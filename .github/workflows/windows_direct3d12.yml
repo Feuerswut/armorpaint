@@ -1,5 +1,4 @@
 name: Windows (Direct3D12)
-
 on:
   push:
     branches:
@@ -8,24 +7,20 @@ on:
     branches:
       - main
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Compile
         run: |
           cd paint
           ../base/make --compile
-
       - name: Find build output
         run: Get-ChildItem -Recurse D:\a\armorpaint\armorpaint\ -Filter "*.exe" | Select-Object FullName
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: armorpaint-windows-d3d12
-          path: paint/build/windows-direct3d12/
+          path: paint/build/
           if-no-files-found: warn
