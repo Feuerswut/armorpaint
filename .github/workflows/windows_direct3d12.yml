@@ -3,20 +3,25 @@ name: Windows (Direct3D12)
 on:
   push:
     branches:
-    - main
+      - main
   pull_request:
     branches:
-    - main
+      - main
   workflow_dispatch:
 
 jobs:
   build:
-
     runs-on: windows-latest
-
     steps:
-    - uses: actions/checkout@v3
-    - name: Compile
-      run: |
-        cd paint
-        ../base/make --compile
+      - uses: actions/checkout@v4  # also fixes the Node.js 20 warning
+
+      - name: Compile
+        run: |
+          cd paint
+          ../base/make --compile
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: armorpaint-windows-d3d12
+          path: paint/build/windows-direct3d12/
