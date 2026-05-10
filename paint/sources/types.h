@@ -191,6 +191,8 @@ typedef struct context {
 	struct ui_handle           *show_envmap_handle;
 	bool                        show_envmap_blur;
 	struct ui_handle           *show_envmap_blur_handle;
+	bool                        capturing_screenshot;
+	bool                        capture_background;
 	f32                         envmap_angle;
 	f32                         light_angle;
 	bool                        cull_backfaces;
@@ -221,7 +223,6 @@ typedef struct context {
 	bool                        show_compass;
 	i32                         project_type;
 	i32                         project_aspect_ratio;
-	struct mesh_object_t_array *project_objects;
 	f32                         last_paint_vec_x;
 	f32                         last_paint_vec_y;
 	f32                         prev_paint_vec_x;
@@ -263,6 +264,7 @@ typedef struct context {
 	bool                        picker_select_material;
 	struct ui_handle           *picker_mask_handle;
 	bool                        pick_pos_nor_tex;
+	bool                        pick_object_id;
 	f32                         posx_picked;
 	f32                         posy_picked;
 	f32                         posz_picked;
@@ -327,7 +329,6 @@ typedef struct context {
 	f32                  brush_nodes_hardness;
 	bool                 brush_directional;
 	f32                  brush_radius;
-	struct ui_handle    *brush_radius_handle;
 	f32                  brush_scale_x;
 	f32                  brush_decal_mask_radius;
 	struct ui_handle    *brush_decal_mask_radius_handle;
@@ -509,6 +510,7 @@ typedef struct project_format {
 	struct mesh_data_t_array      *mesh_datas;
 	struct string_array           *mesh_assets;
 	struct buffer_t_array         *mesh_icons;
+	struct f32_array_t_array      *mesh_transforms;
 	struct i32_array              *atlas_objects;
 	struct string_array           *atlas_names;
 	struct string_array           *script_datas;
@@ -715,6 +717,12 @@ typedef struct buffer_t_array {
 	int        length;
 	int        capacity;
 } buffer_t_array_t;
+
+typedef struct f32_array_t_array {
+	f32_array_t **buffer;
+	int           length;
+	int           capacity;
+} f32_array_t_array_t;
 
 typedef struct slot_material_t_array {
 	slot_material_t **buffer;

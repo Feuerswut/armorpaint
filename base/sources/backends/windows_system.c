@@ -18,25 +18,6 @@ void iron_microsoft_format(const char *format, va_list args, wchar_t *buffer) {
 	MultiByteToWideChar(CP_UTF8, 0, cbuffer, -1, buffer, 4096);
 }
 
-#ifdef IRON_NO_CLIB
-#ifndef NDEBUG
-void _wassert(wchar_t const *message, wchar_t const *filename, unsigned line) {
-	__debugbreak();
-}
-void            _RTC_CheckStackVars(void) {}
-void            _RTC_InitBase(void) {}
-void            _RTC_Shutdown(void) {}
-void            _RTC_AllocaHelper(void) {}
-void            _RTC_CheckStackVars2(void) {}
-void            __GSHandlerCheck(void) {}
-void __fastcall __security_check_cookie(_In_ uintptr_t _StackCookie) {}
-uintptr_t       __security_cookie;
-int             _fltused = 1;
-void            __report_rangecheckfailure(void) {}
-void            __chkstk(void) {}
-#endif
-#endif
-
 #define MAXIMUM_DISPLAYS 8
 
 typedef struct {
@@ -891,7 +872,6 @@ double iron_time(void) {
 	return (double)(stamp.QuadPart - startCount.QuadPart) / (double)frequency.QuadPart;
 }
 
-#if !defined(IRON_NO_MAIN) && !defined(IRON_NO_CLIB)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	int ret = kickstart(__argc, __argv);
 	if (ret != 0) {
@@ -903,7 +883,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 	return ret;
 }
-#endif
 
 void iron_init(iron_window_options_t *ops) {
 	initKeyTranslation();
@@ -1447,7 +1426,7 @@ static BOOL IsXInputDevice(const GUID *pGuidProductFromDirectInput) {
 					// If it does, then get the VID/PID from var.bstrVal
 					DWORD  dwPid = 0, dwVid = 0;
 					WCHAR *strVid = wcsstr(var.bstrVal, L"VID_");
-#ifndef IRON_NO_CLIB
+
 					if (strVid && swscanf(strVid, L"VID_%4X", &dwVid) != 1) {
 						dwVid = 0;
 					}
@@ -1455,7 +1434,6 @@ static BOOL IsXInputDevice(const GUID *pGuidProductFromDirectInput) {
 					if (strPid && swscanf(strPid, L"PID_%4X", &dwPid) != 1) {
 						dwPid = 0;
 					}
-#endif
 
 					// Compare the VID/PID to the DInput device
 					DWORD dwVidPid = MAKELONG(dwVid, dwPid);
@@ -1788,9 +1766,10 @@ void iron_gamepad_handle_messages() {
 
 #include <process.h>
 
-volatile int  iron_exec_async_done = 1;
-static HANDLE child_handle         = NULL;
-static HANDLE wait_handle          = NULL;
+volatile int  iron_exec_async_done        = 1;
+char         *iron_exec_async_output_file = NULL;
+static HANDLE child_handle                = NULL;
+static HANDLE wait_handle                 = NULL;
 
 static void CALLBACK exec_wait_callback(PVOID lparam, BOOLEAN b) {
 	iron_exec_async_done = 1;
@@ -1814,7 +1793,22 @@ void iron_exec_async(const char *path, char *argv[]) {
 	si.cb                  = sizeof(si);
 	si.dwFlags             = STARTF_USESHOWWINDOW;
 	si.wShowWindow         = SW_HIDE;
-	BOOL success           = CreateProcessW(NULL, wcmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+
+	HANDLE out_handle = INVALID_HANDLE_VALUE;
+	if (iron_exec_async_output_file != NULL) {
+		wchar_t wpath[1024];
+		MultiByteToWideChar(CP_UTF8, 0, iron_exec_async_output_file, -1, wpath, 1024);
+		SECURITY_ATTRIBUTES sa = {sizeof(sa), NULL, TRUE};
+		out_handle             = CreateFileW(wpath, GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		si.dwFlags |= STARTF_USESTDHANDLES;
+		si.hStdOutput = out_handle;
+		si.hStdError  = out_handle;
+	}
+
+	BOOL success = CreateProcessW(NULL, wcmd, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
+	if (out_handle != INVALID_HANDLE_VALUE) {
+		CloseHandle(out_handle);
+	}
 	if (!success) {
 		iron_exec_async_done = 1;
 		return;

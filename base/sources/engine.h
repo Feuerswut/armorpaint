@@ -377,11 +377,9 @@ camera_data_t *camera_data_get_raw_by_name(any_array_t *datas, char *name);
 //  ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═════╝  ╚════╝ ╚══════╝ ╚═════╝   ╚═╝
 
 extern vec4_t    _camera_object_sphere_center;
-extern i32       camera_object_taa_frames;
 camera_object_t *camera_object_create(camera_data_t *data);
 void             camera_object_build_proj(camera_object_t *raw, f32 screen_aspect);
 void             camera_object_remove(camera_object_t *raw);
-void             camera_object_render_frame(camera_object_t *raw);
 void             camera_object_proj_jitter(camera_object_t *raw);
 void             camera_object_build_mat(camera_object_t *raw);
 vec4_t           camera_object_right(camera_object_t *raw);
@@ -654,7 +652,6 @@ void                 render_path_render_frame(void);
 void                 render_path_set_target(char *target, string_array_t *additional, char *depth_buffer, gpu_clear_t flags, i32 color, f32 depth);
 void                 render_path_end(void);
 void                 render_path_draw_meshes(char *context);
-void                 render_path_submit_draw(char *context);
 void                 render_path_draw_skydome(char *handle);
 void                 render_path_bind_target(char *target, char *uniform);
 void                 render_path_draw_shader(char *handle);

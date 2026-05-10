@@ -17,6 +17,8 @@ context_t *context_create() {
 	c->show_envmap_handle      = ui_handle_create();
 	c->show_envmap_blur        = false;
 	c->show_envmap_blur_handle = ui_handle_create();
+	c->capturing_screenshot    = false;
+	c->capture_background      = false;
 	c->envmap_angle            = 0.0;
 	c->light_angle             = 0.0;
 	c->cull_backfaces          = true;
@@ -74,6 +76,7 @@ context_t *context_create() {
 	c->picker_select_material  = false;
 	c->picker_mask_handle      = ui_handle_create();
 	c->pick_pos_nor_tex        = false;
+	c->pick_object_id          = false;
 	c->posx_picked             = 0.0;
 	c->posy_picked             = 0.0;
 	c->posz_picked             = 0.0;
@@ -125,7 +128,6 @@ context_t *context_create() {
 	c->brush_nodes_angle                 = 0.0;
 	c->brush_nodes_hardness              = 1.0;
 	c->brush_directional                 = false;
-	c->brush_radius_handle               = ui_handle_create();
 	c->brush_scale_x                     = 1.0;
 	c->brush_decal_mask_radius           = 0.5;
 	c->brush_decal_mask_radius_handle    = ui_handle_create();
@@ -175,7 +177,6 @@ void context_init() {
 	g_context->tool                       = TOOL_TYPE_BRUSH;
 	g_context->color_picker_previous_tool = TOOL_TYPE_BRUSH;
 	g_context->brush_radius               = 0.5;
-	g_context->brush_radius_handle->f     = 0.5;
 	g_context->brush_hardness             = 1.0;
 }
 

@@ -8,14 +8,10 @@ char *_project_import_mesh_box_path;
 bool  _project_import_mesh_box_replace_existing;
 bool  _project_import_mesh_box_clear_layers;
 void (*_project_import_mesh_box_done)(void);
-raw_mesh_t *_project_unwrap_mesh_box_mesh;
-void (*_project_unwrap_mesh_box_done)(raw_mesh_t *);
-bool     _project_unwrap_mesh_box_skip_ui;
 bool     _project_import_asset_hdr_as_envmap;
 bool     _project_import_swatches_replace_existing;
 asset_t *_project_reimport_texture_asset;
 scene_t *_project_scene_mesh_gc;
-i32      _project_unwrap_by = 0;
 
 void project_open_on_file_picked(char *path) {
 	if (!ends_with(path, ".arm")) {
@@ -157,17 +153,6 @@ void project_cleanup() {
 			}
 			data_delete_mesh(p->data->_->handle);
 			mesh_object_remove(p);
-		}
-	}
-
-	mesh_object_t_array_t *meshes = scene_meshes;
-	i32                    len    = meshes->length;
-	for (i32 i = 0; i < len; ++i) {
-		mesh_object_t *m = meshes->buffer[len - i - 1];
-		if (array_index_of(g_context->project_objects, m) == -1 && !string_equals(m->base->name, ".ParticleEmitter") &&
-		    !string_equals(m->base->name, ".Particle")) {
-			data_delete_mesh(m->data->_->handle);
-			mesh_object_remove(m);
 		}
 	}
 
@@ -341,6 +326,7 @@ void project_new(bool reset_layers) {
 	if (in_use)
 		draw_begin(current, false, 0);
 
+	tab_meshes_reset_preview_map();
 	base_update_workflow();
 	project_set_default_envmap();
 	context_select_tool(TOOL_TYPE_BRUSH);
@@ -534,45 +520,15 @@ void project_reimport_mesh() {
 	}
 }
 
-string_array_t *project_get_unwrap_plugins() {
-	string_array_t *unwrap_plugins = any_array_create_from_raw((void *[]){}, 0);
-	if (box_preferences_files_plugin == NULL) {
-		box_preferences_fetch_plugins();
-	}
-#ifdef WITH_PLUGINS
-	for (i32 i = 0; i < box_preferences_files_plugin->length; ++i) {
-		char *f = box_preferences_files_plugin->buffer[i];
-		if (string_index_of(f, "uv_unwrap") >= 0 && ends_with(f, ".c")) {
-			any_array_push(unwrap_plugins, f);
-		}
-	}
-	any_array_push(unwrap_plugins, "uv_unwrap");
-#endif
-	any_array_push(unwrap_plugins, "equirect");
-	return unwrap_plugins;
-}
-
 void project_unwrap_mesh(raw_mesh_t *mesh, void (*done)(raw_mesh_t *)) {
-	string_array_t *unwrap_plugins = project_get_unwrap_plugins();
-
-	if (_project_unwrap_by == unwrap_plugins->length - 1) {
-		util_mesh_equirect_unwrap(mesh);
-	}
-	else {
-		char *f                = unwrap_plugins->buffer[_project_unwrap_by];
-		void (*cb)(void *mesh) = any_map_get(util_mesh_unwrappers, f);
-		cb(mesh);
-	}
+	char *f                = "uv_unwrap";
+	void (*cb)(void *mesh) = any_map_get(util_mesh_unwrappers, f);
+	cb(mesh);
 	done(mesh);
 }
 
 void project_unwrap_mesh_box_draw() {
-	raw_mesh_t *mesh           = _project_unwrap_mesh_box_mesh;
-	void (*done)(raw_mesh_t *) = _project_unwrap_mesh_box_done;
-
-	string_array_t *unwrap_plugins = project_get_unwrap_plugins();
-	_project_unwrap_by             = ui_combo(ui_handle(__ID__), unwrap_plugins, tr("Plugin"), true, UI_ALIGN_LEFT, true);
-
+	ui_end_element();
 	ui_row2();
 	if (ui_icon_button(tr("Cancel"), ICON_CLOSE, UI_ALIGN_CENTER)) {
 		ui_box_hide();
@@ -584,23 +540,13 @@ void project_unwrap_mesh_box_draw() {
 		console_toast(tr("Unwrapping mesh"));
 #endif
 
-		project_unwrap_mesh(mesh, done);
+#ifdef WITH_PLUGINS
+		plugin_uv_unwrap_button();
+#endif
 	}
 }
 
-void project_unwrap_mesh_box(raw_mesh_t *mesh, void (*done)(raw_mesh_t *), bool skip_ui) {
-	gc_unroot(_project_unwrap_mesh_box_mesh);
-	_project_unwrap_mesh_box_mesh = mesh;
-	gc_root(_project_unwrap_mesh_box_mesh);
-	gc_unroot(_project_unwrap_mesh_box_done);
-	_project_unwrap_mesh_box_done = done;
-	gc_root(_project_unwrap_mesh_box_done);
-
-	if (skip_ui) {
-		project_unwrap_mesh(mesh, done);
-		return;
-	}
-
+void project_unwrap_mesh_box() {
 	ui_box_show_custom(&project_unwrap_mesh_box_draw, 400, 200, NULL, true, tr("Unwrap Mesh"));
 }
 

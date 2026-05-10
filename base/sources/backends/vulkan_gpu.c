@@ -61,6 +61,11 @@ static VkBuffer           upload_buffer;
 static int                upload_buffer_size = 0;
 static VkDeviceMemory     upload_mem;
 static bool               is_amd = false;
+#ifdef IRON_ANDROID
+static bool unified_memory = true;
+#else
+static bool unified_memory = false;
+#endif
 
 void     iron_vulkan_get_instance_extensions(const char **extensions, int *index);
 VkBool32 iron_vulkan_get_physical_device_presentation_support(VkPhysicalDevice physical_device, uint32_t queue_family_index);
@@ -379,12 +384,12 @@ static void gpu_cleanup_internal() {
 }
 
 void gpu_render_target_init2(gpu_texture_t *target, int width, int height, gpu_texture_format_t format, int framebuffer_index) {
-	target->width                = width;
-	target->height               = height;
-	target->format               = format;
-	target->state                = (framebuffer_index >= 0) ? GPU_TEXTURE_STATE_PRESENT : GPU_TEXTURE_STATE_SHADER_RESOURCE;
-	target->buffer               = NULL;
-	target->impl.has_storage_bit = false;
+	target->width     = width;
+	target->height    = height;
+	target->format    = format;
+	target->state     = (framebuffer_index >= 0) ? GPU_TEXTURE_STATE_PRESENT : GPU_TEXTURE_STATE_SHADER_RESOURCE;
+	target->buffer    = NULL;
+	target->gpu_write = false;
 
 	if (framebuffer_index >= 0) {
 		return;
@@ -1052,7 +1057,7 @@ void gpu_begin_internal(gpu_clear_t flags, unsigned color, float depth) {
 		    .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		    .resolveMode        = VK_RESOLVE_MODE_NONE,
 		    .resolveImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		    .loadOp             = (flags & GPU_CLEAR_COLOR) ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_LOAD,
+		    .loadOp             = (flags & GPU_CLEAR_COLOR) ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
 		    .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
 		    .clearValue         = clear_value,
 		};
@@ -1065,9 +1070,9 @@ void gpu_begin_internal(gpu_clear_t flags, unsigned color, float depth) {
 		    .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 		    .resolveMode        = VK_RESOLVE_MODE_NONE,
 		    .resolveImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		    .loadOp             = (flags & GPU_CLEAR_DEPTH) ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_LOAD,
+		    .loadOp             = (flags & GPU_CLEAR_DEPTH) ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
 		    .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-		    .clearValue         = 1.0,
+		    .clearValue         = depth,
 		};
 	}
 
@@ -1082,39 +1087,15 @@ void gpu_begin_internal(gpu_clear_t flags, unsigned color, float depth) {
 	};
 	vkCmdBeginRendering(command_buffer, &current_rendering_info);
 
+	for (size_t i = 0; i < current_render_targets_count; ++i) {
+		current_color_attachment_infos[i].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+	}
+	if (current_depth_buffer != NULL) {
+		current_depth_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+	}
+
 	gpu_viewport(0, 0, current_render_targets[0]->width, current_render_targets[0]->height);
 	gpu_scissor(0, 0, current_render_targets[0]->width, current_render_targets[0]->height);
-
-	if (flags != GPU_CLEAR_NONE) {
-		int               count = 0;
-		VkClearAttachment attachments[2];
-		if (flags & GPU_CLEAR_COLOR) {
-			VkClearColorValue clear_color       = {0};
-			clear_color.float32[0]              = ((color & 0x00ff0000) >> 16) / 255.0f;
-			clear_color.float32[1]              = ((color & 0x0000ff00) >> 8) / 255.0f;
-			clear_color.float32[2]              = (color & 0x000000ff) / 255.0f;
-			clear_color.float32[3]              = ((color & 0xff000000) >> 24) / 255.0f;
-			attachments[count].aspectMask       = VK_IMAGE_ASPECT_COLOR_BIT;
-			attachments[count].colorAttachment  = 0;
-			attachments[count].clearValue.color = clear_color;
-			count++;
-		}
-		if (flags & GPU_CLEAR_DEPTH) {
-			attachments[count].aspectMask                      = VK_IMAGE_ASPECT_DEPTH_BIT;
-			attachments[count].clearValue.depthStencil.depth   = depth;
-			attachments[count].clearValue.depthStencil.stencil = 0;
-			count++;
-		}
-		VkClearRect clear_rect = {
-		    .rect.offset.x      = 0,
-		    .rect.offset.y      = 0,
-		    .rect.extent.width  = current_render_targets[0]->width,
-		    .rect.extent.height = current_render_targets[0]->height,
-		    .baseArrayLayer     = 0,
-		    .layerCount         = 1,
-		};
-		vkCmdClearAttachments(command_buffer, count, attachments, 1, &clear_rect);
-	}
 }
 
 void gpu_end_internal() {
@@ -1796,11 +1777,11 @@ void gpu_render_target_init(gpu_texture_t *target, int width, int height, gpu_te
 	gpu_render_target_init2(target, width, height, format, -1);
 }
 
-void _gpu_buffer_init(gpu_buffer_impl_t *buffer, int size, int usage, int memory_requirements) {
-	if (buffer->buf != NULL) {
+void _gpu_buffer_init(VkBuffer *buf, VkDeviceMemory *mem, int size, int usage, int memory_requirements) {
+	if (buf != NULL && *buf != NULL) {
 		assert(buffers_to_destroy_count < 512);
-		buffers_to_destroy[buffers_to_destroy_count]         = buffer->buf;
-		buffer_memories_to_destroy[buffers_to_destroy_count] = buffer->mem;
+		buffers_to_destroy[buffers_to_destroy_count]         = *buf;
+		buffer_memories_to_destroy[buffers_to_destroy_count] = *mem;
 		buffers_to_destroy_count++;
 	}
 
@@ -1815,9 +1796,9 @@ void _gpu_buffer_init(gpu_buffer_impl_t *buffer, int size, int usage, int memory
 		buf_info.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		buf_info.usage |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
 	}
-	vkCreateBuffer(device, &buf_info, NULL, &buffer->buf);
+	vkCreateBuffer(device, &buf_info, NULL, buf);
 	VkMemoryRequirements mem_reqs = {0};
-	vkGetBufferMemoryRequirements(device, buffer->buf, &mem_reqs);
+	vkGetBufferMemoryRequirements(device, *buf, &mem_reqs);
 
 	VkMemoryAllocateInfo mem_alloc = {
 	    .sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -1830,17 +1811,17 @@ void _gpu_buffer_init(gpu_buffer_impl_t *buffer, int size, int usage, int memory
 		memory_allocate_flags_info.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
 		mem_alloc.pNext                  = &memory_allocate_flags_info;
 	}
-	VkResult result = vkAllocateMemory(device, &mem_alloc, NULL, &buffer->mem);
+	VkResult result = vkAllocateMemory(device, &mem_alloc, NULL, mem);
 
 	if (result != VK_SUCCESS && gpu_cleanup_pending()) {
 		gpu_execute_and_wait();
 		gpu_cleanup_internal();
 		gpu_cleanup();
-		_gpu_buffer_init(buffer, size, usage, memory_requirements);
+		_gpu_buffer_init(buf, mem, size, usage, memory_requirements);
 		return;
 	}
 
-	vkBindBufferMemory(device, buffer->buf, buffer->mem, 0);
+	vkBindBufferMemory(device, *buf, *mem, 0);
 }
 
 void _gpu_buffer_copy(VkBuffer dest, VkBuffer source, uint32_t size) {
@@ -1851,6 +1832,17 @@ void _gpu_buffer_copy(VkBuffer dest, VkBuffer source, uint32_t size) {
 	    .size = size,
 	};
 	vkCmdCopyBuffer(command_buffer, source, dest, 1, &copy_region);
+	VkBufferMemoryBarrier buf_barrier = {
+	    .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+	    .srcAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
+	    .dstAccessMask       = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_INDEX_READ_BIT,
+	    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+	    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+	    .buffer              = dest,
+	    .offset              = 0,
+	    .size                = VK_WHOLE_SIZE,
+	};
+	vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, 0, NULL, 1, &buf_barrier, 0, NULL);
 	if (gpu_in_use) {
 		vkCmdBeginRendering(command_buffer, &current_rendering_info);
 	}
@@ -1863,34 +1855,66 @@ void gpu_vertex_buffer_init(gpu_buffer_t *buffer, int count, gpu_vertex_structur
 		gpu_vertex_element_t element = structure->elements[i];
 		buffer->stride += gpu_vertex_data_size(element.data);
 	}
-	buffer->impl.buf = NULL;
+	buffer->cpu_write    = false;
+	buffer->impl.buf     = NULL;
+	buffer->impl.cpu_buf = NULL;
 }
 
 void *gpu_vertex_buffer_lock(gpu_buffer_t *buffer) {
-	_gpu_buffer_init(&buffer->impl, buffer->count * buffer->stride, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-	                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	if (unified_memory && buffer->cpu_write) {
+		if (buffer->impl.buf == NULL) {
+			_gpu_buffer_init(&buffer->impl.buf, &buffer->impl.mem, buffer->count * buffer->stride, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+			                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		}
+		void *p;
+		vkMapMemory(device, buffer->impl.mem, 0, buffer->count * buffer->stride, 0, (void **)&p);
+		return p;
+	}
+
+	if (!buffer->cpu_write || buffer->impl.cpu_buf == NULL) {
+		_gpu_buffer_init(&buffer->impl.cpu_buf, &buffer->impl.cpu_mem, buffer->count * buffer->stride, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	}
 	void *p;
-	vkMapMemory(device, buffer->impl.mem, 0, buffer->count * buffer->stride, 0, (void **)&p);
+	vkMapMemory(device, buffer->impl.cpu_mem, 0, buffer->count * buffer->stride, 0, (void **)&p);
 	return p;
 }
 
 void gpu_vertex_buffer_unlock(gpu_buffer_t *buffer) {
-	vkUnmapMemory(device, buffer->impl.mem);
-	VkBuffer upload_buffer = buffer->impl.buf;
-	_gpu_buffer_init(&buffer->impl, buffer->count * buffer->stride, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-	                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	_gpu_buffer_copy(buffer->impl.buf, upload_buffer, buffer->count * buffer->stride);
-	gpu_execute_and_wait(); ////
+
+	if (unified_memory && buffer->cpu_write) {
+		vkUnmapMemory(device, buffer->impl.mem);
+		return;
+	}
+
+	if (!buffer->cpu_write || buffer->impl.buf == NULL) {
+		_gpu_buffer_init(&buffer->impl.buf, &buffer->impl.mem, buffer->count * buffer->stride,
+		                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	}
+	vkUnmapMemory(device, buffer->impl.cpu_mem);
+	_gpu_buffer_copy(buffer->impl.buf, buffer->impl.cpu_buf, buffer->count * buffer->stride);
+
+	if (!buffer->cpu_write) {
+		assert(buffers_to_destroy_count < 512);
+		buffers_to_destroy[buffers_to_destroy_count]         = buffer->impl.cpu_buf;
+		buffer_memories_to_destroy[buffers_to_destroy_count] = buffer->impl.cpu_mem;
+		buffers_to_destroy_count++;
+		buffer->impl.cpu_buf = NULL;
+		buffer->impl.cpu_mem = VK_NULL_HANDLE;
+	}
 }
 
 void gpu_index_buffer_init(gpu_buffer_t *buffer, int count) {
-	buffer->count    = count;
-	buffer->stride   = sizeof(uint32_t);
-	buffer->impl.buf = NULL;
+	buffer->count        = count;
+	buffer->stride       = sizeof(uint32_t);
+	buffer->cpu_write    = false;
+	buffer->impl.buf     = NULL;
+	buffer->impl.cpu_buf = NULL;
 }
 
 void *gpu_index_buffer_lock(gpu_buffer_t *buffer) {
-	_gpu_buffer_init(&buffer->impl, buffer->count * buffer->stride, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+	_gpu_buffer_init(&buffer->impl.buf, &buffer->impl.mem, buffer->count * buffer->stride, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 	                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	void *p;
 	vkMapMemory(device, buffer->impl.mem, 0, buffer->count * buffer->stride, 0, (void **)&p);
@@ -1900,17 +1924,19 @@ void *gpu_index_buffer_lock(gpu_buffer_t *buffer) {
 void gpu_index_buffer_unlock(gpu_buffer_t *buffer) {
 	vkUnmapMemory(device, buffer->impl.mem);
 	VkBuffer upload_buffer = buffer->impl.buf;
-	_gpu_buffer_init(&buffer->impl, buffer->count * buffer->stride, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+	_gpu_buffer_init(&buffer->impl.buf, &buffer->impl.mem, buffer->count * buffer->stride, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 	                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	_gpu_buffer_copy(buffer->impl.buf, upload_buffer, buffer->count * buffer->stride);
-	gpu_execute_and_wait(); ////
 }
 
 void gpu_constant_buffer_init(gpu_buffer_t *buffer, int size) {
-	buffer->count    = size;
-	buffer->data     = NULL;
-	buffer->impl.buf = NULL;
-	_gpu_buffer_init(&buffer->impl, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	buffer->count        = size;
+	buffer->data         = NULL;
+	buffer->cpu_write    = false;
+	buffer->impl.buf     = NULL;
+	buffer->impl.cpu_buf = NULL;
+	_gpu_buffer_init(&buffer->impl.buf, &buffer->impl.mem, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+	                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 }
 
 void gpu_constant_buffer_lock(gpu_buffer_t *buffer, int start, int count) {
@@ -2162,6 +2188,8 @@ void _gpu_raytrace_acceleration_structure_destroy_top(gpu_acceleration_structure
 }
 
 void gpu_raytrace_acceleration_structure_build(gpu_acceleration_structure_t *accel, gpu_buffer_t *_vb_full, gpu_buffer_t *_ib_full) {
+	gpu_execute_and_wait();
+
 	bool build_bottom = false;
 	for (int i = 0; i < 16; ++i) {
 		if (vb_last[i] != vb[i]) {
@@ -2741,8 +2769,8 @@ void gpu_raytrace_set_pipeline(gpu_raytrace_pipeline_t *_pipeline) {
 }
 
 void gpu_raytrace_set_target(gpu_texture_t *_output) {
-	if (!_output->impl.has_storage_bit) {
-		_output->impl.has_storage_bit = true;
+	if (!_output->gpu_write) {
+		_output->gpu_write = true;
 		gpu_texture_destroy(_output);
 
 		VkImageCreateInfo image_info = {
