@@ -1205,7 +1205,8 @@ void ui_update_text_edit(int align, bool editable, bool live_update) {
 		else if (editable && // Write
 		         current->key_code != KEY_CODE_SHIFT && current->key_code != KEY_CODE_CAPS_LOCK && current->key_code != KEY_CODE_CONTROL &&
 		         current->key_code != KEY_CODE_META && current->key_code != KEY_CODE_ALT && current->key_code != KEY_CODE_UP &&
-		         current->key_code != KEY_CODE_DOWN && current->key_char >= 32 && (!current->is_ctrl_down || current->is_alt_down)) { // AltGr = ctrl+alt
+		         current->key_code != KEY_CODE_DOWN && current->key_char >= 32 && (!current->is_ctrl_down || current->is_alt_down) && // AltGr = ctrl+alt
+		         !(current->key_code >= KEY_CODE_F1 && current->key_code <= KEY_CODE_F24)) {
 			ui_remove_chars_at(text, current->highlight_anchor, current->cursor_x - current->highlight_anchor);
 			ui_insert_char_at(text, current->highlight_anchor, current->key_char);
 
@@ -1626,7 +1627,7 @@ void ui_begin_sticky() {
 void ui_end_sticky() {
 	current->sticky  = false;
 	current->scissor = true;
-	gpu_scissor(0, current->_y, current->_window_w, current->_window_h - current->_y);
+	draw_scissor(0, current->_y, current->_window_w, current->_window_h - current->_y);
 	current->window_header_h += current->_y - current->window_header_h;
 	current->_y += current->current_window->scroll_offset;
 	current->is_hovered = false;

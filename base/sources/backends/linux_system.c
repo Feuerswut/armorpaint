@@ -1204,11 +1204,9 @@ void iron_internal_shutdown() {
 	iron_internal_shutdown_callback();
 }
 
-#ifndef IRON_NO_MAIN
 int main(int argc, char **argv) {
 	return kickstart(argc, argv);
 }
-#endif
 
 void iron_copy_to_clipboard(const char *text) {
 	size_t textLength = strlen(text);
@@ -1538,10 +1536,12 @@ bool _save_and_quit_callback_internal() {
 	return false;
 }
 
+#include <fcntl.h>
 #include <signal.h>
 #include <sys/wait.h>
-static pid_t child_pid            = -1;
-volatile int iron_exec_async_done = 1;
+static pid_t child_pid                   = -1;
+volatile int iron_exec_async_done        = 1;
+char        *iron_exec_async_output_file = NULL;
 
 void iron_exec_handler(int sig) {
 	int status;
@@ -1554,6 +1554,11 @@ void iron_exec_async(const char *path, char *argv[]) {
 	iron_exec_async_done = 0;
 	child_pid            = fork();
 	if (child_pid == 0) {
+		if (iron_exec_async_output_file != NULL) {
+			int fd = open(iron_exec_async_output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+			dup2(fd, STDOUT_FILENO);
+			close(fd);
+		}
 		execve(path, argv, NULL);
 		exit(1);
 	}

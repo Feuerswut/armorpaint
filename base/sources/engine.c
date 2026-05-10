@@ -11,12 +11,9 @@ f32 sys_time(void);
 
 gpu_pipeline_t *_mesh_object_last_pipeline   = NULL;
 vec4_t          _camera_object_sphere_center = {0};
-i32             camera_object_taa_frames     = 1;
 
 gpu_buffer_t   *gpu_create_vertex_buffer(i32 count, gpu_vertex_structure_t *structure);
 gpu_buffer_t   *gpu_create_index_buffer(i32 count);
-buffer_t       *gpu_lock_vertex_buffer(gpu_buffer_t *buffer);
-u32_array_t    *gpu_lock_index_buffer(gpu_buffer_t *buffer);
 void            gpu_delete_buffer(gpu_buffer_t *buffer);
 f32             math_floor(f32 x);
 gpu_shader_t   *gpu_create_shader(buffer_t *data, i32 shader_type);
@@ -843,7 +840,7 @@ i32 mesh_data_get_vertex_size(char *vertex_data) {
 
 void mesh_data_build_vertices(gpu_buffer_t *vertex_buffer, any_array_t *vertex_arrays) {
 	vertex_array_t *va0       = (vertex_array_t *)vertex_arrays->buffer[0];
-	buffer_t       *vertices  = gpu_lock_vertex_buffer(vertex_buffer);
+	int16_t        *vertices  = gpu_vertex_buffer_lock(vertex_buffer);
 	i32             size      = mesh_data_get_vertex_size(va0->data);
 	i32             num_verts = va0->values->length / size;
 	i32             di        = -1;
@@ -852,7 +849,7 @@ void mesh_data_build_vertices(gpu_buffer_t *vertex_buffer, any_array_t *vertex_a
 			vertex_array_t *v = (vertex_array_t *)vertex_arrays->buffer[va];
 			i32             l = mesh_data_get_vertex_size(v->data);
 			for (i32 o = 0; o < l; ++o) {
-				buffer_set_i16(vertices, ++di * 2, v->values->buffer[i * l + o]);
+				vertices[++di] = v->values->buffer[i * l + o];
 			}
 		}
 	}
@@ -860,8 +857,8 @@ void mesh_data_build_vertices(gpu_buffer_t *vertex_buffer, any_array_t *vertex_a
 }
 
 void mesh_data_build_indices(gpu_buffer_t *index_buffer, u32_array_t *index_array) {
-	u32_array_t *ia = gpu_lock_index_buffer(index_buffer);
-	memcpy(ia->buffer, index_array->buffer, ia->length * 4);
+	uint32_t *ia = gpu_index_buffer_lock(index_buffer);
+	memcpy(ia, index_array->buffer, index_buffer->count * 4);
 	gpu_index_buffer_unlock(index_buffer);
 }
 
@@ -1079,51 +1076,15 @@ void camera_object_remove(camera_object_t *raw) {
 	object_remove_super(raw->base);
 }
 
-void camera_object_render_frame(camera_object_t *raw) {
-	camera_object_proj_jitter(raw);
-	camera_object_build_mat(raw);
-	render_path_render_frame();
-}
-
 void camera_object_proj_jitter(camera_object_t *raw) {
 	i32 w  = render_path_current_w;
 	i32 h  = render_path_current_h;
 	raw->p = raw->no_jitter_p;
-
-	i32 i = raw->frame % camera_object_taa_frames;
-	f32 x = 0.0;
-	f32 y = 0.0;
-
-	if (i == 0) {
-		x = 0.5;
-		y = 0.333;
-	}
-	else if (i == 1) {
-		x = -0.5;
-		y = -0.333;
-	}
-	else if (i == 2) {
-		x = 0.25;
-		y = 0.111;
-	}
-	else if (i == 3) {
-		x = -0.25;
-		y = -0.111;
-	}
-	else if (i == 4) {
-		x = 0.375;
-		y = 0.444;
-	}
-	else {
-		x = -0.375;
-		y = -0.444;
-	}
-	x *= 2;
-	y *= 2;
-
+	i32 i = raw->frame % 2;
+	f32 x = i == 0 ? -0.5 :  0.5;
+	f32 y = i == 0 ?  0.5 : -0.5;
 	raw->p.m20 += x / w;
 	raw->p.m21 += y / h;
-	raw->frame++;
 }
 
 void camera_object_build_mat(camera_object_t *raw) {
@@ -2256,7 +2217,11 @@ void scene_render_frame(void) {
 			transform_update(e->transform);
 		}
 	}
-	camera_object_render_frame(scene_camera);
+
+	camera_object_proj_jitter(scene_camera);
+	camera_object_build_mat(scene_camera);
+	render_path_render_frame();
+	scene_camera->frame++;
 }
 
 object_t *scene_add_object(object_t *parent) {
@@ -2563,11 +2528,6 @@ void render_path_end(void) {
 }
 
 void render_path_draw_meshes(char *context) {
-	render_path_submit_draw(context);
-	render_path_end();
-}
-
-void render_path_submit_draw(char *context) {
 	any_array_t *meshes = scene_meshes;
 	gc_unroot(_mesh_object_last_pipeline);
 	_mesh_object_last_pipeline = NULL;
@@ -2575,6 +2535,7 @@ void render_path_submit_draw(char *context) {
 		mesh_object_t *mesh = (mesh_object_t *)meshes->buffer[i];
 		mesh_object_render(mesh, context, _render_path_bind_params);
 	}
+	render_path_end();
 }
 
 void render_path_draw_skydome(char *handle) {

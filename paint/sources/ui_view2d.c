@@ -21,16 +21,16 @@ void ui_view2d_init() {
 	ui_view2d_pipe->vertex_shader   = sys_get_shader("layer_view.vert");
 	ui_view2d_pipe->fragment_shader = sys_get_shader("layer_view.frag");
 	gpu_vertex_structure_t *vs      = GC_ALLOC_INIT(gpu_vertex_structure_t, {0});
-	gpu_vertex_struct_add(vs, "pos", GPU_VERTEX_DATA_F32_2X);
+	gpu_vertex_structure_add(vs, "pos", GPU_VERTEX_DATA_F32_2X);
+	gpu_vertex_structure_add(vs, "tex", GPU_VERTEX_DATA_F32_2X);
+	gpu_vertex_structure_add(vs, "col", GPU_VERTEX_DATA_F32_4X);
 	ui_view2d_pipe->input_layout              = vs;
 	ui_view2d_pipe->blend_source              = GPU_BLEND_ONE;
 	ui_view2d_pipe->blend_destination         = GPU_BLEND_ZERO;
 	ui_view2d_pipe->color_write_mask_alpha[0] = false;
 	gpu_pipeline_compile(ui_view2d_pipe);
 	pipes_offset = 0;
-	pipes_get_constant_location("float4");
-	pipes_get_constant_location("float4");
-	pipes_get_constant_location("float4");
+	pipes_get_constant_location("float4"); // empty
 	ui_view2d_channel_loc = pipes_get_constant_location("int");
 }
 
@@ -101,7 +101,7 @@ void ui_view2d_render(void *_) {
 	}
 
 	// Ensure UV map is drawn
-	if (ui_view2d_uvmap_show) {
+	if (ui_view2d_uvmap_show || ui_view2d_type == VIEW_2D_TYPE_UVMAP) {
 		util_uv_cache_uv_map();
 	}
 
@@ -178,7 +178,7 @@ void ui_view2d_render(void *_) {
 				}
 			}
 		}
-		else if (ui_view2d_type == VIEW_2D_TYPE_LAYER) {
+		else if (ui_view2d_type == VIEW_2D_TYPE_LAYER || ui_view2d_type == VIEW_2D_TYPE_UVMAP) {
 			slot_layer_t *layer = l;
 
 			if (g_config->brush_live && render_path_paint_live_layer_drawn > 0) {
@@ -271,6 +271,11 @@ void ui_view2d_render(void *_) {
 		// UV map
 		if (ui_view2d_type == VIEW_2D_TYPE_LAYER && ui_view2d_uvmap_show) {
 			draw_scaled_image(util_uv_uvmap, tx, ty, tw, th);
+		}
+
+		if (ui_view2d_type == VIEW_2D_TYPE_UVMAP) {
+			draw_scaled_image(util_uv_uvmap, tx, ty, tw, th);
+			edit_uvmap_update();
 		}
 
 		// Menu
@@ -414,10 +419,11 @@ void ui_view2d_render(void *_) {
 				ui->_y = 2 + start_y;
 			}
 
-			char *view_type = ui_view2d_type == VIEW_2D_TYPE_ASSET  ? tr("Asset")
-			                  : ui_view2d_type == VIEW_2D_TYPE_NODE ? tr("Node")
-			                  : ui_view2d_type == VIEW_2D_TYPE_FONT ? tr("Font")
-			                                                        : tr("Layer");
+			char *view_type = ui_view2d_type == VIEW_2D_TYPE_ASSET   ? tr("Asset")
+			                  : ui_view2d_type == VIEW_2D_TYPE_NODE  ? tr("Node")
+			                  : ui_view2d_type == VIEW_2D_TYPE_FONT  ? tr("Font")
+			                  : ui_view2d_type == VIEW_2D_TYPE_UVMAP ? tr("UVMap")
+			                                                         : tr("Layer");
 
 			ui->_w = math_floor(ew * 0.5 + 3);
 			ui_text(view_type, UI_ALIGN_LEFT, 0x00000000);

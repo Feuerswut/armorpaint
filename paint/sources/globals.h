@@ -7,7 +7,7 @@
 
 char *manifest_title           = "ArmorPaint";
 char *manifest_version         = "1.0 alpha";
-char *manifest_version_project = "5";
+char *manifest_version_project = "6";
 char *manifest_version_config  = "1";
 char *manifest_url             = "https://armorpaint.org";
 char *manifest_url_android     = "https://play.google.com/store/apps/details?id=org.armorpaint";
@@ -150,7 +150,6 @@ i32                       ui_menu_h                          = 0;
 bool                      ui_menu_keep_open                  = false;
 void (*ui_menu_commands)(void)                               = NULL;
 bool                      ui_menu_show_first                 = true;
-i32                       render_path_base_taa_frame         = 0;
 i32                       render_path_base_bloom_current_mip = 0;
 f32                       render_path_base_bloom_sample_scale;
 bool                      render_path_base_buf_swapped = false;
@@ -407,7 +406,6 @@ ui_handle_t    *ui_box_hwnd;
 bool            ui_box_click_to_hide           = true;
 i32             ui_box_modalw                  = 400;
 i32             ui_box_modalh                  = 170;
-i32             _tab_scene_paint_object_length = 1;
 ui_handle_t    *tab_layers_layer_name_handle;
 gpu_texture_t  *util_uv_uvmap                    = NULL;
 bool            util_uv_uvmap_cached             = false;

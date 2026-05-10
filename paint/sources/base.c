@@ -20,6 +20,7 @@ i32            base_appx               = 0;
 i32            base_appy               = 0;
 i32            base_last_window_width  = 0;
 i32            base_last_window_height = 0;
+bool           base_start_arm_found    = false;
 i32            _base_material_count;
 i32            ui_base_border_started         = 0;
 ui_handle_t   *ui_base_border_handle          = NULL;
@@ -58,7 +59,9 @@ void base_on_drop_files(char *drop_path) {
 }
 
 void base_init_on_start_arm(void *_) {
-	import_arm_run_project(project_filepath);
+	if (base_start_arm_found) {
+		import_arm_run_project(project_filepath);
+	}
 	g_context->tool = TOOL_TYPE_CURSOR;
 	// Auto-run script
 	if (g_project->script_datas != NULL && g_project->script_datas->length > 0) {
@@ -312,6 +315,10 @@ void base_update(void *_) {
 	}
 
 	compass_update();
+
+	if (g_config->workspace == WORKSPACE_PLAYER) {
+		player_update();
+	}
 }
 
 gpu_texture_t *base_get_drag_image() {
@@ -403,7 +410,7 @@ void base_render(void *_) {
 		base_init_undo_layers();
 		make_material_parse_mesh_material();
 		make_material_parse_paint_material(true);
-		g_context->ddirty          = 0;
+		g_context->ddirty = 0;
 	}
 	else if (g_context->frame == 3) {
 		g_context->ddirty = 3;
@@ -438,6 +445,7 @@ void base_render(void *_) {
 
 	bool using_menu = ui_menu_show && mouse_y > ui_header_h;
 	base_ui_enabled = !ui_box_show && !using_menu && ui->combo_selected_handle == NULL;
+
 	if (ui_box_show) {
 		ui_box_render();
 	}
@@ -630,12 +638,6 @@ void ui_base_init() {
 		sys_notify_on_next_frame(&ui_base_init_on_next_frame, NULL);
 	}
 
-	g_context->project_objects = any_array_create_from_raw((void *[]){}, 0);
-	for (i32 i = 0; i < scene_meshes->length; ++i) {
-		mesh_object_t *m = scene_meshes->buffer[i];
-		any_array_push(g_context->project_objects, m);
-	}
-
 	operator_register("view_top", ui_base_view_top);
 }
 
@@ -644,7 +646,7 @@ void ui_base_menu_draw_viewport_mode() {
 	mode_handle->i           = g_context->viewport_mode;
 	ui_text(tr("Viewport Mode"), UI_ALIGN_RIGHT, 0x00000000);
 
-	string_array_t *modes = base_get_viewport_modes();
+	string_array_t *modes     = base_get_viewport_modes();
 	string_array_t *shortcuts = base_get_viewport_mode_shortcuts();
 	if (gpu_raytrace_supported()) {
 		any_array_push(modes, tr("Path Traced"));
@@ -763,6 +765,8 @@ void ui_base_update_ui() {
 		return;
 	}
 
+	gizmo_update();
+
 	// Same mapping for paint and rotate (predefined in touch keymap)
 	if (context_in_3d_view()) {
 		char *paint_key  = any_map_get(config_keymap, "action_paint");
@@ -849,6 +853,7 @@ void ui_base_update_ui() {
 		g_context->brush_stencil_x += (old_w - new_w) / (float)base_w() / 2.0;
 		g_context->brush_stencil_y += (old_h - new_h) / (float)base_h() / 2.0;
 	}
+
 	bool set_clone_source =
 	    g_context->tool == TOOL_TYPE_CLONE &&
 	    operator_shortcut(string("%s+%s", any_map_get(config_keymap, "set_clone_source"), any_map_get(config_keymap, "action_paint")), SHORTCUT_TYPE_DOWN);
@@ -919,10 +924,9 @@ void ui_base_update_ui() {
 		}
 	}
 	else if (g_context->brush_time > 0) { // Brush released
-		g_context->brush_time       = 0;
-		g_context->prev_paint_vec_x = -1;
-		g_context->prev_paint_vec_y = -1;
-		// g_context->ddirty              = 3; // Keep accumulated samples for D3D12
+		g_context->brush_time        = 0;
+		g_context->prev_paint_vec_x  = -1;
+		g_context->prev_paint_vec_y  = -1;
 		g_context->brush_blend_dirty = true; // Update brush mask
 
 		g_context->layer_preview_dirty = true; // Update layer preview
@@ -1006,8 +1010,6 @@ void ui_base_update_ui() {
 	else if (redo_pressed) {
 		history_redo();
 	}
-
-	gizmo_update();
 }
 
 void ui_base_update(void *_) {
@@ -1081,11 +1083,9 @@ void ui_base_update(void *_) {
 	if (keyboard_started(any_map_get(config_keymap, "view_distract_free")) || (keyboard_started("escape") && !ui_base_show && !ui_box_show)) {
 		ui_base_toggle_distract_free();
 	}
-	// if (g_config->experimental && keyboard_started("f5") && g_config->workspace != WORKSPACE_PLAYER) {
-	// 	g_config->workspace = WORKSPACE_PLAYER;
-	// 	base_update_workspace();
-	// }
-	if (g_config->experimental && keyboard_started("f5")) {
+	if (g_config->experimental && keyboard_started("f5") && g_config->workspace != WORKSPACE_PLAYER) {
+		// g_config->workspace = WORKSPACE_PLAYER;
+		// base_update_workspace();
 		base_run_in_player();
 	}
 
@@ -1130,7 +1130,6 @@ void ui_base_update(void *_) {
 					g_context->brush_radius += mouse_movement_x / 150.0;
 					g_context->brush_radius           = math_max(0.01, math_min(4.0, g_context->brush_radius));
 					g_context->brush_radius           = math_round(g_context->brush_radius * 100) / 100.0;
-					g_context->brush_radius_handle->f = g_context->brush_radius;
 				}
 				ui_header_handle->redraws = 2;
 			}
@@ -1225,13 +1224,11 @@ void ui_base_update(void *_) {
 			else if (operator_shortcut(any_map_get(config_keymap, "brush_radius_decrease"), SHORTCUT_TYPE_REPEAT)) {
 				g_context->brush_radius -= ui_base_get_radius_increment();
 				g_context->brush_radius           = math_max(math_round(g_context->brush_radius * 100) / 100.0, 0.01);
-				g_context->brush_radius_handle->f = g_context->brush_radius;
 				ui_header_handle->redraws         = 2;
 			}
 			else if (operator_shortcut(any_map_get(config_keymap, "brush_radius_increase"), SHORTCUT_TYPE_REPEAT)) {
 				g_context->brush_radius += ui_base_get_radius_increment();
 				g_context->brush_radius           = math_round(g_context->brush_radius * 100) / 100.0;
-				g_context->brush_radius_handle->f = g_context->brush_radius;
 				ui_header_handle->redraws         = 2;
 			}
 			else if (decal_mask) {
@@ -1394,13 +1391,18 @@ void ui_base_update(void *_) {
 		base_is_resizing      = false;
 	}
 
-	if (g_context->tool == TOOL_TYPE_PARTICLE && context_in_paint_area() && !g_context->paint2d) {
+	if (g_context->tool == TOOL_TYPE_PARTICLE) {
 		util_particle_init_physics();
 		physics_world_t *world = physics_world_active;
 		physics_world_update(world);
-		g_context->ddirty = 2;
-		g_context->rdirty = 2;
-		if (mouse_started("left")) {
+
+		if (g_context->particle_timer != NULL) {
+			g_context->ddirty = 2;
+			g_context->rdirty = 2;
+			iron_delay_idle_sleep();
+		}
+
+		if (mouse_started("left") && context_in_paint_area() && !g_context->paint2d) {
 			if (g_context->particle_timer != NULL) {
 				tween_stop(g_context->particle_timer);
 				tween_anim_t *timer = g_context->particle_timer;
@@ -1432,7 +1434,6 @@ void ui_base_update(void *_) {
 		}
 
 #ifdef arm_physics
-
 		physics_pair_t_array_t *pairs = physics_world_get_contact_pairs(world, g_context->paint_body);
 		if (pairs != NULL) {
 			for (i32 i = 0; i < pairs->length; ++i) {
@@ -1447,7 +1448,6 @@ void ui_base_update(void *_) {
 				break; // 1 pair for now
 			}
 		}
-
 #endif
 	}
 }
@@ -1726,15 +1726,16 @@ void base_init() {
 		gc_unroot(project_filepath);
 		project_filepath = start_arm;
 		gc_root(project_filepath);
+		base_start_arm_found = true;
 		args_player = true;
 	}
 
 	if (args_player) {
-		sys_notify_on_next_frame(&base_init_on_start_arm, NULL);
-		make_material_parse_paint_material(true);
+		// base_player_lock = true;
 		g_config->workspace = WORKSPACE_PLAYER;
 		base_update_workspace();
-		base_player_lock = true;
+		make_material_parse_paint_material(true);
+		sys_notify_on_next_frame(&base_init_on_start_arm, NULL);
 	}
 }
 
@@ -1857,7 +1858,7 @@ void base_resize() {
 		cam->data->ortho->buffer[3] = 2 * (sys_h() / (float)sys_w());
 	}
 	camera_object_build_proj(cam, -1.0);
-	render_path_base_taa_frame = 0;
+	scene_camera->frame = 0;
 
 	if (g_context->camera_type == CAMERA_TYPE_ORTHOGRAPHIC) {
 		viewport_update_camera_type(g_context->camera_type);
@@ -2069,6 +2070,10 @@ tab_draw_array_t_array_t *ui_base_init_hwnd_tabs() {
 	}
 #endif
 
+#ifdef is_debug
+	any_array_push(a0, _draw_callback_create(tab_debug_draw));
+#endif
+
 	tab_draw_array_t_array_t *r = any_array_create_from_raw((void *[]){}, 0);
 	any_array_push(r, a0);
 	any_array_push(r, a1);
@@ -2275,9 +2280,11 @@ void base_update_workspace() {
 		float h                                          = UI_ELEMENT_H() + UI_ELEMENT_OFFSET() + 2;
 		g_config->layout->buffer[LAYOUT_SIZE_SIDEBAR_H0] = iron_window_height() - h;
 		g_config->layout->buffer[LAYOUT_SIZE_SIDEBAR_H1] = h;
+		render_path_resize();
 	}
 	else if (g_config->workspace == WORKSPACE_PLAYER) {
 		ui_base_show = false;
+		render_path_resize();
 	}
 
 	base_resize();

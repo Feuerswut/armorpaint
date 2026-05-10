@@ -73,12 +73,12 @@ f32 uniforms_ext_f32_link(object_t *object, material_data_t *mat, char *link) {
 		return val;
 	}
 	else if (string_equals(link, "_brush_scale")) {
-		if (g_context->tool == TOOL_TYPE_CURSOR) {
-			i32 atlas_w      = config_get_scene_atlas_res();
-			i32 item_w       = config_get_layer_res();
-			i32 atlas_stride = atlas_w / (float)item_w;
-			return atlas_stride;
-		}
+		// if (g_context->tool == TOOL_TYPE_CURSOR) {
+		// 	i32 atlas_w      = config_get_scene_atlas_res();
+		// 	i32 item_w       = config_get_layer_res();
+		// 	i32 atlas_stride = atlas_w / (float)item_w;
+		// 	return atlas_stride;
+		// }
 		bool fill = g_context->layer->fill_layer != NULL;
 		f32  val  = (fill ? g_context->layer->scale : g_context->brush_scale) * g_context->brush_nodes_scale;
 		return val;
@@ -109,15 +109,7 @@ f32 uniforms_ext_f32_link(object_t *object, material_data_t *mat, char *link) {
 		return g_context->picked_color->height;
 	}
 	else if (string_equals(link, "_taa_blend")) {
-		if (render_path_base_taa_frame == 0) {
-			return 0.0;
-		}
-		if (g_context->ddirty > 1 || g_context->pdirty > 0) {
-			camera_object_taa_frames = 2;
-			return 0.5;
-		}
-		camera_object_taa_frames = 6;
-		return 0.833;
+		return scene_camera->frame == 0 ? 0.0 : 0.5;
 	}
 	if (parser_material_script_links != NULL) {
 		string_array_t *keys = map_keys(parser_material_script_links);
