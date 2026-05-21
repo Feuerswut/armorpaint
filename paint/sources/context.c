@@ -314,12 +314,6 @@ void context_init_tool() {
 		}
 		util_render_make_decal_preview();
 	}
-	else if (g_context->tool == TOOL_TYPE_BAKE) {
-		// Bake in lit mode for now
-		if (g_context->viewport_mode == VIEWPORT_MODE_PATH_TRACE) {
-			g_context->viewport_mode = VIEWPORT_MODE_LIT;
-		}
-	}
 	else if (g_context->tool == TOOL_TYPE_MATERIAL) {
 		layers_update_fill_layers();
 		context_main_object()->skip_context = NULL;

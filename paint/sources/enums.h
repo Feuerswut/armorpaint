@@ -20,7 +20,7 @@ typedef enum {
 	BAKE_TYPE_MATERIALID    = 7,
 	BAKE_TYPE_OBJECTID      = 8,
 	BAKE_TYPE_VERTEX_COLOR  = 9,
-	BAKE_TYPE_AO            = 10,
+	BAKE_TYPE_OCCLUSION     = 10,
 	BAKE_TYPE_LIGHTMAP      = 11,
 	BAKE_TYPE_BENT_NORMAL   = 12,
 	BAKE_TYPE_THICKNESS     = 13,
@@ -232,9 +232,9 @@ typedef enum {
 	TOOL_TYPE_PARTICLE = 7,
 	TOOL_TYPE_COLORID  = 8,
 	TOOL_TYPE_PICKER   = 9,
-	TOOL_TYPE_BAKE     = 10,
-	TOOL_TYPE_MATERIAL = 11,
-	TOOL_TYPE_CURSOR   = 12,
+	TOOL_TYPE_MATERIAL = 10,
+	TOOL_TYPE_CURSOR   = 11,
+	TOOL_TYPE_BAKE     = 12, // Hidden, used by Bake Texture node
 } tool_type_t;
 
 typedef enum {
@@ -312,8 +312,8 @@ typedef enum {
 	ICON_PARTICLE         = 7,
 	ICON_COLOR_ID         = 8,
 	ICON_PICKER           = 9,
-	ICON_BAKE             = 10,
-	ICON_MATERIAL         = 11,
+	ICON_MATERIAL         = 10,
+	ICON_CURSOR           = 11,
 	ICON_DROP             = 12,
 	ICON_MATERIAL_PREVIEW = 13,
 	ICON_FOLDER_FULL      = 14,
@@ -325,7 +325,7 @@ typedef enum {
 	ICON_FOLDER_OPEN      = 20,
 	ICON_EMPTY            = 21,
 	ICON_SMUDGE           = 22,
-	ICON_CURSOR           = 23,
+	ICON_BAKE             = 23,
 	ICON_MENU             = 24,
 	ICON_FILE_NEW         = 25,
 	ICON_FOLDER           = 26,

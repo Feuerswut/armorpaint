@@ -18,6 +18,7 @@
 #include "brush_nodes/vector_node.c"
 
 #include "material_nodes/attribute_node.c"
+#include "material_nodes/bake_texture_node.c"
 #include "material_nodes/blur_node.c"
 #include "material_nodes/brick_texture_node.c"
 #include "material_nodes/brightness_contrast_node.c"

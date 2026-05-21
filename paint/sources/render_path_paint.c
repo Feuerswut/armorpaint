@@ -724,6 +724,10 @@ void render_path_paint_commands_cursor() {
 }
 
 bool render_path_paint_paint_enabled() {
+	if (g_context->tool == TOOL_TYPE_BAKE) {
+		return true;
+	}
+
 	bool fill_layer = g_context->layer->fill_material != NULL && g_context->tool != TOOL_TYPE_PICKER && g_context->tool != TOOL_TYPE_MATERIAL &&
 	                  g_context->tool != TOOL_TYPE_COLORID;
 	bool group_layer = slot_layer_is_group(g_context->layer);
@@ -806,22 +810,13 @@ void render_path_paint_end() {
 	g_context->pdirty--;
 }
 
-void render_path_paint_update_bake_layer(texture_bits_t bits) {
-	if (base_bits_handle->i != bits) {
-		base_bits_handle->i = bits;
-		layers_set_bits();
-	}
-}
-
 void _render_path_paint_final() {
 	g_context->bake_type = _render_path_paint_bake_type;
-	make_material_parse_paint_material(true);
+	make_material_parse_paint_material(false);
 	g_context->pdirty = 1;
 	render_path_paint_commands_paint(true);
 	g_context->pdirty        = 0;
 	render_path_paint_baking = false;
-
-	render_path_paint_update_bake_layer(TEXTURE_BITS_BITS8);
 }
 
 void _render_path_paint_deriv_on_next_frame(void *_) {
@@ -830,7 +825,7 @@ void _render_path_paint_deriv_on_next_frame(void *_) {
 
 void _render_path_paint_deriv() {
 	g_context->bake_type = BAKE_TYPE_HEIGHT;
-	make_material_parse_paint_material(true);
+	make_material_parse_paint_material(false);
 	g_context->pdirty = 1;
 	render_path_paint_commands_paint(true);
 	g_context->pdirty = 0;
@@ -841,7 +836,7 @@ void _render_path_paint_deriv() {
 }
 
 bool render_path_paint_is_rt_bake() {
-	return (g_context->bake_type == BAKE_TYPE_AO || g_context->bake_type == BAKE_TYPE_LIGHTMAP || g_context->bake_type == BAKE_TYPE_BENT_NORMAL ||
+	return (g_context->bake_type == BAKE_TYPE_OCCLUSION || g_context->bake_type == BAKE_TYPE_LIGHTMAP || g_context->bake_type == BAKE_TYPE_BENT_NORMAL ||
 	        g_context->bake_type == BAKE_TYPE_THICKNESS);
 }
 
@@ -874,13 +869,10 @@ void render_path_paint_draw() {
 			if (g_context->bake_type == BAKE_TYPE_NORMAL || g_context->bake_type == BAKE_TYPE_HEIGHT || g_context->bake_type == BAKE_TYPE_DERIVATIVE) {
 				if (!render_path_paint_baking && g_context->pdirty > 0) {
 
-					// Use RGBA128 texture format for high poly to low poly baking to prevent artifacts
-					render_path_paint_update_bake_layer(TEXTURE_BITS_BITS32);
-
 					render_path_paint_baking     = true;
 					_render_path_paint_bake_type = g_context->bake_type;
 					g_context->bake_type = g_context->bake_type == BAKE_TYPE_NORMAL ? BAKE_TYPE_NORMAL_OBJECT : BAKE_TYPE_POSITION; // Bake high poly data
-					make_material_parse_paint_material(true);
+					make_material_parse_paint_material(false);
 					mesh_object_t *_paint_object = g_context->paint_object;
 					mesh_object_t *high_poly     = project_paint_objects->buffer[g_context->bake_high_poly];
 					bool           _visible      = high_poly->base->visible;
@@ -923,9 +915,7 @@ void render_path_paint_draw() {
 					g_context->merged_object->base->visible = _visible;
 			}
 			else if (render_path_paint_is_rt_bake()) {
-				bool dirty = render_path_raytrace_bake_commands(make_material_parse_paint_material);
-				if (dirty)
-					ui_header_handle->redraws = 2;
+				render_path_raytrace_bake_commands(make_material_parse_paint_material);
 				render_path_paint_dilate(true, false);
 			}
 			else {

@@ -1088,6 +1088,9 @@ bool layers_is_fill_material() {
 }
 
 void layers_update_fill_layers() {
+	if (bake_texture_node_baking)
+		return;
+
 	slot_layer_t  *_layer     = g_context->layer;
 	tool_type_t    _tool      = g_context->tool;
 	i32            _fill_type = g_context->fill_type_handle->i;

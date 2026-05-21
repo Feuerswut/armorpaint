@@ -27,6 +27,7 @@ void nodes_material_init() {
 	gc_unroot(nodes_material_texture);
 	nodes_material_texture = any_array_create_from_raw((void *[]){}, 0);
 	gc_root(nodes_material_texture);
+	bake_texture_node_init();
 	brick_texture_node_init();
 	camera_texture_node_init();
 	checker_texture_node_init();

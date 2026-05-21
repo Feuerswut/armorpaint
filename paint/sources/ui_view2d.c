@@ -529,13 +529,12 @@ void ui_view2d_update(void *_) {
 	bool set_clone_source =
 	    g_context->tool == TOOL_TYPE_CLONE &&
 	    operator_shortcut(string("%s+%s", any_map_get(config_keymap, "set_clone_source"), any_map_get(config_keymap, "action_paint")), SHORTCUT_TYPE_DOWN);
-	bool bake = g_context->tool == TOOL_TYPE_BAKE;
 
 	if (!ui->input_down) {
 		ui_view2d_layer_touched = false;
 	}
 
-	if (ui_view2d_type == VIEW_2D_TYPE_LAYER && !ui_view2d_text_input_hover && !bake &&
+	if (ui_view2d_type == VIEW_2D_TYPE_LAYER && !ui_view2d_text_input_hover &&
 	    (operator_shortcut(any_map_get(config_keymap, "action_paint"), SHORTCUT_TYPE_DOWN) ||
 	     operator_shortcut(string("%s+%s", any_map_get(config_keymap, "brush_ruler"), any_map_get(config_keymap, "action_paint")), SHORTCUT_TYPE_DOWN) ||
 	     decal_mask || set_clone_source || g_config->brush_live)) {

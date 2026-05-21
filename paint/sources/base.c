@@ -1190,9 +1190,6 @@ void ui_base_update(void *_) {
 			else if (operator_shortcut(any_map_get(config_keymap, "tool_picker"), SHORTCUT_TYPE_STARTED)) {
 				context_select_tool(TOOL_TYPE_PICKER);
 			}
-			else if (operator_shortcut(any_map_get(config_keymap, "tool_bake"), SHORTCUT_TYPE_STARTED)) {
-				context_select_tool(TOOL_TYPE_BAKE);
-			}
 			else if (operator_shortcut(any_map_get(config_keymap, "tool_material"), SHORTCUT_TYPE_STARTED)) {
 				context_select_tool(TOOL_TYPE_MATERIAL);
 			}
@@ -1571,7 +1568,7 @@ void ui_base_render_cursor(void *_) {
 		return;
 	}
 
-	if (g_context->tool == TOOL_TYPE_MATERIAL || g_context->tool == TOOL_TYPE_BAKE) {
+	if (g_context->tool == TOOL_TYPE_MATERIAL) {
 		return;
 	}
 
@@ -2064,7 +2061,7 @@ void base_toggle_fullscreen() {
 }
 
 bool base_is_decal_layer() {
-	bool is_painting = g_context->tool != TOOL_TYPE_MATERIAL && g_context->tool != TOOL_TYPE_BAKE;
+	bool is_painting = g_context->tool != TOOL_TYPE_MATERIAL;
 	return is_painting && g_context->layer->fill_material != NULL && g_context->layer->uv_type == UV_TYPE_PROJECT;
 }
 

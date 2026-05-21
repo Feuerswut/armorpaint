@@ -89,11 +89,10 @@ void _kickstart() {
 	        _tr("Particle"),
 	        _tr("ColorID"),
 	        _tr("Picker"),
-	        _tr("Bake"),
 	        _tr("Material"),
 	        _tr("Cursor"),
 	    },
-	    13);
+	    12);
 	gc_root(ui_toolbar_tool_names);
 
 	ui_toolbar_tooltip_extras = any_array_create_from_raw(
@@ -110,9 +109,8 @@ void _kickstart() {
 	        "",
 	        "",
 	        "",
-	        "",
 	    },
-	    13);
+	    12);
 	gc_root(ui_toolbar_tooltip_extras);
 	uniforms_ext_ortho_p = mat4_ortho(-0.5, 0.5, -0.5, 0.5, -0.5, 0.5);
 

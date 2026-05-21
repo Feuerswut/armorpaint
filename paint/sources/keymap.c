@@ -97,7 +97,6 @@ any_map_t *keymap_get_default() {
 	any_map_set(keymap, "tool_particle", "p");
 	any_map_set(keymap, "tool_colorid", "c");
 	any_map_set(keymap, "tool_picker", "v");
-	any_map_set(keymap, "tool_bake", "k");
 	any_map_set(keymap, "tool_cursor", "r");
 	any_map_set(keymap, "tool_material", "");
 	any_map_set(keymap, "swap_brush_eraser", "");

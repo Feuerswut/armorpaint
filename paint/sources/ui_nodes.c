@@ -1484,6 +1484,13 @@ gpu_texture_t *ui_nodes_get_node_preview_image(ui_node_t *n) {
 			}
 		}
 	}
+	else if (string_equals(n->type, "TEX_BAKE")) {
+		char            *rt_name = string("bake_texture_node_%d", n->id);
+		render_target_t *rt      = any_map_get(render_path_render_targets, rt_name);
+		if (rt != NULL) {
+			img = rt->_image;
+		}
+	}
 	else if (starts_with(n->type, "NEURAL_") && !string_equals(n->type, "NEURAL_IMAGE_TO_PBR")) {
 		img = any_imap_get(neural_node_results, n->id);
 	}
