@@ -38,13 +38,16 @@ void import_lut_run(const char *path) {
 
 		if (*line != '#' && *line != '\0') {
 			if (strncmp(line, "LUT_3D_SIZE", 11) == 0) {
-				sscanf(line + 11, "%d", &n);
+				n    = (int)strtol(line + 11, NULL, 10);
 				cube = (f32 *)malloc(n * n * n * 3 * sizeof(f32));
 			}
 			else if (n > 0 && cube != NULL && data_count < n * n * n) {
 				if ((*line >= '0' && *line <= '9') || *line == '-' || *line == '.') {
-					f32 r, g, b;
-					if (sscanf(line, "%f %f %f", &r, &g, &b) == 3) {
+					char *p;
+					f32   r = strtof(line, &p);
+					f32   g = strtof(p, &p);
+					f32   b = strtof(p, &p);
+					if (p != line) {
 						cube[data_count * 3 + 0] = r;
 						cube[data_count * 3 + 1] = g;
 						cube[data_count * 3 + 2] = b;
