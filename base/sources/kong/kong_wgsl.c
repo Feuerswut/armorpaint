@@ -895,6 +895,10 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, func
 					*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = inverseSqrt(_%" PRIu64 ");\n", o->op_call.var.index,
 					                   type_string(o->op_call.var.type.type), o->op_call.parameters[0].index);
 				}
+				else if (o->op_call.func == add_name("frac")) {
+					*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = fract(_%" PRIu64 ");\n", o->op_call.var.index,
+					                   type_string(o->op_call.var.type.type), o->op_call.parameters[0].index);
+				}
 				else if (o->op_call.func == add_name("float3x3")) {
 					*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = mat3x3<f32>(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n", o->op_call.var.index,
 					                   type_string(o->op_call.var.type.type), o->op_call.parameters[0].index, o->op_call.parameters[1].index,
@@ -914,7 +918,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, func
 					                   o->op_call.parameters[2].index);
 				}
 				else if (o->op_call.func == add_name("frac3")) {
-					*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = frac(_%" PRIu64 ");\n", o->op_call.var.index,
+					*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = fract(_%" PRIu64 ");\n", o->op_call.var.index,
 					                   type_string(o->op_call.var.type.type), o->op_call.parameters[0].index);
 				}
 				else if (o->op_call.func == add_name("abs3")) {
