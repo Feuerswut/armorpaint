@@ -29,9 +29,9 @@ typedef struct {
 
 static void shader_compile_worker(void *param) {
 	shader_compile_job_t *job = (shader_compile_job_t *)param;
-	job->result = gpu_create_shader_from_source(job->source, job->source_size, job->shader_type);
+	job->result               = gpu_create_shader_from_source(job->source, job->source_size, job->shader_type);
 }
-void            gpu_delete_pipeline(gpu_pipeline_t *pipeline);
+void gpu_delete_pipeline(gpu_pipeline_t *pipeline);
 #ifdef arm_embed
 gpu_shader_t *sys_get_shader(char *name);
 #endif
@@ -579,17 +579,20 @@ void shader_context_compile(shader_context_t *raw) {
 	}
 
 	if (raw->shader_from_source) {
-		// raw->_->pipe->vertex_shader   = gpu_create_shader_from_source(raw->vertex_shader, raw->_->vertex_shader_size, GPU_SHADER_TYPE_VERTEX);
-		// raw->_->pipe->fragment_shader = gpu_create_shader_from_source(raw->fragment_shader, raw->_->fragment_shader_size, GPU_SHADER_TYPE_FRAGMENT);
 
-		shader_compile_job_t vs_job = {raw->vertex_shader,   raw->_->vertex_shader_size,   GPU_SHADER_TYPE_VERTEX,   NULL};
+#ifdef IRON_WASM
+		raw->_->pipe->vertex_shader   = gpu_create_shader_from_source(raw->vertex_shader, raw->_->vertex_shader_size, GPU_SHADER_TYPE_VERTEX);
+		raw->_->pipe->fragment_shader = gpu_create_shader_from_source(raw->fragment_shader, raw->_->fragment_shader_size, GPU_SHADER_TYPE_FRAGMENT);
+#else
+		shader_compile_job_t vs_job = {raw->vertex_shader, raw->_->vertex_shader_size, GPU_SHADER_TYPE_VERTEX, NULL};
 		shader_compile_job_t fs_job = {raw->fragment_shader, raw->_->fragment_shader_size, GPU_SHADER_TYPE_FRAGMENT, NULL};
-		iron_thread_t vs_thread;
+		iron_thread_t        vs_thread;
 		iron_thread_init(&vs_thread, shader_compile_worker, &vs_job);
 		shader_compile_worker(&fs_job);
 		iron_thread_wait_and_destroy(&vs_thread);
 		raw->_->pipe->vertex_shader   = vs_job.result;
 		raw->_->pipe->fragment_shader = fs_job.result;
+#endif
 
 		if (raw->_->pipe->vertex_shader == NULL || raw->_->pipe->fragment_shader == NULL) {
 			return;
@@ -1102,9 +1105,9 @@ void camera_object_proj_jitter(camera_object_t *raw) {
 	i32 w  = render_path_current_w;
 	i32 h  = render_path_current_h;
 	raw->p = raw->no_jitter_p;
-	i32 i = raw->frame % 2;
-	f32 x = i == 0 ? -0.5 :  0.5;
-	f32 y = i == 0 ?  0.5 : -0.5;
+	i32 i  = raw->frame % 2;
+	f32 x  = i == 0 ? -0.5 : 0.5;
+	f32 y  = i == 0 ? 0.5 : -0.5;
 	raw->p.m20 += x / w;
 	raw->p.m21 += y / h;
 }
