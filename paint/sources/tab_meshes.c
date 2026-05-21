@@ -458,9 +458,9 @@ void tab_meshes_make_preview(mesh_object_t *o) {
 	quat_t saved_rot   = o->base->transform->rot;
 	{
 		vec4_t aabb = mesh_data_calculate_aabb(o->data);
-		f32    r    = math_sqrt(aabb.x * aabb.x + aabb.y * aabb.y + aabb.z * aabb.z);
-		f32    s    = 1.0 / r;
-		if (o->base->parent == NULL) {
+		f32    r    = math_max(aabb.x, math_max(aabb.y, aabb.z));
+		f32    s    = 0.5 / r;
+		if (o->base->parent == NULL || o->base->parent == _scene_scene_parent) {
 			s *= o->base->transform->scale.x;
 		}
 		s *= o->data->scale_pos;
