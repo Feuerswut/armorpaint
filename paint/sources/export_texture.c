@@ -244,7 +244,7 @@ void export_texture_run_layers(char *path, slot_layer_t_array_t *layers, char *o
 			gpu_set_texture(pipes_texa, layers_temp_image);
 			gpu_set_float(pipes_opac, slot_layer_get_opacity(l1));
 			gpu_set_float(pipes_tex1w, empty->width);
-			gpu_set_int(pipes_blending, layers->length > 1 ? l1->blending : 0);
+			gpu_set_int(pipes_blending, layers->length > 1 ? slot_layer_get_blending(l1) : 0);
 			gpu_set_vertex_buffer(const_data_screen_aligned_vb);
 			gpu_set_index_buffer(const_data_screen_aligned_ib);
 			gpu_draw();

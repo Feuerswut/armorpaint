@@ -372,7 +372,7 @@ node_shader_context_t *make_mesh_run(material_t *data, i32 layer_pass) {
 				}
 				else {
 					node_shader_write_frag(kong, string("basecol = %s;",
-					                                    make_material_blend_mode(kong, l->blending, "basecol", "texpaint_sample.rgb", "texpaint_opac")));
+					                                    make_material_blend_mode(kong, slot_layer_get_blending(l), "basecol", "texpaint_sample.rgb", "texpaint_opac")));
 				}
 			}
 

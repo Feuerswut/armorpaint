@@ -447,7 +447,7 @@ void tab_layers_draw_layer_slot_full(slot_layer_t *l, i32 i) {
 	}
 
 	// Blending combo
-	if (!slot_layer_is_group(l) && !slot_layer_is_mask(l)) {
+	if (!slot_layer_is_group(l) && !slot_layer_is_mask(l) && !slot_layer_is_filter(l)) {
 		ui->_x = uix + uiw * 0.60;
 		ui->_y = uiy;
 		ui->_w = uiw * 0.30;
@@ -455,7 +455,7 @@ void tab_layers_draw_layer_slot_full(slot_layer_t *l, i32 i) {
 	}
 
 	// Object combo
-	if (!slot_layer_is_group(l) && !slot_layer_is_mask(l)) {
+	if (!slot_layer_is_group(l) && !slot_layer_is_mask(l) && !slot_layer_is_filter(l)) {
 		ui->_x = uix + uiw * 0.60;
 		ui->_y = uiy + center * 2;
 		ui->_w = uiw * 0.30;
@@ -638,12 +638,12 @@ void tab_layers_draw_layer_context_menu_draw() {
 			ui_menu_keep_open = true;
 		}
 
-		if (!slot_layer_is_group(l) && !slot_layer_is_mask(l)) {
+		if (!slot_layer_is_group(l) && !slot_layer_is_mask(l) && !slot_layer_is_filter(l)) {
 			if (tab_layers_combo_blending(l, true)->changed) {
 				ui_menu_keep_open = true;
 			}
 		}
-		if (slot_layer_is_layer(l)) {
+		if (slot_layer_is_layer(l) && !slot_layer_is_filter(l)) {
 			if (tab_layers_combo_object(l, true)->changed) {
 				ui_menu_keep_open = true;
 			}

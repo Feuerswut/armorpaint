@@ -617,7 +617,11 @@ f32 slot_layer_get_opacity(slot_layer_t *raw) {
 }
 
 i32 slot_layer_get_object_mask(slot_layer_t *raw) {
-	return slot_layer_is_mask(raw) ? raw->parent->object_mask : raw->object_mask;
+	return (slot_layer_is_mask(raw) || slot_layer_is_filter(raw)) ? raw->parent->object_mask : raw->object_mask;
+}
+
+i32 slot_layer_get_blending(slot_layer_t *raw) {
+	return slot_layer_is_filter(raw) ? raw->parent->blending : raw->blending;
 }
 
 bool slot_layer_is_layer(slot_layer_t *raw) {
@@ -1735,7 +1739,7 @@ void layers_merge_layer(slot_layer_t *l0, slot_layer_t *l1, bool use_mask) {
 			gpu_set_texture(pipes_texa, layers_temp_image);
 			gpu_set_float(pipes_opac, slot_layer_get_opacity(l1));
 			gpu_set_float(pipes_tex1w, empty->width);
-			gpu_set_int(pipes_blending, l1->blending);
+			gpu_set_int(pipes_blending, slot_layer_get_blending(l1));
 			gpu_set_vertex_buffer(const_data_screen_aligned_vb);
 			gpu_set_index_buffer(const_data_screen_aligned_ib);
 			gpu_draw();
@@ -1861,7 +1865,7 @@ slot_layer_t *layers_flatten(bool height_to_normal, slot_layer_t_array_t *layers
 			gpu_set_texture(pipes_texa, layers_temp_image);
 			gpu_set_float(pipes_opac, slot_layer_get_opacity(l1));
 			gpu_set_float(pipes_tex1w, empty->width);
-			gpu_set_int(pipes_blending, layers->length > 1 ? l1->blending : 0);
+			gpu_set_int(pipes_blending, layers->length > 1 ? slot_layer_get_blending(l1) : 0);
 			gpu_set_vertex_buffer(const_data_screen_aligned_vb);
 			gpu_set_index_buffer(const_data_screen_aligned_ib);
 			gpu_draw();

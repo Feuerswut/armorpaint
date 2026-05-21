@@ -37,6 +37,7 @@ bool                  slot_layer_has_masks(slot_layer_t *raw, bool include_group
 slot_layer_t_array_t *slot_layer_get_filters(slot_layer_t *raw, bool include_group_filters);
 f32                   slot_layer_get_opacity(slot_layer_t *raw);
 i32                   slot_layer_get_object_mask(slot_layer_t *raw);
+i32                   slot_layer_get_blending(slot_layer_t *raw);
 bool                  slot_layer_is_layer(slot_layer_t *raw);
 bool                  slot_layer_is_path(slot_layer_t *raw);
 bool                  slot_layer_is_group(slot_layer_t *raw);
