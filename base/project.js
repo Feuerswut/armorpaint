@@ -130,7 +130,18 @@ if (graphics == "metal" || (graphics == "vulkan" && platform != "android")) {
 
 if (flags.with_kong) {
 	project.add_define("WITH_KONG");
-	project.add_cfiles("sources/kong/*.c");
+	project.add_cfiles("sources/kong/dir.c");
+	project.add_cfiles("sources/kong/kong.c");
+	project.add_cfiles("sources/kong/kong_cstyle.c");
+	project.add_cfiles("sources/kong/stb_ds.c");
+	project.add_cfiles("sources/kong/kong_spirv.c");
+	project.add_cfiles("sources/kong/kong_wgsl.c");
+	if (platform == "windows") {
+		project.add_cfiles("sources/kong/kong_hlsl.c");
+	}
+	if (platform == "macos" || platform == "ios") {
+		project.add_cfiles("sources/kong/kong_metal.c");
+	}
 }
 
 if (flags.with_plugins) {
