@@ -1539,7 +1539,7 @@ class XCodeExporter extends Exporter {
 			this.p('IPHONEOS_DEPLOYMENT_TARGET = 18.0;', 4);
 		}
 		else {
-			this.p('MACOSX_DEPLOYMENT_TARGET = 13.0;', 4);
+			this.p('MACOSX_DEPLOYMENT_TARGET = 14.0;', 4);
 		}
 		this.p('MTL_ENABLE_DEBUG_INFO = YES;', 4);
 		this.p('ONLY_ACTIVE_ARCH = YES;', 4);
