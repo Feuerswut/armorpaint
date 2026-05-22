@@ -233,6 +233,7 @@ minic_val_t minic_dispatch(minic_ext_func_t *ef, minic_val_t *args, int argc) {
 		case MINIC_T_FLOAT:
 			a[i].f = (float)dv;
 			break;
+		case MINIC_T_EMBED:
 		case MINIC_T_PTR:
 			if (args[i].type == MINIC_T_PTR) {
 				a[i].p = args[i].p;
