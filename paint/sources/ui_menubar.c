@@ -351,6 +351,7 @@ void ui_menubar_draw_category_items() {
 		any_map_set(vars_undo, "step", step_undo);
 		if (ui_menu_button(vtr("Undo {step}", vars_undo), any_map_get(config_keymap, "edit_undo"), ICON_UNDO)) {
 			history_undo();
+			ui_menu_keep_open = true;
 		}
 
 		ui->enabled          = history_redos > 0;
@@ -358,8 +359,40 @@ void ui_menubar_draw_category_items() {
 		any_map_set(vars_redo, "step", step_redo);
 		if (ui_menu_button(vtr("Redo {step}", vars_redo), any_map_get(config_keymap, "edit_redo"), ICON_REDO)) {
 			history_redo();
+			ui_menu_keep_open = true;
 		}
+
 		ui->enabled = true;
+		ui_menu_separator();
+
+		// History steps
+		i32          history_max    = g_config->undo_steps + 1;
+		ui_handle_t *history_handle = ui_handle(__ID__);
+		history_handle->i           = history_steps->length - 1 - history_redos;
+		for (i32 i = 0; i < history_max; ++i) {
+			if (i < history_steps->length) {
+				ui_radio(history_handle, i, history_steps->buffer[i]->name, "");
+			}
+			else {
+				ui->enabled = false;
+				ui_radio(history_handle, i, tr("History"), "");
+				ui->enabled = true;
+			}
+		}
+		if (history_handle->changed) {
+			i32 active = history_steps->length - 1 - history_redos;
+			i32 diff   = history_handle->i - active;
+			while (diff > 0) {
+				diff--;
+				history_redo();
+			}
+			while (diff < 0) {
+				diff++;
+				history_undo();
+			}
+			ui_menu_keep_open = true;
+		}
+
 		ui_menu_separator();
 		if (ui_menu_button(tr("Preferences..."), any_map_get(config_keymap, "edit_prefs"), ICON_COG)) {
 			box_preferences_show();
