@@ -5,10 +5,10 @@ typedef struct slot_stage {
 	char *name;
 } slot_stage_t;
 
-any_array_t  *project_stages              = NULL;
-int           selected_stage              = 0;
+any_array_t  *project_stages               = NULL;
+int           selected_stage               = 0;
 bool          tab_stages_show_context_menu = false;
-slot_stage_t *tab_stages_context_stage    = NULL;
+slot_stage_t *tab_stages_context_stage     = NULL;
 
 void tab_stages_context_menu_delete(void *_) {
 	array_remove(project_stages, tab_stages_context_stage);
