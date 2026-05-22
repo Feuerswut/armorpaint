@@ -258,6 +258,7 @@ i32                       render_path_raytrace_bake_rays_pix       = 0;
 i32                       render_path_raytrace_bake_rays_sec       = 0;
 i32                       render_path_raytrace_bake_current_sample = 0;
 bool                      bake_texture_node_baking                 = false;
+gpu_texture_t            *bake_texture_node_texpaint               = NULL;
 bool                      make_material_transluc_used              = false;
 bool                      make_material_height_used                = false;
 bool                      make_material_emis_used                  = false;

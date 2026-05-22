@@ -67,7 +67,7 @@ bool render_path_raytrace_bake_commands(void (*parse_paint_material)(bool)) {
 
 		bake_type_t _bake_type = g_context->bake_type;
 		g_context->bake_type   = BAKE_TYPE_INIT;
-		parse_paint_material(true);
+		parse_paint_material(false);
 		render_path_set_target("baketex0", NULL, NULL, GPU_CLEAR_COLOR, 0x00000000, 0.0);
 		// Pixels with alpha of 0.0 are skipped during raytracing
 		string_array_t *additional = any_array_create_from_raw(
@@ -114,8 +114,11 @@ bool render_path_raytrace_bake_commands(void (*parse_paint_material)(bool)) {
 
 		gpu_texture_t *tex2 = NULL;
 		if (g_context->bake_type == BAKE_TYPE_LIGHTMAP) {
-			slot_layer_t *flat = layers_flatten(true, NULL);
-			tex2               = flat->texpaint;
+			gpu_texture_t *_texpaint   = g_context->layer->texpaint;
+			g_context->layer->texpaint = bake_texture_node_texpaint;
+			slot_layer_t *flat         = layers_flatten(true, NULL);
+			tex2                       = flat->texpaint;
+			g_context->layer->texpaint = _texpaint;
 		}
 		else {
 			render_target_t *texpaint_undo = any_map_get(render_path_render_targets, string("texpaint_undo%d", history_undo_i));

@@ -3,9 +3,7 @@
 
 static tool_type_t      _bake_texture_node_tool;
 static render_target_t *_bake_texture_node_rt;
-static gpu_texture_t   *_bake_texture_node_texpaint;
 static int              _bake_texture_node_bits;
-extern bool             bake_texture_node_baking;
 
 static void bake_texture_node_clear(gpu_texture_t *t) {
 	draw_begin(t, true, 0xff000000);
@@ -33,11 +31,11 @@ static void bake_texture_node_check_result(ui_node_t *node) {
 	}
 
 	any_map_set(render_path_render_targets, string("texpaint%d", g_context->layer->id), _bake_texture_node_rt);
-	g_context->layer->texpaint = _bake_texture_node_texpaint;
+	g_context->layer->texpaint = bake_texture_node_texpaint;
 	g_context->tool            = _bake_texture_node_tool;
 	ui_nodes_hwnd->redraws     = 2;
 	ui_view2d_hwnd->redraws    = 2;
-	bake_texture_node_baking  = false;
+	bake_texture_node_baking   = false;
 	make_material_parse_paint_material(true);
 
 	if (rgba128) {
@@ -145,13 +143,14 @@ static void bake_texture_node_button(i32 node_id) {
 		i32 lid               = g_context->layer->id;
 		_bake_texture_node_rt = any_map_get(render_path_render_targets, string("texpaint%d", lid));
 		any_map_set(render_path_render_targets, string("texpaint%d", lid), rt);
-		_bake_texture_node_texpaint = g_context->layer->texpaint;
+		bake_texture_node_texpaint = g_context->layer->texpaint;
 
 		g_context->layer->texpaint               = rt->_image;
 		g_context->pdirty                        = rt_bake ? g_context->bake_samples : 1;
 		g_context->rdirty                        = 3;
 		render_path_raytrace_bake_current_sample = 0;
-		bake_texture_node_baking                = true;
+		render_path_raytrace_frame               = 0;
+		bake_texture_node_baking                 = true;
 		make_material_parse_paint_material(false);
 		sys_notify_on_next_frame(bake_texture_node_clear, rt->_image);
 		sys_notify_on_update(bake_texture_node_check_result, node);
