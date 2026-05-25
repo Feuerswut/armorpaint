@@ -1766,7 +1766,7 @@ ui_nodes_t *ui_nodes_create() {
 	        "OUTPUT_MATERIAL_PBR",
 	        "GROUP_OUTPUT",
 	        "GROUP_INPUT",
-	        "BrushOutputNode",
+	        "brush_output_node",
 	    },
 	    4);
 	gc_root(ui_nodes_exclude_remove);
