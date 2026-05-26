@@ -1233,9 +1233,10 @@ void ui_nodes_render(void *_) {
 
 		// Grid
 		draw_set_color(0xffffffff);
-		f32 step = ui_nodes_grid_cell_w * ui_nodes->zoom;
-		f32 x    = math_fmod(UI_NODES_PAN_X(), step) - step;
-		f32 y    = math_fmod(UI_NODES_PAN_Y(), step) - step;
+		f32                  step            = ui_nodes_grid_cell_w * ui_nodes->zoom;
+		ui_canvas_control_t *pending_control = ui_nodes_on_canvas_control();
+		f32                  x               = math_fmod(UI_NODES_PAN_X() + pending_control->pan_x, step) - step;
+		f32                  y               = math_fmod(UI_NODES_PAN_Y() + pending_control->pan_y, step) - step;
 		draw_image(ui_nodes_grid, x, y);
 
 		// Undo
