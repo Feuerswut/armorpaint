@@ -86,6 +86,8 @@
 #include "neural_nodes/neural_node.c"
 #include "neural_nodes/neural_node_models.c"
 #include "neural_nodes/outpaint_image_node.c"
+#include "neural_nodes/repeat_node.c"
+#include "neural_nodes/save_image_node.c"
 #include "neural_nodes/text_to_image_node.c"
 #include "neural_nodes/text_to_text_node.c"
 #include "neural_nodes/tile_image_node.c"

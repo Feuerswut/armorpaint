@@ -51,7 +51,7 @@ bool neural_node_button(ui_node_t *node, char *model) {
 		if (node != neural_node_current) {
 			ui->enabled = false;
 		}
-		ui_button(tr("Processing..."), UI_ALIGN_CENTER, "");
+		ui_button(tr("Running..."), UI_ALIGN_CENTER, "");
 		if (node != neural_node_current) {
 			ui->enabled = true;
 		}
@@ -65,19 +65,34 @@ bool neural_node_button(ui_node_t *node, char *model) {
 	return false;
 }
 
+void neural_node_load_result(ui_node_t *node) {
+	char *file = string("%s%soutput.png", neural_node_dir(), PATH_SEP);
+	if (iron_file_exists(file)) {
+		gpu_texture_t *result = iron_load_texture(file);
+		any_imap_set(neural_node_results, node->id, result);
+		ui_nodes_hwnd->redraws   = 2;
+		ui_view2d_hwnd->redraws  = 2;
+		ui_node_canvas_t *canvas = ui_nodes_get_canvas(true);
+		for (i32 i = 0; i < canvas->links->length; ++i) {
+			ui_node_link_t *l = canvas->links->buffer[i];
+			if (l->from_id == node->id) {
+				ui_node_t *to_node = ui_get_node(canvas->nodes, l->to_id);
+				if (to_node != NULL && string_equals(to_node->type, "NEURAL_SAVE_IMAGE")) {
+					save_image_node_run(node, result);
+					break;
+				}
+			}
+		}
+	}
+}
+
 void neural_node_check_result(ui_node_t *node) {
 	gc_unroot(neural_node_current);
 	neural_node_current = node;
 	gc_root(neural_node_current);
 	iron_delay_idle_sleep();
 	if (iron_exec_async_done == 1) {
-		char *file = string("%s%soutput.png", neural_node_dir(), PATH_SEP);
-		if (iron_file_exists(file)) {
-			gpu_texture_t *result = iron_load_texture(file);
-			any_imap_set(neural_node_results, node->id, result);
-			ui_nodes_hwnd->redraws  = 2;
-			ui_view2d_hwnd->redraws = 2;
-		}
+		neural_node_load_result(node);
 		sys_remove_update(neural_node_check_result);
 	}
 }

@@ -130,6 +130,35 @@ string_array_t *text_to_image_node_wan_args(char *dir, char *prompt) {
 	return argv;
 }
 
+void text_to_image_node_run(ui_node_t *node, void (*callback)(ui_node_t *)) {
+	char        *node_name = parser_material_node_name(node, NULL);
+	ui_handle_t *h         = ui_handle(node_name);
+	i32          model     = ui_nest(h, 0)->i;
+	char        *prompt    = ui_nest(h, 1)->text;
+	char        *dir       = neural_node_dir();
+	if (prompt == NULL || string_equals(prompt, "")) {
+		prompt = ".";
+	}
+	string_array_t *argv;
+	if (model == 0) {
+		argv = text_to_image_node_sd_args(dir, prompt);
+	}
+	else if (model == 1) {
+		argv = text_to_image_node_zimage_args(dir, prompt);
+	}
+	else if (model == 2) {
+		argv = text_to_image_node_qwen_args(dir, prompt);
+	}
+	else {
+		argv = text_to_image_node_wan_args(dir, prompt);
+	}
+	if (node->buttons->buffer[1]->default_value->buffer[0] > 0.0) {
+		array_insert(argv, argv->length - 1, "--circular");
+	}
+	iron_exec_async(argv->buffer[0], argv->buffer);
+	sys_notify_on_update(callback, node);
+}
+
 void text_to_image_node_button(i32 node_id) {
 	ui_node_t      *node      = ui_get_node(ui_nodes_get_canvas(true)->nodes, node_id);
 	char           *node_name = parser_material_node_name(node, NULL);
@@ -147,45 +176,33 @@ void text_to_image_node_button(i32 node_id) {
 	node->buttons->buffer[0]->height = string_split(prompt, "\n")->length + 2;
 
 	if (neural_node_button(node, models->buffer[model])) {
-		char *dir = neural_node_dir();
-
-		if (string_equals(prompt, "")) {
-			prompt = ".";
-		}
-
-		string_array_t *argv;
-		if (model == 0) {
-			argv = text_to_image_node_sd_args(dir, prompt);
-		}
-		else if (model == 1) {
-			argv = text_to_image_node_zimage_args(dir, prompt);
-		}
-		else if (model == 2) {
-			argv = text_to_image_node_qwen_args(dir, prompt);
-		}
-		else {
-			argv = text_to_image_node_wan_args(dir, prompt);
-		}
-
-		if (node->buttons->buffer[1]->default_value->buffer[0] > 0.0) {
-			array_insert(argv, argv->length - 1, "--circular");
-		}
-
-		iron_exec_async(argv->buffer[0], argv->buffer);
-		sys_notify_on_update(neural_node_check_result, node);
+		text_to_image_node_run(node, neural_node_check_result);
 	}
 }
 
 void text_to_image_node_init() {
 
 	ui_node_t *text_to_image_node_def =
-	    GC_ALLOC_INIT(ui_node_t, {.id      = 0,
-	                              .name    = _tr("Text to Image"),
-	                              .type    = "NEURAL_TEXT_TO_IMAGE",
-	                              .x       = 0,
-	                              .y       = 0,
-	                              .color   = 0xff4982a0,
-	                              .inputs  = any_array_create_from_raw((void *[]){}, 0),
+	    GC_ALLOC_INIT(ui_node_t, {.id     = 0,
+	                              .name   = _tr("Text to Image"),
+	                              .type   = "NEURAL_TEXT_TO_IMAGE",
+	                              .x      = 0,
+	                              .y      = 0,
+	                              .color  = 0xff4982a0,
+	                              .inputs = any_array_create_from_raw(
+	                                  (void *[]){
+	                                      GC_ALLOC_INIT(ui_node_socket_t, {.id            = 0,
+	                                                                       .node_id       = 0,
+	                                                                       .name          = _tr("In"),
+	                                                                       .type          = "BOOL",
+	                                                                       .color         = 0xff6363c7,
+	                                                                       .default_value = f32_array_create_xyz(0.0, 0.0, 0.0),
+	                                                                       .min           = 0.0,
+	                                                                       .max           = 1.0,
+	                                                                       .precision     = 100,
+	                                                                       .display       = 0}),
+	                                  },
+	                                  1),
 	                              .outputs = any_array_create_from_raw(
 	                                  (void *[]){
 	                                      GC_ALLOC_INIT(ui_node_socket_t, {.id            = 0,
