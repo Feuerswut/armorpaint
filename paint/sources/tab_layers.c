@@ -914,6 +914,14 @@ void tab_layers_draw_layer_slot(slot_layer_t *l, i32 i, bool mini) {
 		return;
 	}
 
+	bool is_sculpt_layer = l->texpaint_sculpt != NULL;
+	if (g_config->workflow == WORKFLOW_SCULPT && !is_sculpt_layer) {
+		return;
+	}
+	if (g_config->workflow != WORKFLOW_SCULPT && is_sculpt_layer) {
+		return;
+	}
+
 	if (l->parent != NULL && !l->parent->show_panel) { // Group closed
 		return;
 	}

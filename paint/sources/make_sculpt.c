@@ -213,7 +213,7 @@ node_shader_context_t *sculpt_make_sculpt_run(material_t *data, material_context
 
 void sculpt_make_mesh_run(node_shader_t *kong, slot_layer_t *l) {
 	node_shader_add_constant(kong, "WVP: float4x4", "_world_view_proj_matrix");
-	i32 lid = l->id;
+	i32 lid = array_index_of(project_layers, l);
 	node_shader_add_texture(kong, "texpaint_sculpt", string("_texpaint_sculpt%s", i32_to_string(lid)));
 	node_shader_add_constant(kong, "texpaint_sculpt_size: float2", string("_size(_texpaint_sculpt%s)", i32_to_string(lid)));
 	// node_shader_write_vert(kong, "var meshpos: float3 = sample_lod(texpaint_sculpt, sampler_linear, uint2(vertex_id() % constants.texpaint_sculpt_size.x,
@@ -337,8 +337,9 @@ void sculpt_init() {
 }
 
 void sculpt_layers_create_sculpt_layer() {
-	slot_layer_t *l  = layers_new_layer(true, -1, NULL);
-	mesh_data_t  *md = g_context->paint_object->data;
+	slot_layer_t *l = layers_new_layer(true, -1, NULL);
+	l->name         = string("Sculpt %d", l->id + 1);
+	mesh_data_t *md = g_context->paint_object->data;
 	sculpt_init_sculpt_texture(l, md);
 	sculpt_init();
 }

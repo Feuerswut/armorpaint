@@ -410,6 +410,7 @@ void base_render(void *_) {
 		util_render_make_material_preview();
 		ui_base_hwnds->buffer[TAB_AREA_SIDEBAR1]->redraws = 2;
 		base_init_undo_layers();
+
 		make_material_parse_mesh_material();
 		make_material_parse_paint_material(true);
 		g_context->ddirty = 0;
@@ -2353,6 +2354,13 @@ void base_update_workspace() {
 	base_resize();
 }
 
+void base_update_workflow_create_sculpt_layer(void *_) {
+	if (history_undo_layers != NULL) {
+		sculpt_layers_create_sculpt_layer();
+		sys_remove_update(base_update_workflow_create_sculpt_layer);
+	}
+}
+
 void base_update_workflow() {
 	// Update Material Output nodes
 	for (i32 i = 0; i < project_materials->length; ++i) {
@@ -2361,6 +2369,32 @@ void base_update_workflow() {
 			if (string_equals(nodes->buffer[j]->type, "OUTPUT_MATERIAL_PBR")) {
 				nodes->buffer[j]->inputs->length          = g_config->workflow == WORKFLOW_PBR ? 9 : 2;
 				nodes->buffer[j]->inputs->buffer[0]->name = g_config->workflow == WORKFLOW_SCULPT ? tr("Displacement") : tr("Base Color");
+			}
+		}
+	}
+
+	if (g_config->workflow == WORKFLOW_SCULPT) {
+		slot_layer_t *first_sculpt = NULL;
+		for (i32 i = project_layers->length - 1; i >= 0; --i) {
+			if (project_layers->buffer[i]->texpaint_sculpt != NULL) {
+				first_sculpt = project_layers->buffer[i];
+				break;
+			}
+		}
+		if (first_sculpt == NULL) {
+			sys_remove_update(base_update_workflow_create_sculpt_layer);
+			sys_notify_on_update(base_update_workflow_create_sculpt_layer, NULL);
+		}
+		else {
+			context_set_layer(first_sculpt);
+		}
+	}
+	else {
+		for (i32 i = project_layers->length - 1; i >= 0; --i) {
+			slot_layer_t *l = project_layers->buffer[i];
+			if (l->texpaint_sculpt == NULL && slot_layer_is_layer(l)) {
+				context_set_layer(l);
+				break;
 			}
 		}
 	}
