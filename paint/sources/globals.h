@@ -87,6 +87,8 @@ i32              pipes_cursor_decal_camera_right;
 i32              pipes_cursor_decal_opacity;
 i32              pipes_cursor_decal_angle;
 i32              pipes_cursor_decal_scale_x;
+i32              pipes_cursor_decal_camera_up;
+i32              pipes_cursor_decal_camera_align;
 i32              pipes_cursor_decal_gbufferd;
 i32              pipes_cursor_decal_texdecal;
 i32              pipes_cursor_decal_gbuffer0;

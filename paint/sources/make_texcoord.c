@@ -39,7 +39,23 @@ void make_texcoord_run(node_shader_t *kong) {
 			node_shader_add_texture(kong, "gbuffer0", NULL);
 			node_shader_add_constant(kong, "decal_mask: float4", "_decal_mask");
 			node_shader_add_constant(kong, "invVP: float4x4", "_inv_view_proj_matrix");
+			node_shader_add_constant(kong, "VP: float4x4", "_view_proj_matrix");
 			node_shader_add_constant(kong, "camera_right: float3", "_camera_right");
+			node_shader_add_constant(kong, "camera_up: float3", "_camera_up");
+			node_shader_add_constant(kong, "camera_align: float", "_decal_camera_align");
+
+			node_shader_write_attrib_frag(kong, "if (constants.camera_align > 0.0) {");
+			node_shader_write_attrib_frag(kong, "var ca_depth: float = sample_lod(gbufferD, sampler_linear, constants.decal_mask.xy, 0.0).r;");
+			node_shader_write_attrib_frag(kong, "var ca_coord: float2 = float2(constants.decal_mask.x * 2.0 - 1.0, 1.0 - constants.decal_mask.y * 2.0);");
+			node_shader_write_attrib_frag(kong, "var ca_homog: float4 = constants.invVP * float4(ca_coord.x, ca_coord.y, ca_depth, 1.0);");
+			node_shader_write_attrib_frag(kong, "var ca_clip_w: float = 1.0 / ca_homog.w;");
+			node_shader_write_attrib_frag(kong, "var vp_up_y: float = (constants.VP * float4(constants.camera_up, 0.0)).y;");
+			node_shader_write_attrib_frag(kong, "uvsp = sp.xy - constants.decal_mask.xy;");
+			node_shader_write_attrib_frag(kong, "uvsp.x *= constants.aspect_ratio;");
+			node_shader_write_attrib_frag(kong, "uvsp = uvsp * (ca_clip_w / (vp_up_y * constants.brush_radius));");
+			node_shader_write_attrib_frag(kong, "}");
+
+			node_shader_write_attrib_frag(kong, "else {");
 
 			// When mask is active, anchor the decal at the frozen position; otherwise follow the mouse
 			node_shader_write_attrib_frag(kong, "var decal_xy: float2 = constants.inp.xy;");
@@ -71,6 +87,8 @@ void make_texcoord_run(node_shader_t *kong) {
 			node_shader_write_attrib_frag(kong, "if (abs(dot(d_offset, dn)) > decal_radius) { discard; }");
 			node_shader_write_attrib_frag(kong, "uvsp = float2(dot(d_offset, d_tan), dot(d_offset, d_bin));");
 			node_shader_write_attrib_frag(kong, "uvsp = uvsp / decal_radius * 0.5;");
+
+			node_shader_write_attrib_frag(kong, "}");
 
 			if (g_context->brush_directional) {
 				node_shader_add_constant(kong, "brush_direction: float3", "_brush_direction");

@@ -104,6 +104,9 @@ f32 uniforms_ext_f32_link(object_t *object, material_data_t *mat, char *link) {
 		vec4_t sc = mat4_get_scale(g_context->layer->decal_mat);
 		return sc.z * 0.5;
 	}
+	else if (string_equals(link, "_decal_camera_align")) {
+		return context_is_decal_camera_align() ? 1.0f : 0.0f;
+	}
 	else if (string_equals(link, "_picker_opacity")) {
 		return g_context->picked_color->opacity;
 	}
@@ -222,6 +225,10 @@ vec4_t uniforms_ext_vec3_link(object_t *object, material_data_t *mat, char *link
 	}
 	else if (string_equals(link, "_camera_right")) {
 		v = camera_object_right_world(scene_camera);
+		return v;
+	}
+	else if (string_equals(link, "_camera_up")) {
+		v = camera_object_up_world(scene_camera);
 		return v;
 	}
 	return v;

@@ -10,6 +10,8 @@ const constants: {
 	opacity: float;
 	angle: float2;
 	scale_x: float;
+	camera_up: float3;
+	camera_align: float;
 };
 
 #[set(everything)]
@@ -89,10 +91,18 @@ fun cursor_decal_vert(input: vert_in): vert_out {
 	var uv2: float2 = constants.mouse - constants.tex_step * float2(4.0, 4.0);
 	var n: float3 = normalize(get_normal(constants.mouse) + get_normal(uv1) + get_normal(uv2));
 
-	var cam_right: float3 = constants.camera_right;
-	if (abs(dot(n, cam_right)) > 0.999) { cam_right = float3(0.0, 0.0, 1.0); }
-	var n_tan: float3 = normalize(cam_right - n * dot(cam_right, n));
-	var n_bin: float3 = cross(n_tan, n);
+	var n_tan: float3;
+	var n_bin: float3;
+	if (constants.camera_align > 0.0) {
+		n_tan = constants.camera_right;
+		n_bin = constants.camera_up;
+	}
+	else {
+		var cam_right: float3 = constants.camera_right;
+		if (abs(dot(n, cam_right)) > 0.999) { cam_right = float3(0.0, 0.0, 1.0); }
+		n_tan = normalize(cam_right - n * dot(cam_right, n));
+		n_bin = cross(n_tan, n);
+	}
 
 	// Rotate tangent basis by brush angle
 	var r_tan: float3 = constants.angle.x * n_tan + constants.angle.y * n_bin;

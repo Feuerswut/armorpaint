@@ -120,11 +120,11 @@ void pipes_init() {
 		gc_root(pipes_invert_mask);
 		pipes_invert_mask->vertex_shader   = sys_get_shader("layer_invert.vert");
 		pipes_invert_mask->fragment_shader = sys_get_shader("layer_invert.frag");
-		gpu_vertex_structure_t *vs     = GC_ALLOC_INIT(gpu_vertex_structure_t, {0});
+		gpu_vertex_structure_t *vs         = GC_ALLOC_INIT(gpu_vertex_structure_t, {0});
 		gpu_vertex_structure_add(vs, "pos", GPU_VERTEX_DATA_F32_2X);
 		gpu_vertex_structure_add(vs, "tex", GPU_VERTEX_DATA_F32_2X);
 		gpu_vertex_structure_add(vs, "col", GPU_VERTEX_DATA_F32_4X);
-		pipes_invert_mask->input_layout           = vs;
+		pipes_invert_mask->input_layout = vs;
 		gpu_pipeline_compile(pipes_invert_mask);
 	}
 
@@ -138,10 +138,10 @@ void pipes_init() {
 		gpu_vertex_structure_add(vs, "pos", GPU_VERTEX_DATA_F32_2X);
 		pipes_apply_mask->input_layout = vs;
 		gpu_pipeline_compile(pipes_apply_mask);
-		pipes_tex0_mask = 0;
-		pipes_texa_mask = 1;
-		pipes_offset           = 0;
-		pipes_opac_apply_mask  = pipes_get_constant_location("float");
+		pipes_tex0_mask       = 0;
+		pipes_texa_mask       = 1;
+		pipes_offset          = 0;
+		pipes_opac_apply_mask = pipes_get_constant_location("float");
 	}
 
 	{
@@ -242,6 +242,8 @@ void pipes_init() {
 		pipes_cursor_decal_opacity      = pipes_get_constant_location("float");
 		pipes_cursor_decal_angle        = pipes_get_constant_location("vec2");
 		pipes_cursor_decal_scale_x      = pipes_get_constant_location("float");
+		pipes_cursor_decal_camera_up    = pipes_get_constant_location("vec3");
+		pipes_cursor_decal_camera_align = pipes_get_constant_location("float");
 		pipes_cursor_decal_gbufferd     = 0;
 		pipes_cursor_decal_texdecal     = 1;
 		pipes_cursor_decal_gbuffer0     = 2;
