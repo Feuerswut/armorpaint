@@ -162,11 +162,17 @@ node_shader_context_t *make_mesh_run(material_t *data, i32 layer_pass) {
 	kong->frag_n   = true;
 	node_shader_add_function(kong, str_pack_float_int16);
 
-	for (i32 i = 0; i < project_layers->length; ++i) {
-		slot_layer_t *l = project_layers->buffer[i];
-		if (l->texpaint_sculpt != NULL) {
-			sculpt_make_mesh_run(kong, l);
+	{
+		slot_layer_t_array_t *sculpt_layers  = any_array_create_from_raw((void *[]){}, 0);
+		i32_array_t          *sculpt_indices = i32_array_create(0);
+		for (i32 i = 0; i < project_layers->length; ++i) {
+			slot_layer_t *l = project_layers->buffer[i];
+			if (l->texpaint_sculpt != NULL && slot_layer_is_visible(l)) {
+				any_array_push(sculpt_layers, l);
+				i32_array_push(sculpt_indices, i);
+			}
 		}
+		sculpt_make_mesh_run(kong, sculpt_layers, sculpt_indices);
 	}
 
 	if (g_context->colorid_viewport_mask && g_context->tool != TOOL_TYPE_COLORID) {
@@ -371,8 +377,8 @@ node_shader_context_t *make_mesh_run(material_t *data, i32 layer_pass) {
 					node_shader_write_frag(kong, "basecol = texpaint_sample.rgb * texpaint_opac;");
 				}
 				else {
-					node_shader_write_frag(kong, string("basecol = %s;",
-					                                    make_material_blend_mode(kong, slot_layer_get_blending(l), "basecol", "texpaint_sample.rgb", "texpaint_opac")));
+					node_shader_write_frag(kong, string("basecol = %s;", make_material_blend_mode(kong, slot_layer_get_blending(l), "basecol",
+					                                                                              "texpaint_sample.rgb", "texpaint_opac")));
 				}
 			}
 

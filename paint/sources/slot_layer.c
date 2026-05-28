@@ -1168,7 +1168,7 @@ void layers_update_fill_layers() {
 					if (l->texpaint_sculpt != NULL) {
 						i32 tid = l->id;
 						i32 hid = history_undo_i - 1 < 0 ? g_config->undo_steps - 1 : history_undo_i - 1;
-						sculpt_import_mesh_pack_to_texture(g_context->paint_object->data, l);
+						sculpt_import_mesh_pack_to_texture(g_context->paint_object->data, l->texpaint_sculpt);
 						render_path_set_target(string("texpaint_sculpt_undo%d", hid), NULL, NULL, GPU_CLEAR_NONE, 0, 0.0);
 						render_path_bind_target(string("texpaint_sculpt%d", tid), "tex");
 						render_path_draw_shader("Scene/copy_pass/copyRGBA128_pass");
@@ -1248,7 +1248,7 @@ void layers_update_fill_layer(bool parse_paint) {
 	if (g_context->layer->texpaint_sculpt != NULL) {
 		i32 tid = g_context->layer->id;
 		i32 hid = history_undo_i - 1 < 0 ? g_config->undo_steps - 1 : history_undo_i - 1;
-		sculpt_import_mesh_pack_to_texture(g_context->paint_object->data, g_context->layer);
+		sculpt_import_mesh_pack_to_texture(g_context->paint_object->data, g_context->layer->texpaint_sculpt);
 		render_path_set_target(string("texpaint_sculpt_undo%d", hid), NULL, NULL, GPU_CLEAR_NONE, 0, 0.0);
 		render_path_bind_target(string("texpaint_sculpt%d", tid), "tex");
 		render_path_draw_shader("Scene/copy_pass/copyRGBA128_pass");

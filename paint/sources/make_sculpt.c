@@ -1,7 +1,7 @@
 
 #include "global.h"
 
-void sculpt_import_mesh_pack_to_texture(mesh_data_t *mesh, slot_layer_t *l) {
+void sculpt_import_mesh_pack_to_texture(mesh_data_t *mesh, gpu_texture_t *target) {
 	buffer_t *b = buffer_create(config_get_texture_res_x() * config_get_texture_res_y() * 4 * 4);
 	for (i32 i = 0; i < math_floor(mesh->index_array->length); ++i) {
 		i32 index = mesh->index_array->buffer[i];
@@ -24,7 +24,7 @@ void sculpt_import_mesh_pack_to_texture(mesh_data_t *mesh, slot_layer_t *l) {
 	}
 
 	gpu_texture_t *imgmesh = gpu_create_texture_from_bytes(b, config_get_texture_res_x(), config_get_texture_res_y(), GPU_TEXTURE_FORMAT_RGBA128);
-	draw_begin(l->texpaint_sculpt, false, 0);
+	draw_begin(target, false, 0);
 	draw_set_pipeline(pipes_copy128);
 	draw_scaled_image(imgmesh, 0, 0, config_get_texture_res_x(), config_get_texture_res_y());
 	draw_set_pipeline(NULL);
@@ -211,38 +211,73 @@ node_shader_context_t *sculpt_make_sculpt_run(material_t *data, material_context
 	return con_paint;
 }
 
-void sculpt_make_mesh_run(node_shader_t *kong, slot_layer_t *l) {
+void sculpt_make_mesh_run(node_shader_t *kong, slot_layer_t_array_t *sculpt_layers, i32_array_t *sculpt_indices) {
+	i32 count = sculpt_layers->length;
+	if (count == 0) {
+		return;
+	}
+
+	i32 idx0 = sculpt_indices->buffer[0];
+
 	node_shader_add_constant(kong, "WVP: float4x4", "_world_view_proj_matrix");
-	i32 lid = array_index_of(project_layers, l);
-	node_shader_add_texture(kong, "texpaint_sculpt", string("_texpaint_sculpt%s", i32_to_string(lid)));
-	node_shader_add_constant(kong, "texpaint_sculpt_size: float2", string("_size(_texpaint_sculpt%s)", i32_to_string(lid)));
-	// node_shader_write_vert(kong, "var meshpos: float3 = sample_lod(texpaint_sculpt, sampler_linear, uint2(vertex_id() % constants.texpaint_sculpt_size.x,
-	// vertex_id() / constants.texpaint_sculpt_size.y), 0.0).xyz;");
-	node_shader_write_vert(kong, "var meshpos: float4 = texpaint_sculpt[uint2(uint(float(vertex_id()) % constants.texpaint_sculpt_size.x), "
-	                             "uint(float(vertex_id()) / constants.texpaint_sculpt_size.y))];");
-	// + input.pos.xyz * 0.000001
-	node_shader_write_vert(kong, "output.pos = constants.WVP * float4(meshpos.xyz, 1.0);");
-	kong->frag_n = false;
 	node_shader_add_constant(kong, "N: float3x3", "_normal_matrix");
 	node_shader_add_out(kong, "wnormal: float3");
+	kong->frag_n = false;
+
+	node_shader_add_constant(kong, string("texpaint_sculpt_size%d: float2", idx0), string("_size(_texpaint_sculpt%d)", idx0));
+
+	for (i32 i = 0; i < count; ++i) {
+		i32 idx = sculpt_indices->buffer[i];
+		node_shader_add_texture(kong, string("texpaint_sculpt%d", idx), string("_texpaint_sculpt%d", idx));
+	}
+
+	if (count > 1) {
+		node_shader_add_texture(kong, "texpaint_sculpt_base", "_texpaint_sculpt_base");
+	}
+
+	// Position
+	node_shader_write_vert(kong, string("var sculpt_uv: uint2 = uint2(uint(float(vertex_id()) %% constants.texpaint_sculpt_size%d.x), "
+	                                    "uint(float(vertex_id()) / constants.texpaint_sculpt_size%d.y));",
+	                                    idx0, idx0));
+	node_shader_write_vert(kong, string("var texpaint_sculpt_sample: float4 = texpaint_sculpt%d[sculpt_uv];", idx0));
+	node_shader_write_vert(kong, "var sculpt_pos: float3 = texpaint_sculpt_sample.xyz;");
+	for (i32 i = 1; i < count; ++i) {
+		i32 idx = sculpt_indices->buffer[i];
+		node_shader_write_vert(kong, string("var texpaint_sculpt_sample_%d: float4 = texpaint_sculpt%d[sculpt_uv];", idx, idx));
+		node_shader_write_vert(kong, string("var texpaint_sculpt_base_sample_%d: float4 = texpaint_sculpt_base[sculpt_uv];", idx));
+		node_shader_write_vert(kong, string("sculpt_pos = sculpt_pos + texpaint_sculpt_sample_%d.xyz - texpaint_sculpt_base_sample_%d.xyz;", idx, idx));
+	}
+	node_shader_write_vert(kong, "output.pos = constants.WVP * float4(sculpt_pos, 1.0);");
+
+	// Normal
 	node_shader_write_attrib_vert(kong, "var base_vertex0: float = float(vertex_id()) - (float(vertex_id()) % float(3));");
 	node_shader_write_attrib_vert(kong, "var base_vertex1: float = base_vertex0 + 1.0;");
 	node_shader_write_attrib_vert(kong, "var base_vertex2: float = base_vertex0 + 2.0;");
-	// node_shader_write_attrib_vert(kong, "var meshpos0: float3 = sample_lod(texpaint_sculpt, sampler_linear, uint2(base_vertex0 %
-	// constants.texpaint_sculpt_size.x, base_vertex0 / constants.texpaint_sculpt_size.y), 0.0).xyz;"); node_shader_write_attrib_vert(kong, "var meshpos1:
-	// float3 = sample_lod(texpaint_sculpt, sampler_linear, uint2(base_vertex1 % constants.texpaint_sculpt_size.x, base_vertex1 /
-	// constants.texpaint_sculpt_size.y), 0.0).xyz;"); node_shader_write_attrib_vert(kong, "var meshpos2: float3 = sample_lod(texpaint_sculpt, sampler_linear,
-	// uint2(base_vertex2 % constants.texpaint_sculpt_size.x, base_vertex2 / constants.texpaint_sculpt_size.y), 0.0).xyz;");
-	node_shader_write_attrib_vert(kong, "var meshpos0: float4 = texpaint_sculpt[uint2(uint(base_vertex0 % constants.texpaint_sculpt_size.x), uint(base_vertex0 "
-	                                    "/ constants.texpaint_sculpt_size.y))];");
-	node_shader_write_attrib_vert(kong, "var meshpos1: float4 = texpaint_sculpt[uint2(uint(base_vertex1 % constants.texpaint_sculpt_size.x), uint(base_vertex1 "
-	                                    "/ constants.texpaint_sculpt_size.y))];");
-	node_shader_write_attrib_vert(kong, "var meshpos2: float4 = texpaint_sculpt[uint2(uint(base_vertex2 % constants.texpaint_sculpt_size.x), uint(base_vertex2 "
-	                                    "/ constants.texpaint_sculpt_size.y))];");
+	node_shader_write_attrib_vert(
+	    kong,
+	    string("var uv0: uint2 = uint2(uint(base_vertex0 %% constants.texpaint_sculpt_size%d.x), uint(base_vertex0 / constants.texpaint_sculpt_size%d.y));",
+	           idx0, idx0));
+	node_shader_write_attrib_vert(
+	    kong,
+	    string("var uv1: uint2 = uint2(uint(base_vertex1 %% constants.texpaint_sculpt_size%d.x), uint(base_vertex1 / constants.texpaint_sculpt_size%d.y));",
+	           idx0, idx0));
+	node_shader_write_attrib_vert(
+	    kong,
+	    string("var uv2: uint2 = uint2(uint(base_vertex2 %% constants.texpaint_sculpt_size%d.x), uint(base_vertex2 / constants.texpaint_sculpt_size%d.y));",
+	           idx0, idx0));
+
+	node_shader_write_attrib_vert(kong, string("var meshpos0: float4 = texpaint_sculpt%d[uv0];", idx0));
+	node_shader_write_attrib_vert(kong, string("var meshpos1: float4 = texpaint_sculpt%d[uv1];", idx0));
+	node_shader_write_attrib_vert(kong, string("var meshpos2: float4 = texpaint_sculpt%d[uv2];", idx0));
+	for (i32 i = 1; i < count; ++i) {
+		i32 idx = sculpt_indices->buffer[i];
+		node_shader_write_attrib_vert(kong, string("meshpos0 = meshpos0 + texpaint_sculpt%d[uv0] - texpaint_sculpt_base[uv0];", idx));
+		node_shader_write_attrib_vert(kong, string("meshpos1 = meshpos1 + texpaint_sculpt%d[uv1] - texpaint_sculpt_base[uv1];", idx));
+		node_shader_write_attrib_vert(kong, string("meshpos2 = meshpos2 + texpaint_sculpt%d[uv2] - texpaint_sculpt_base[uv2];", idx));
+	}
 
 	node_shader_write_attrib_vert(kong, "var meshnor: float3 = normalize(cross(meshpos2.xyz - meshpos1.xyz, meshpos0.xyz - meshpos1.xyz));");
 	node_shader_write_attrib_vert(kong, "output.wnormal = constants.N * meshnor;");
-
 	node_shader_write_attrib_frag(kong, "var n: float3 = normalize(input.wnormal);");
 }
 
@@ -256,7 +291,29 @@ void sculpt_init_sculpt_texture(slot_layer_t *l, mesh_data_t *md) {
 		t->format          = "RGBA128";
 		l->texpaint_sculpt = render_path_create_render_target(t)->_image;
 	}
-	sculpt_import_mesh_pack_to_texture(md, l);
+	sculpt_import_mesh_pack_to_texture(md, l->texpaint_sculpt);
+
+	i32 sculpt_layer_count = 0;
+	for (i32 i = 0; i < project_layers->length; ++i) {
+		if (project_layers->buffer[i]->texpaint_sculpt != NULL) {
+			sculpt_layer_count++;
+		}
+	}
+
+	if (any_map_get(render_path_render_targets, "texpaint_sculpt_base") == NULL) {
+		render_target_t *t = render_target_create();
+		t->name            = "texpaint_sculpt_base";
+		t->width           = config_get_texture_res_x();
+		t->height          = config_get_texture_res_y();
+		t->format          = "RGBA128";
+		render_path_create_render_target(t);
+	}
+
+	if (sculpt_layer_count == 1) {
+		render_path_set_target("texpaint_sculpt_base", NULL, NULL, GPU_CLEAR_NONE, 0, 0.0);
+		render_path_bind_target(string("texpaint_sculpt%s", i32_to_string(id)), "tex");
+		render_path_draw_shader("Scene/copy_pass/copyRGBA128_pass");
+	}
 }
 
 void sculpt_init() {
@@ -295,6 +352,10 @@ void sculpt_init() {
 	                                               .scale_tex   = 1.0});
 	md               = mesh_data_create(raw);
 	mesh_object_set_data(g_context->paint_object, md);
+
+	if (g_context->merged_object != NULL) {
+		util_mesh_merge(NULL);
+	}
 
 	make_material_parse_paint_material(true);
 	make_material_parse_mesh_material();

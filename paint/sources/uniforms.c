@@ -381,6 +381,10 @@ gpu_texture_t *uniforms_ext_tex_link(object_t *object, material_data_t *mat, cha
 		i32 tid = parse_int(substring(link, string_length(link) - 1, string_length(link)));
 		return tid < project_layers->length ? project_layers->buffer[tid]->texpaint_pack : NULL;
 	}
+	if (string_equals(link, "_texpaint_sculpt_base")) {
+		render_target_t *rt = any_map_get(render_path_render_targets, "texpaint_sculpt_base");
+		return rt != NULL ? rt->_image : NULL;
+	}
 	if (starts_with(link, "_texpaint_sculpt")) {
 		i32 tid = parse_int(substring(link, string_length(link) - 1, string_length(link)));
 		return tid < project_layers->length ? project_layers->buffer[tid]->texpaint_sculpt : NULL;

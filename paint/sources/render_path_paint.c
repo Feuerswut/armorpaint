@@ -433,6 +433,17 @@ void render_path_paint_commands_paint(bool dilation) {
 			if (read_tc) {
 				render_path_bind_target("gbuffer2", "gbuffer2");
 			}
+			i32 sculpt_layer_count = 0;
+			for (i32 i = 0; i < project_layers->length; ++i) {
+				slot_layer_t *sl = project_layers->buffer[i];
+				if (sl->texpaint_sculpt != NULL && slot_layer_is_visible(sl)) {
+					render_path_bind_target(string("texpaint_sculpt%d", sl->id), string("texpaint_sculpt%d", sl->id));
+					sculpt_layer_count++;
+				}
+			}
+			if (sculpt_layer_count > 1) {
+				render_path_bind_target("texpaint_sculpt_base", "texpaint_sculpt_base");
+			}
 			object_t *bullet     = scene_get_child(".Bullet");
 			bool      bullet_vis = bullet != NULL && bullet->visible;
 			if (bullet != NULL) {
@@ -703,8 +714,8 @@ void render_path_paint_commands_cursor() {
 		return;
 	}
 
-	f32 mx = g_context->paint_vec.x;
-	f32 my = 1.0 - g_context->paint_vec.y;
+	f32 mx                 = g_context->paint_vec.x;
+	f32 my                 = 1.0 - g_context->paint_vec.y;
 	f32 brush_nodes_radius = 1.0; // g_context->brush_nodes_radius; // Prevent cursor jumping constantly if randomness is used in brush nodes
 
 	if (context_is_decal() && !g_context->paint2d) {
