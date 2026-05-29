@@ -422,13 +422,6 @@ i32 sys_y(void) {
 	return 0;
 }
 
-static void _sys_run_callbacks(any_array_t *cbs) {
-	for (i32 i = 0; i < (i32)cbs->length; ++i) {
-		callback_t *cb = cbs->buffer[i];
-		cb->f(cb->data);
-	}
-}
-
 f32 sys_delta(void) {
 	if (_sys_time_frequency < 0) {
 		_sys_time_frequency = sys_display_frequency();
@@ -440,22 +433,31 @@ f32 sys_real_delta(void) {
 	return _sys_time_real_delta;
 }
 
+static void _sys_run_callbacks(any_array_t *cbs, i32 len) {
+	for (i32 i = 0; i < len; ++i) {
+		callback_t *cb = cbs->buffer[i];
+		cb->f(cb->data);
+	}
+}
+
 void sys_render(void) {
 	if (_sys_on_next_frames->length > 0) {
-		_sys_run_callbacks(_sys_on_next_frames);
-		array_splice(_sys_on_next_frames, 0, _sys_on_next_frames->length);
+		i32 len = _sys_on_next_frames->length;
+		_sys_run_callbacks(_sys_on_next_frames, len);
+		array_splice(_sys_on_next_frames, 0, len);
 	}
 
-	_sys_run_callbacks(_sys_on_updates);
+	_sys_run_callbacks(_sys_on_updates, _sys_on_updates->length);
 
 	if (iron_window_width() > 0 && iron_window_height() > 0) {
 		scene_render_frame();
-		_sys_run_callbacks(_sys_on_renders);
+		_sys_run_callbacks(_sys_on_renders, _sys_on_renders->length);
 	}
 
 	if (_sys_on_end_frames->length > 0) {
-		_sys_run_callbacks(_sys_on_end_frames);
-		array_splice(_sys_on_end_frames, 0, _sys_on_end_frames->length);
+		i32 len = _sys_on_end_frames->length;
+		_sys_run_callbacks(_sys_on_end_frames, len);
+		array_splice(_sys_on_end_frames, 0, len);
 	}
 
 	input_end_frame();
