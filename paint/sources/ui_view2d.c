@@ -303,6 +303,21 @@ void ui_view2d_render(void *_) {
 			edit_uvmap_update();
 		}
 
+		// Pixel grid
+		if (g_config->view2d_grid_show && ui_view2d_type == VIEW_2D_TYPE_LAYER && tex != NULL) {
+			i32 cell  = g_config->view2d_grid_cell;
+			f32 stepx = cell / (float)tex->width * tw;
+			f32 stepy = cell / (float)tex->height * th;
+			draw_set_color(0x55ffffff);
+			for (f32 gx = tx; gx <= tx + tw + 0.5; gx += stepx) {
+				draw_filled_rect(math_floor(gx), ty, 1, th);
+			}
+			for (f32 gy = ty; gy <= ty + th + 0.5; gy += stepy) {
+				draw_filled_rect(tx, math_floor(gy), tw, 1);
+			}
+			draw_set_color(0xffffffff);
+		}
+
 		// Context menu
 		if (tex != NULL && ui->input_released_r && math_abs(ui->input_x - ui->input_started_x) < 2 && math_abs(ui->input_y - ui->input_started_y) < 2) {
 			gc_unroot(ui_view2d_tex);

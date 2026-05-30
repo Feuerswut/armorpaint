@@ -131,6 +131,9 @@ void config_save() {
 	json_encode_i32("render_mode", g_config->render_mode);
 	json_encode_i32("workspace", g_config->workspace);
 	json_encode_i32("workflow", g_config->workflow);
+	json_encode_bool("view2d_grid_show", g_config->view2d_grid_show);
+	json_encode_i32("view2d_grid_cell", g_config->view2d_grid_cell);
+	json_encode_bool("view2d_grid_snap", g_config->view2d_grid_snap);
 	char *config_json = json_encode_end();
 
 	buffer_t *buffer = sys_string_to_buffer(config_json);
@@ -250,6 +253,9 @@ void config_init() {
 		g_config->scene_atlas_res     = TEXTURE_RES_RES8192;
 		g_config->pathtrace_mode      = PATHTRACE_MODE_FAST;
 		g_config->grid_snap           = false;
+		g_config->view2d_grid_show    = false;
+		g_config->view2d_grid_cell    = 64;
+		g_config->view2d_grid_snap    = false;
 		g_config->experimental        = false;
 		g_config->neural_backend      = NEURAL_BACKEND_VULKAN;
 #if defined(IRON_ANDROID) || defined(IRON_IOS)

@@ -135,6 +135,9 @@ typedef struct config {
 	render_mode_t        render_mode;
 	workspace_t          workspace;
 	workflow_t           workflow;
+	bool                 view2d_grid_show;
+	i32                  view2d_grid_cell;
+	bool                 view2d_grid_snap;
 } config_t;
 
 typedef struct physics_body {
@@ -178,9 +181,9 @@ typedef struct context {
 	struct mesh_object  *paint_object;
 	struct mesh_object  *merged_object;
 	bool                 merged_object_is_atlas;
-	i32                  ddirty; // depth
-	i32                  pdirty; // paint
-	i32                  rdirty; // render
+	i32                  ddirty;  // depth
+	i32                  pdirty;  // paint
+	i32                  rdirty;  // render
 	i32                  rtdirty; // raytrace
 	bool                 brush_blend_dirty;
 	bool                 split_view;

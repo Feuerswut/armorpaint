@@ -12,6 +12,46 @@ f32    input_node_lock_start_y = 0.0;
 bool   input_node_registered   = false;
 vec4_t input_node_coords       = (vec4_t){0.0, 0.0, 0.0, 1.0};
 
+static void input_node_grid_snap_2d() {
+	if (!g_config->view2d_grid_snap) {
+		return;
+	}
+	if (!context_in_2d_view(VIEW_2D_TYPE_LAYER)) {
+		return;
+	}
+
+	slot_layer_t  *layer = g_context->layer;
+	gpu_texture_t *tex   = layer->texpaint;
+	if (tex == NULL) {
+		return;
+	}
+
+	i32 headerh = g_config->layout->buffer[LAYOUT_SIZE_HEADER] == 1 ? ui_header_h * 2 : ui_header_h;
+	i32 apph    = iron_window_height() - g_config->layout->buffer[LAYOUT_SIZE_STATUS_H] + headerh;
+	if (!base_view3d_show) {
+		apph = base_h();
+	}
+	f32 wm = fmin(ui_view2d_ww, ui_view2d_wh);
+	f32 tw = wm * 0.9 * ui_view2d_pan_scale;
+	f32 th = tw * (tex->height / (float)tex->width);
+	f32 tx = ui_view2d_wx + ui_view2d_ww / 2.0 - tw / 2.0 + ui_view2d_pan_x;
+	f32 ty = ui_view2d_wy + apph / 2.0 - th / 2.0 + ui_view2d_pan_y;
+	f32 sx = input_node_coords.x * base_w() + base_x();
+	f32 sy = input_node_coords.y * base_h() + base_y();
+
+	// Snap to nearest cell center
+	f32 u    = (sx - tx) / tw;
+	f32 v    = (sy - ty) / th;
+	i32 cell = g_config->view2d_grid_cell;
+	f32 px   = (math_floor(u * tex->width / cell) + 0.5) * cell;
+	f32 py   = (math_floor(v * tex->height / cell) + 0.5) * cell;
+	sx       = tx + (px / tex->width) * tw;
+	sy       = ty + (py / tex->height) * th;
+
+	input_node_coords.x = (sx - base_x()) / base_w();
+	input_node_coords.y = (sy - base_y()) / base_h();
+}
+
 void input_node_update(float_node_t *self) {
 	if (g_context->split_view) {
 		g_context->view_index = mouse_view_x() > base_w() / 2.0 ? 1 : 0;
@@ -104,6 +144,8 @@ void input_node_update(float_node_t *self) {
 		g_context->last_paint_x = -1;
 		g_context->last_paint_y = -1;
 	}
+
+	input_node_grid_snap_2d();
 
 	brush_output_node_parse_inputs();
 }
