@@ -95,7 +95,7 @@ fun cursor_decal_vert(input: vert_in): vert_out {
 	var n_bin: float3;
 	if (constants.camera_align > 0.0) {
 		n_tan = constants.camera_right;
-		n_bin = constants.camera_up;
+		n_bin = -constants.camera_up;
 	}
 	else {
 		var cam_right: float3 = constants.camera_right;
