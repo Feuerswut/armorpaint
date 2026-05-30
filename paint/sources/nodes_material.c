@@ -96,6 +96,9 @@ void nodes_material_init() {
 	repeat_node_init();
 	save_image_node_init();
 	text_to_image_node_init();
+	if (g_config->experimental) {
+		texture_mesh_node_init();
+	}
 	tile_image_node_init();
 	upscale_image_node_init();
 	vary_image_node_init();

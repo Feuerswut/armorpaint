@@ -292,6 +292,7 @@ typedef struct context {
 	bool                        decal_preview;
 	f32                         decal_x;
 	f32                         decal_y;
+	bool                        decal_camera_align;
 	bool                        write_icon_on_export;
 	struct gpu_texture         *text_tool_image;
 	char                       *text_tool_text;

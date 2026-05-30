@@ -89,6 +89,7 @@
 #include "neural_nodes/repeat_node.c"
 #include "neural_nodes/save_image_node.c"
 #include "neural_nodes/text_to_image_node.c"
+#include "neural_nodes/texture_mesh_node.c"
 #include "neural_nodes/text_to_text_node.c"
 #include "neural_nodes/tile_image_node.c"
 #include "neural_nodes/upscale_image_node.c"

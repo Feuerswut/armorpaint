@@ -425,7 +425,7 @@ bool context_is_decal_mask() {
 }
 
 bool context_is_decal_camera_align() {
-	return context_is_decal() && operator_shortcut(any_map_get(config_keymap, "decal_camera_align"), SHORTCUT_TYPE_DOWN);
+	return context_is_decal() && (g_context->decal_camera_align || operator_shortcut(any_map_get(config_keymap, "decal_camera_align"), SHORTCUT_TYPE_DOWN));
 }
 
 bool context_is_decal_mask_paint() {

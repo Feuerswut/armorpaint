@@ -692,6 +692,7 @@ void                    upscale_image_node_init();
 void                    image_to_pbr_node_init();
 void                    inpaint_image_node_init();
 void                    text_to_image_node_init();
+void                    texture_mesh_node_init();
 void                    text_to_text_node_clear();
 void                    text_to_text_node_run(char *prompt, void (*done)(char *));
 void                    outpaint_image_node_init();
