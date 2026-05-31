@@ -184,9 +184,6 @@ char *iron_get_arg(i32 index) {
 #include "kong/dir.h"
 #include <lz4x.h>
 #include <stdio.h>
-#ifdef IRON_AUDIO
-#include "iron_audio.h"
-#endif
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #ifdef IRON_DIRECT3D12
@@ -243,10 +240,6 @@ void _update() {
 	if (paused_frames == 30) {
 		gc_run();
 	}
-#endif
-
-#ifdef IRON_AUDIO
-	iron_a2_update();
 #endif
 
 	iron_net_update();
@@ -586,10 +579,6 @@ void _iron_init(iron_window_options_t *ops) {
 	iron_set_copy_callback(_copy, NULL);
 	iron_set_paste_callback(_paste, NULL);
 	iron_keyboard_set_key_press_callback(_key_press, NULL);
-#ifdef IRON_AUDIO
-	iron_a1_init();
-	iron_a2_init();
-#endif
 }
 
 void _iron_set_update_callback(void (*callback)(void)) {
@@ -894,6 +883,7 @@ gpu_texture_t *iron_load_texture(char *file) {
 
 #ifdef IRON_AUDIO
 void *iron_load_sound(char *file) {
+	iron_a1_init();
 	iron_a1_sound_t *sound = iron_a1_sound_create(file);
 	return sound;
 }

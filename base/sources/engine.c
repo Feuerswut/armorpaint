@@ -1849,18 +1849,13 @@ any_map_t *data_cached_blobs      = NULL;
 any_map_t *data_cached_images     = NULL;
 any_map_t *data_cached_videos     = NULL;
 any_map_t *data_cached_fonts      = NULL;
-#ifdef IRON_AUDIO
-any_map_t *data_cached_sounds = NULL;
-#endif
-i32 data_assets_loaded = 0;
+any_map_t *data_cached_sounds     = NULL;
+i32        data_assets_loaded     = 0;
 
 buffer_t      *iron_load_blob(char *file);
 gpu_texture_t *iron_load_texture(char *file);
 void           gpu_delete_texture(gpu_texture_t *texture);
-#ifdef IRON_AUDIO
-void *iron_load_sound(char *file);
-// void  iron_a1_sound_destroy(void *sound);
-#endif
+void          *iron_load_sound(char *file);
 
 char *data_path(void) {
 #ifdef IRON_ANDROID
@@ -2065,6 +2060,18 @@ sound_t *data_get_sound(char *file) {
 	data_assets_loaded++;
 	return b;
 }
+
+void data_delete_sound(char *handle) {
+	if (data_cached_sounds == NULL) {
+		return;
+	}
+	sound_t *sound = (sound_t *)any_map_get(data_cached_sounds, handle);
+	if (sound == NULL) {
+		return;
+	}
+	iron_a1_sound_destroy(sound->sound_);
+	map_delete(data_cached_sounds, handle);
+}
 #endif
 
 void data_delete_mesh(char *handle) {
@@ -2125,20 +2132,6 @@ void data_delete_font(char *handle) {
 	draw_font_destroy(font);
 	map_delete(data_cached_fonts, handle);
 }
-
-#ifdef IRON_AUDIO
-void data_delete_sound(char *handle) {
-	if (data_cached_sounds == NULL) {
-		return;
-	}
-	sound_t *sound = (sound_t *)any_map_get(data_cached_sounds, handle);
-	if (sound == NULL) {
-		return;
-	}
-	iron_a1_sound_destroy(sound->sound_);
-	map_delete(data_cached_sounds, handle);
-}
-#endif
 
 // ███████╗ ██████╗███████╗███╗   ██╗███████╗
 // ██╔════╝██╔════╝██╔════╝████╗  ██║██╔════╝

@@ -10,7 +10,9 @@
 
 #include <assert.h>
 #include <math.h>
+#include <memory.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,11 +38,11 @@ struct iron_internal_video_channel {
 static iron_mutex_t mutex;
 
 #define CHANNEL_COUNT 16
-static iron_a1_channel_t             channels[CHANNEL_COUNT];
-static iron_a1_stream_channel_t      streamchannels[CHANNEL_COUNT];
-static iron_internal_video_channel_t videos[CHANNEL_COUNT];
+static iron_a1_channel_t        channels[CHANNEL_COUNT];
+static iron_a1_stream_channel_t streamchannels[CHANNEL_COUNT];
+// static iron_internal_video_channel_t videos[CHANNEL_COUNT];
 
-static float sampleLinear(int16_t *data, float position) {
+static float sample_linear(int16_t *data, float position) {
 	int   pos1    = (int)position;
 	int   pos2    = (int)(position + 1);
 	float sample1 = data[pos1] / 32767.0f;
@@ -59,11 +61,12 @@ void iron_a1_mix(iron_a2_buffer_t *buffer, uint32_t samples) {
 		float right_value = 0.0f;
 
 		iron_mutex_lock(&mutex);
+
 		for (int i = 0; i < CHANNEL_COUNT; ++i) {
 			if (channels[i].sound != NULL) {
-				left_value += sampleLinear(channels[i].sound->left, channels[i].position) * channels[i].volume * channels[i].sound->volume;
+				left_value += sample_linear(channels[i].sound->left, channels[i].position) * channels[i].volume * channels[i].sound->volume;
 				right_value = fmaxf(fminf(right_value, 1.0f), -1.0f);
-				right_value += sampleLinear(channels[i].sound->right, channels[i].position) * channels[i].volume * channels[i].sound->volume;
+				right_value += sample_linear(channels[i].sound->right, channels[i].position) * channels[i].volume * channels[i].sound->volume;
 				left_value = fmaxf(fminf(left_value, 1.0f), -1.0f);
 
 				channels[i].position += channels[i].pitch / channels[i].sound->sample_rate_pos;
@@ -78,6 +81,7 @@ void iron_a1_mix(iron_a2_buffer_t *buffer, uint32_t samples) {
 				}
 			}
 		}
+
 		for (int i = 0; i < CHANNEL_COUNT; ++i) {
 			if (streamchannels[i].stream != NULL) {
 				float *samples = iron_a1_sound_stream_next_frame(streamchannels[i].stream);
@@ -117,7 +121,14 @@ void iron_a1_mix(iron_a2_buffer_t *buffer, uint32_t samples) {
 	}
 }
 
+static bool a1_initialized = false;
+
 void iron_a1_init(void) {
+	if (a1_initialized) {
+		return;
+	}
+	a1_initialized = true;
+
 	for (int i = 0; i < CHANNEL_COUNT; ++i) {
 		channels[i].sound    = NULL;
 		channels[i].position = 0;
@@ -205,29 +216,29 @@ void iron_a1_stop_sound_stream(iron_a1_sound_stream_t *stream) {
 	iron_mutex_unlock(&mutex);
 }
 
-void iron_internal_play_video_sound_stream(struct iron_internal_video_sound_stream *stream) {
-	iron_mutex_lock(&mutex);
-	for (int i = 0; i < CHANNEL_COUNT; ++i) {
-		if (videos[i].stream == NULL) {
-			videos[i].stream   = stream;
-			videos[i].position = 0;
-			break;
-		}
-	}
-	iron_mutex_unlock(&mutex);
-}
+// void iron_internal_play_video_sound_stream(struct iron_internal_video_sound_stream *stream) {
+// 	iron_mutex_lock(&mutex);
+// 	for (int i = 0; i < CHANNEL_COUNT; ++i) {
+// 		if (videos[i].stream == NULL) {
+// 			videos[i].stream   = stream;
+// 			videos[i].position = 0;
+// 			break;
+// 		}
+// 	}
+// 	iron_mutex_unlock(&mutex);
+// }
 
-void iron_internal_stop_video_sound_stream(struct iron_internal_video_sound_stream *stream) {
-	iron_mutex_lock(&mutex);
-	for (int i = 0; i < CHANNEL_COUNT; ++i) {
-		if (videos[i].stream == stream) {
-			videos[i].stream   = NULL;
-			videos[i].position = 0;
-			break;
-		}
-	}
-	iron_mutex_unlock(&mutex);
-}
+// void iron_internal_stop_video_sound_stream(struct iron_internal_video_sound_stream *stream) {
+// 	iron_mutex_lock(&mutex);
+// 	for (int i = 0; i < CHANNEL_COUNT; ++i) {
+// 		if (videos[i].stream == stream) {
+// 			videos[i].stream   = NULL;
+// 			videos[i].position = 0;
+// 			break;
+// 		}
+// 	}
+// 	iron_mutex_unlock(&mutex);
+// }
 
 float iron_a1_channel_get_volume(iron_a1_channel_t *channel) {
 	return channel->volume;
@@ -324,7 +335,7 @@ static void splitMono16(int16_t *data, int size, int16_t *left, int16_t *right) 
 	}
 }
 
-#define MAXIMUM_SOUNDS 1024
+#define MAXIMUM_SOUNDS 128
 static iron_a1_sound_t sounds[MAXIMUM_SOUNDS] = {0};
 
 static iron_a1_sound_t *find_sound(void) {
@@ -449,7 +460,7 @@ void iron_a1_sound_set_volume(iron_a1_sound_t *sound, float value) {
 	sound->volume = value;
 }
 
-static iron_a1_sound_stream_t streams[256];
+static iron_a1_sound_stream_t streams[64];
 static int                    nextStream = 0;
 static uint8_t                buffer[1024 * 10];
 static int                    bufferIndex;
@@ -568,8 +579,48 @@ float *iron_a1_sound_stream_next_frame(iron_a1_sound_stream_t *stream) {
 	return stream->samples;
 }
 
+static iron_mutex_t mutex;
+
+static void (*a2_callback)(iron_a2_buffer_t *buffer, uint32_t samples, void *userdata) = NULL;
+static void *a2_userdata                                                               = NULL;
+
+void iron_a2_set_callback(void (*iron_a2_audio_callback)(iron_a2_buffer_t *buffer, uint32_t samples, void *userdata), void *userdata) {
+	iron_mutex_lock(&mutex);
+	a2_callback = iron_a2_audio_callback;
+	a2_userdata = userdata;
+	iron_mutex_unlock(&mutex);
+}
+
+static void (*a2_sample_rate_callback)(void *userdata) = NULL;
+static void *a2_sample_rate_userdata                   = NULL;
+
+void iron_a2_set_sample_rate_callback(void (*iron_a2_sample_rate_callback)(void *userdata), void *userdata) {
+	iron_mutex_lock(&mutex);
+	a2_sample_rate_callback = iron_a2_sample_rate_callback;
+	a2_sample_rate_userdata = userdata;
+	iron_mutex_unlock(&mutex);
+}
+
+void iron_a2_internal_init(void) {
+	iron_mutex_init(&mutex);
+}
+
+bool iron_a2_internal_callback(iron_a2_buffer_t *buffer, int samples) {
+	iron_mutex_lock(&mutex);
+	bool has_callback = a2_callback != NULL;
+	if (has_callback) {
+		a2_callback(buffer, samples, a2_userdata);
+	}
+	iron_mutex_unlock(&mutex);
+	return has_callback;
+}
+
+void iron_a2_internal_sample_rate_callback(void) {
+	iron_mutex_lock(&mutex);
+	if (a2_sample_rate_callback != NULL) {
+		a2_sample_rate_callback(a2_sample_rate_userdata);
+	}
+	iron_mutex_unlock(&mutex);
+}
+
 #endif
-
-#define IRON_IMPLEMENTATION_AUDIO2
-
-#include "iron_audio.h"

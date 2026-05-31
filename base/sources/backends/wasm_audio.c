@@ -5,12 +5,16 @@
 #include <stdlib.h>
 
 static iron_a2_buffer_t a2_buffer;
+static bool             initialized = false;
 
 void iron_a2_init() {
-	iron_a2_internal_init();
-}
+	if (initialized) {
+		return;
+	}
 
-void iron_a2_update() {}
+	iron_a2_internal_init();
+	initialized = true;
+}
 
 void iron_a2_shutdown() {}
 

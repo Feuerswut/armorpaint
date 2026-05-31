@@ -111,8 +111,6 @@ void resumeAudio() {
 	SLresult result = (*bqPlayerPlay)->SetPlayState(bqPlayerPlay, SL_PLAYSTATE_PLAYING);
 }
 
-void iron_a2_update() {}
-
 void iron_a2_shutdown() {
 	if (bqPlayerObject != NULL) {
 		(*bqPlayerObject)->Destroy(bqPlayerObject);

@@ -284,8 +284,6 @@ void iron_a2_init() {
 	}
 }
 
-void iron_a2_update() {}
-
 #define SAFE_RELEASE(punk) \
 	if ((punk) != NULL) {  \
 		(punk)->Release(); \
