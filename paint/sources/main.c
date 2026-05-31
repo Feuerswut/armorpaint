@@ -66,6 +66,8 @@
 #include "material_nodes/shader_node.c"
 #include "material_nodes/text_texture_node.c"
 #include "material_nodes/texture_coordinate_node.c"
+#include "material_nodes/tilesheet_animation_node.c"
+#include "material_nodes/tilesheet_node.c"
 #include "material_nodes/uv_map_node.c"
 #include "material_nodes/value_node.c"
 #include "material_nodes/vector_curves_node.c"

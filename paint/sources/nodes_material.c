@@ -20,6 +20,8 @@ void nodes_material_init() {
 	script_node_init();
 	shader_node_init();
 	texture_coordinate_node_init();
+	tilesheet_animation_node_init();
+	tilesheet_node_init();
 	uv_map_node_init();
 	value_node_init();
 	wireframe_node_init();

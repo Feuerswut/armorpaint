@@ -671,6 +671,7 @@ void                         layer_mask_node_init();
 void                         camera_texture_node_init();
 void                         value_node_init();
 void                         texture_coordinate_node_init();
+void                         tilesheet_node_init();
 void                         group_node_init();
 void                         nodes_material_new_group_button(i32 node_id);
 void                         nodes_material_group_input_button(i32 node_id);
