@@ -3,7 +3,7 @@
 armorpaint
 ==============
 
-3D content creation tools.
+Graphics creation tools.
 
 [armorpaint/](https://github.com/armory3d/armorpaint/tree/main/paint)<br>
 
