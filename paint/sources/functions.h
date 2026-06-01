@@ -124,6 +124,7 @@ void                      box_export_show_brush();
 void                      box_export_show_player();
 void                      import_blend_mesh_ui();
 void                      import_blend_mesh_run(char *path, bool replace_existing);
+void                      tab_timeline_draw(ui_handle_t *htab);
 void                      tab_console_draw(ui_handle_t *htab);
 void                      tab_textures_draw(ui_handle_t *htab);
 void                      render_path_forward_init();

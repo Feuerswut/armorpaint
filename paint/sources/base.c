@@ -2123,6 +2123,7 @@ tab_draw_array_t_array_t *ui_base_init_hwnd_tabs() {
 	        _draw_callback_create(tab_textures_draw),
 	        _draw_callback_create(tab_fonts_draw),
 	        _draw_callback_create(tab_swatches_draw),
+	        _draw_callback_create(tab_timeline_draw),
 	        _draw_callback_create(tab_console_draw),
 	        _draw_callback_create(ui_statusbar_draw_version_tab),
 	    },
