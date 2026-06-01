@@ -12,11 +12,15 @@ f32    input_node_lock_start_y = 0.0;
 bool   input_node_registered   = false;
 vec4_t input_node_coords       = (vec4_t){0.0, 0.0, 0.0, 1.0};
 
-static void input_node_grid_snap_2d() {
-	if (!g_config->view2d_grid_snap) {
+static void input_node_grid_snap() {
+	bool snap_shortcut = operator_shortcut(any_map_get(config_keymap, "grid_snap"), SHORTCUT_TYPE_DOWN);
+	bool in_2d         = context_in_2d_view(VIEW_2D_TYPE_LAYER);
+	bool in_3d         = context_in_3d_view();
+
+	if (!in_2d && !in_3d) {
 		return;
 	}
-	if (!context_in_2d_view(VIEW_2D_TYPE_LAYER)) {
+	if (!snap_shortcut && !(g_config->view2d_grid_snap && in_2d)) {
 		return;
 	}
 
@@ -26,16 +30,41 @@ static void input_node_grid_snap_2d() {
 		return;
 	}
 
-	i32 headerh = g_config->layout->buffer[LAYOUT_SIZE_HEADER] == 1 ? ui_header_h * 2 : ui_header_h;
-	i32 apph    = iron_window_height() - g_config->layout->buffer[LAYOUT_SIZE_STATUS_H] + headerh;
-	if (!base_view3d_show) {
-		apph = base_h();
+	f32 wx;
+	f32 wy;
+	f32 ww;
+	f32 wh;
+	f32 pan_x;
+	f32 pan_y;
+	f32 pan_scale;
+	if (in_2d) {
+		i32 headerh = g_config->layout->buffer[LAYOUT_SIZE_HEADER] == 1 ? ui_header_h * 2 : ui_header_h;
+		wh          = iron_window_height() - g_config->layout->buffer[LAYOUT_SIZE_STATUS_H] + headerh;
+		if (!base_view3d_show) {
+			wh = base_h();
+		}
+		wx        = ui_view2d_wx;
+		wy        = ui_view2d_wy;
+		ww        = ui_view2d_ww;
+		pan_x     = ui_view2d_pan_x;
+		pan_y     = ui_view2d_pan_y;
+		pan_scale = ui_view2d_pan_scale;
 	}
-	f32 wm = fmin(ui_view2d_ww, ui_view2d_wh);
-	f32 tw = wm * 0.9 * ui_view2d_pan_scale;
+	else {
+		wx        = base_x();
+		wy        = base_y();
+		ww        = base_w();
+		wh        = base_h();
+		pan_x     = 0.0;
+		pan_y     = 0.0;
+		pan_scale = 1.0;
+	}
+
+	f32 wm = fmin(ww, wh);
+	f32 tw = wm * 0.9 * pan_scale;
 	f32 th = tw * (tex->height / (float)tex->width);
-	f32 tx = ui_view2d_wx + ui_view2d_ww / 2.0 - tw / 2.0 + ui_view2d_pan_x;
-	f32 ty = ui_view2d_wy + apph / 2.0 - th / 2.0 + ui_view2d_pan_y;
+	f32 tx = wx + ww / 2.0 - tw / 2.0 + pan_x;
+	f32 ty = wy + wh / 2.0 - th / 2.0 + pan_y;
 	f32 sx = input_node_coords.x * base_w() + base_x();
 	f32 sy = input_node_coords.y * base_h() + base_y();
 
@@ -145,7 +174,7 @@ void input_node_update(float_node_t *self) {
 		g_context->last_paint_y = -1;
 	}
 
-	input_node_grid_snap_2d();
+	input_node_grid_snap();
 
 	brush_output_node_parse_inputs();
 }
