@@ -373,7 +373,7 @@ void tab_layers_draw_layer_slot_full(slot_layer_t *l, i32 i) {
 	if (parent_hidden) {
 		col -= 0x99000000;
 	}
-	if (ui_sub_image(icons, col, -1.0, r->x, r->y, r->w, r->h) == UI_STATE_RELEASED) {
+	if (ui_sub_image(icons, col, r->h, r->x, r->y, r->w, r->h) == UI_STATE_RELEASED) {
 		tab_layers_layer_toggle_visible(l);
 	}
 
@@ -387,19 +387,20 @@ void tab_layers_draw_layer_slot_full(slot_layer_t *l, i32 i) {
 	}
 
 	// Layer icon
+	i32 icon_h       = (UI_ELEMENT_H() - 3) * 2;
 	ui->_x           = uix + uiw * 0.08 + offx;
 	ui->_y           = uiy + 3;
-	ui->_w           = uiw * 0.16;
+	ui->_w           = math_max(uiw * 0.16, icon_h);
 	ui_state_t state = tab_layers_draw_layer_icon(l, i, uix, uiy, false);
 	tab_layers_handle_layer_icon_state(l, i, state, uix, uiy);
 
 	// Draw layer name
-	ui->_x = uix + uiw * 0.25 + 2 * UI_SCALE() + offx;
-	ui->_y = uiy + center;
-	ui->_w = uiw * 0.36;
-	if (g_config->touch_ui) {
-		ui->_x += 12 * UI_SCALE();
-	}
+	bool has_blending = !slot_layer_is_group(l) && !slot_layer_is_mask(l) && !slot_layer_is_filter(l);
+	f32  name_x       = math_max(uix + uiw * 0.25 + offx, uix + uiw * 0.08 + offx + icon_h + 4 * UI_SCALE());
+	f32  name_right   = has_blending ? uix + uiw * 0.60 : (has_children ? uix + uiw * 0.90 : uix + uiw); // Blending combo / panel / window edge
+	ui->_x            = name_x;
+	ui->_y            = uiy + center;
+	ui->_w            = name_right - name_x;
 	if (tab_layers_layer_name_edit == l->id) {
 		tab_layers_layer_name_handle->text = string_copy(l->name);
 		l->name                            = string_copy(ui_text_input(tab_layers_layer_name_handle, "", UI_ALIGN_LEFT, true, false));

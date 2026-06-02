@@ -753,7 +753,10 @@ void tab_timeline_draw(ui_handle_t *htab) {
 		draw_set_color(ui->ops->theme->LABEL_COL);
 		i32 label_start = (tab_timeline_scroll / 5) * 5;
 		for (i32 i = label_start; i < tab_timeline_scroll + visible + 1 && i < tab_timeline_max_frames; i += 5) {
-			f32   lx      = start_x + (i - tab_timeline_scroll) * frame_w;
+			f32 lx = start_x + (i - tab_timeline_scroll) * frame_w;
+			if (lx < start_x) {
+				continue;
+			}
 			char *label   = i32_to_string(i);
 			f32   label_w = draw_string_width(ui->ops->font, ui->font_size, label);
 			draw_string(label, lx + (frame_w - label_w) / 2.0f, start_y);
@@ -779,7 +782,10 @@ void tab_timeline_draw(ui_handle_t *htab) {
 			draw_string(layer->name, ui->_x + icon_size + 2, row_y + (strip_h - font_h) / 2.0f);
 
 			for (i32 i = tab_timeline_scroll; i < tab_timeline_scroll + visible + 1 && i < tab_timeline_max_frames; i++) {
-				f32  x        = start_x + (i - tab_timeline_scroll) * frame_w;
+				f32 x = start_x + (i - tab_timeline_scroll) * frame_w;
+				if (x < start_x) {
+					continue;
+				}
 				bool selected = i == tab_timeline_selected_frame && ri == tab_timeline_selected_row;
 				u32  col      = selected ? sel_col : (i % 5 == 0) ? bright_col : base_col;
 
@@ -820,7 +826,10 @@ void tab_timeline_draw(ui_handle_t *htab) {
 			draw_string(mesh->base->name, ui->_x + icon_size + 2, row_y + (strip_h - font_h) / 2.0f);
 
 			for (i32 i = tab_timeline_scroll; i < tab_timeline_scroll + visible + 1 && i < tab_timeline_max_frames; i++) {
-				f32  x        = start_x + (i - tab_timeline_scroll) * frame_w;
+				f32 x = start_x + (i - tab_timeline_scroll) * frame_w;
+				if (x < start_x) {
+					continue;
+				}
 				bool selected = i == tab_timeline_selected_frame && ri == tab_timeline_selected_row;
 				u32  col      = selected ? sel_col : (i % 5 == 0) ? bright_col : base_col;
 
