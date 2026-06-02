@@ -1686,7 +1686,7 @@ void ui_base_render_cursor(void *_) {
 		draw_filled_rect(mx - 1, my - 1, 2, 2);
 		mx         = g_context->brush_lazy_x * base_w() + base_x();
 		my         = g_context->brush_lazy_y * base_h() + base_y();
-		f32 radius = g_context->brush_lazy_radius * 180;
+		f32 radius = g_context->brush_lazy_radius * util_layer_brush_screen_radius() * 3.0 * 2.0 * sys_h();
 		draw_set_color(0xff666666);
 		draw_scaled_image(cursor_img, mx - radius / 2.0, my - radius / 2.0, radius, radius);
 		draw_set_color(0xffffffff);

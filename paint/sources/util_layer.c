@@ -35,6 +35,25 @@ static f32 bezier_eval(f32 p0, f32 pc, f32 p1, f32 t) {
 	return t1 * t1 * t1 * p0 + 3.0f * t * t1 * pc + t * t * t * p1;
 }
 
+f32 util_layer_brush_screen_radius() {
+	f32  r_world = g_context->brush_radius * g_context->brush_nodes_radius / 15.0f * 2.0f;
+	bool on_mesh = math_abs(g_context->posx_picked) < 50.0f && math_abs(g_context->posy_picked) < 50.0f && math_abs(g_context->posz_picked) < 50.0f;
+	if (!on_mesh) {
+		return r_world;
+	}
+	vec4_t c_w   = (vec4_t){g_context->posx_picked, g_context->posy_picked, g_context->posz_picked, 1.0f};
+	vec4_t right = camera_object_right_world(scene_camera);
+	vec4_t e_w   = vec4_add(c_w, vec4_mult(right, r_world));
+	f32    cx, cy, ex, ey;
+	if (!project_to_screen(c_w, &cx, &cy) || !project_to_screen(e_w, &ex, &ey)) {
+		return r_world;
+	}
+	f32 aspect = sys_w() / (f32)sys_h();
+	f32 dx     = (ex - cx) * aspect;
+	f32 dy     = ey - cy;
+	return sqrtf(dx * dx + dy * dy);
+}
+
 static void path_push_camera(f32_array_t *ar) {
 	vec4_t loc = scene_camera->base->transform->loc;
 	quat_t rot = scene_camera->base->transform->rot;
@@ -127,20 +146,15 @@ static void path_paint_curved(f32_array_t *points, f32_array_t *points_world, f3
 			sby[0]  = wy0;
 			sbz[0]  = wz0;
 			slen[0] = 0.0f;
-			f32 psx = prev_px, psy = prev_py;
 			for (i32 k = 1; k <= 32; k++) {
 				f32 kt = k / 32.0f;
 				sbx[k] = bezier_eval(wx0, wcx, wx1, kt);
 				sby[k] = bezier_eval(wy0, wcy, wy1, kt);
 				sbz[k] = bezier_eval(wz0, wcz, wz1, kt);
-				f32 sx = psx, sy = psy;
-				project_to_screen((vec4_t){sbx[k], sby[k], sbz[k], 1.0f}, &sx, &sy);
-				f32 dx = (sx - psx) * (f32)sys_w(), dy = (sy - psy) * (f32)sys_h();
-				slen[k] = slen[k - 1] + sqrtf(dx * dx + dy * dy);
-				psx     = sx;
-				psy     = sy;
+				f32 dx = sbx[k] - sbx[k - 1], dy = sby[k] - sby[k - 1], dz = sbz[k] - sbz[k - 1];
+				slen[k] = slen[k - 1] + sqrtf(dx * dx + dy * dy + dz * dz);
 			}
-			i32 n = dot_spacing > 0.5f ? (i32)ceilf(slen[32] / dot_spacing) : 17;
+			i32 n = dot_spacing > 0.0f ? (i32)ceilf(slen[32] / dot_spacing) : 17;
 			n     = n < 2 ? 2 : n > 64 ? 64 : n;
 			for (i32 s = 1; s <= n; s++) {
 				f32 tgt = s / (f32)n * slen[32];
@@ -219,10 +233,11 @@ static void path_paint_straight(f32_array_t *points, f32_array_t *points_world, 
 			project_to_screen((vec4_t){pwx, pwy, pwz, 1.0f}, &ppx, &ppy);
 			prev_px                     = ppx;
 			prev_py                     = ppy;
-			f32 dx                      = (cur_px - ppx) * (f32)sys_w();
-			f32 dy                      = (cur_py - ppy) * (f32)sys_h();
-			f32 len                     = sqrtf(dx * dx + dy * dy);
-			i32 n                       = dot_spacing > 0.5f ? (i32)ceilf(len / dot_spacing) : 17;
+			f32 dx                      = cwx - pwx;
+			f32 dy                      = cwy - pwy;
+			f32 dz                      = cwz - pwz;
+			f32 len                     = sqrtf(dx * dx + dy * dy + dz * dz);
+			i32 n                       = dot_spacing > 0.0f ? (i32)ceilf(len / dot_spacing) : 17;
 			n                           = n < 1 ? 1 : n > 64 ? 64 : n;
 			g_context->prev_paint_vec_x = ppx;
 			g_context->prev_paint_vec_y = ppy;
@@ -286,7 +301,9 @@ static void path_repaint(slot_layer_t *l) {
 	i32          num_camera    = points_camera->length / 9;
 	i32          num_parent    = points_parent->length;
 	bool         sphere_mode   = g_context->brush_lazy_radius > 0 && g_context->brush_lazy_step > 0;
-	f32          dot_spacing   = sphere_mode ? g_context->brush_lazy_radius * g_context->brush_lazy_step * 85.0f : 0.0f;
+	// Spacing in world units
+	f32 r_world     = g_context->brush_radius * g_context->brush_nodes_radius / 15.0f * 2.0f;
+	f32 dot_spacing = sphere_mode ? g_context->brush_lazy_radius * g_context->brush_lazy_step * r_world * 3.0 : 0.0f;
 
 	if (l->path_curved && num_world >= 1) {
 		path_paint_curved(points, points_world, points_camera, points_parent, num_world, num_camera, num_parent, sphere_mode, dot_spacing);

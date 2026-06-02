@@ -154,10 +154,11 @@ void input_node_update(float_node_t *self) {
 	}
 
 	if (g_context->brush_lazy_radius > 0 && !slot_layer_is_path(g_context->layer)) {
-		vec4_t v1 = (vec4_t){g_context->brush_lazy_x * sys_w(), g_context->brush_lazy_y * sys_h(), 0.0, 1.0};
-		vec4_t v2 = (vec4_t){input_node_coords.x * sys_w(), input_node_coords.y * sys_h(), 0.0, 1.0};
-		f32    d  = vec4_dist(v1, v2);
-		f32    r  = g_context->brush_lazy_radius * 85;
+		f32    aspect = sys_w() / (f32)sys_h();
+		vec4_t v1     = (vec4_t){g_context->brush_lazy_x * aspect, g_context->brush_lazy_y, 0.0, 1.0};
+		vec4_t v2     = (vec4_t){input_node_coords.x * aspect, input_node_coords.y, 0.0, 1.0};
+		f32    d      = vec4_dist(v1, v2);
+		f32    r      = g_context->brush_lazy_radius * util_layer_brush_screen_radius() * 3.0;
 		if (d > r) {
 			vec4_t v3           = (vec4_t){0.0, 0.0, 0.0, 1.0};
 			v3                  = vec4_sub(v2, v1);
@@ -165,8 +166,8 @@ void input_node_update(float_node_t *self) {
 			v3                  = vec4_mult(v3, 1.0 - g_context->brush_lazy_step);
 			v3                  = vec4_mult(v3, r);
 			v2                  = vec4_add(v1, v3);
-			input_node_coords.x = v2.x / (float)sys_w();
-			input_node_coords.y = v2.y / (float)sys_h();
+			input_node_coords.x = v2.x / aspect;
+			input_node_coords.y = v2.y;
 			// Parse brush inputs once on next draw
 			g_context->painted = -1;
 		}
