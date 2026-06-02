@@ -2131,6 +2131,7 @@ tab_draw_array_t_array_t *ui_base_init_hwnd_tabs() {
 
 #ifdef IRON_IOS
 	if (config_is_iphone()) {
+		array_splice(a2, 5, 1); // Timeline
 		array_splice(a2, 4, 1); // Swatches
 	}
 #endif
