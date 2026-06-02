@@ -558,17 +558,38 @@ void export_texture_run(char *path, bool bake_material) {
 			}
 		}
 		if (atlas_export) {
+			string_array_t *used_atlases = project_get_used_atlases();
 			for (i32 atlas_index = 0; atlas_index < project_atlas_objects->length; ++atlas_index) {
-				slot_layer_t_array_t *layers = any_array_create_from_raw((void *[]){}, 0);
+				// Skip atlases that no object is assigned to
+				bool atlas_used = false;
 				for (i32 object_index = 0; object_index < project_atlas_objects->length; ++object_index) {
 					if (project_atlas_objects->buffer[object_index] == atlas_index) {
-						for (i32 i = 0; i < project_layers->length; ++i) {
-							slot_layer_t *l = project_layers->buffer[i];
-							if (slot_layer_get_object_mask(l) == 0 || // shared object
-							    slot_layer_get_object_mask(l) - 1 == object_index) {
-								any_array_push(layers, l);
-							}
+						atlas_used = true;
+						break;
+					}
+				}
+				if (!atlas_used) {
+					continue;
+				}
+				slot_layer_t_array_t *layers = any_array_create_from_raw((void *[]){}, 0);
+				for (i32 i = 0; i < project_layers->length; ++i) {
+					slot_layer_t *l    = project_layers->buffer[i];
+					i32           mask = slot_layer_get_object_mask(l);
+					bool          add  = false;
+					if (mask == 0) { // Shared object
+						add = true;
+					}
+					else if (mask <= project_paint_objects->length) { // Specific object
+						add = project_atlas_objects->buffer[mask - 1] == atlas_index;
+					}
+					else if (used_atlases != NULL) { // Atlas
+						i32 used_index = mask - project_paint_objects->length - 1;
+						if (used_index < used_atlases->length) {
+							add = string_array_index_of(project_atlas_names, used_atlases->buffer[used_index]) == atlas_index;
 						}
+					}
+					if (add) {
+						any_array_push(layers, l);
 					}
 				}
 				if (layers->length > 0) {
