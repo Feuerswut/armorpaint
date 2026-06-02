@@ -353,7 +353,7 @@ quat_t quat_from_rot_mat(mat4_t m) {
 		q.y = (m23 + m32) / s;
 		q.z = 0.25 * s;
 	}
-	return q;
+	return quat_norm(q);
 }
 
 quat_t quat_mult(quat_t a, quat_t b) {
