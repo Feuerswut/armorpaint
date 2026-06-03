@@ -39,6 +39,7 @@ i32  tab_timeline_scroll_drag_v  = 0;
 
 static i32          tab_timeline_max_frames = 200;
 static i32          tab_timeline_frame_rate = 24;
+static bool         tab_timeline_skinning   = false;
 static any_array_t *tab_timeline_keyframes  = NULL;
 static any_array_t *tab_timeline_origins    = NULL;
 static i32          tab_timeline_last_frame = 0;
@@ -352,6 +353,10 @@ static void tab_timeline_frame_change_on_next_frame(void *_) {
 		from == 0 ? tab_timeline_save_mesh_origins() : tab_timeline_save_mesh_to_keyframes(from);
 		to == 0 ? tab_timeline_load_mesh_origins() : tab_timeline_load_mesh_from_keyframes((float)to);
 	}
+
+	if (tab_timeline_skinning) {
+		project_reimport_mesh_skinned(to);
+	}
 }
 
 static void tab_timeline_add_keyframe_on_next_frame(void *_) {
@@ -660,6 +665,14 @@ void tab_timeline_draw_edit() {
 	if (hframes->changed) {
 		tab_timeline_max_frames = (i32)hframes->f;
 		ui_menu_keep_open       = true;
+	}
+
+	ui_handle_t *hskin = ui_handle(__ID__);
+	hskin->b           = tab_timeline_skinning;
+	ui_check(hskin, tr("Skinning"), "");
+	if (hskin->changed) {
+		tab_timeline_skinning = hskin->b;
+		ui_menu_keep_open     = true;
 	}
 
 	if (ui_menu_button(tr("Clear"), "", ICON_ERASE)) {
