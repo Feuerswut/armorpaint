@@ -2136,6 +2136,12 @@ tab_draw_array_t_array_t *ui_base_init_hwnd_tabs() {
 	}
 #endif
 
+#ifdef IRON_ANDROID
+	if (iron_window_width() <= 1080) {
+		array_splice(a2, 5, 1); // Timeline
+	}
+#endif
+
 #ifdef is_debug
 	any_array_push(a0, _draw_callback_create(tab_debug_draw));
 #endif
