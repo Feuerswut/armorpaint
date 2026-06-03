@@ -3,8 +3,10 @@
 
 bool import_mesh_clear_layers = true;
 bool import_mesh_needs_unwrap = false;
+bool import_mesh_no_reset     = false;
+bool import_mesh_no_scale     = false;
 
-void import_mesh_run(char *path, bool _clear_layers, bool replace_existing) {
+void import_mesh_run(char *path, bool _clear_layers, bool replace_existing, bool keep_camera) {
 	if (!path_is_mesh(path)) {
 		if (!context_enable_import_plugin(path)) {
 			console_error(strings_unknown_asset_format());
@@ -13,6 +15,7 @@ void import_mesh_run(char *path, bool _clear_layers, bool replace_existing) {
 	}
 
 	import_mesh_clear_layers = _clear_layers;
+	import_mesh_no_reset     = keep_camera;
 	g_context->layer_filter  = 0;
 
 	char *p = to_lower_case(path);
@@ -98,7 +101,10 @@ void import_mesh_finish_import(void *_) {
 		g_context->merged_object->base->visible = true;
 	}
 
-	viewport_scale_to_bounds(2.0);
+	if (!import_mesh_no_scale) {
+		viewport_scale_to_bounds(2.0);
+	}
+	import_mesh_no_scale = false;
 
 	if (string_equals(g_context->paint_object->base->name, "")) {
 		g_context->paint_object->base->name = "Object";
@@ -160,7 +166,9 @@ void import_mesh_make_mesh(raw_mesh_t *mesh) {
 	g_context->paint_object = context_main_object();
 
 	context_select_paint_object(context_main_object());
-	viewport_reset();
+	if (!import_mesh_no_reset) {
+		viewport_reset();
+	}
 
 	for (i32 i = 0; i < project_paint_objects->length; ++i) {
 		mesh_object_t *p = project_paint_objects->buffer[i];

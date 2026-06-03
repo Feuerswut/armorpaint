@@ -680,6 +680,10 @@ void           node_shader_write_frag(void *raw, char *s);
 mesh_object_t *context_main_object();
 void           export_texture_run(char *path, bool bake_material);
 void           context_select_tool(i32 i);
+gpu_texture_t *gpu_create_render_target(i32 width, i32 height, i32 format);
+void           viewport_capture_screenshot_to(gpu_texture_t *target, float x, float y, float w, float h);
+void           viewport_save_texture(gpu_texture_t *screenshot);
+void           project_reimport_mesh_skinned(i32 frame);
 
 extern any_map_t      *import_texture_importers;
 extern string_array_t *_path_texture_formats;
@@ -879,6 +883,12 @@ void minic_register_builtins() {
 	static const char *ui_node_flag_names[]  = {"UI_NODE_FLAG_NONE", "UI_NODE_FLAG_COLLAPSED", "UI_NODE_FLAG_PREVIEW"};
 	static const int   ui_node_flag_values[] = {0, 1, 2};
 	minic_register_enum("ui_node_flag_t", ui_node_flag_names, ui_node_flag_values, 3);
+
+	static const char *gpu_texture_format_names[]  = {"GPU_TEXTURE_FORMAT_RGBA32", "GPU_TEXTURE_FORMAT_RGBA64",    "GPU_TEXTURE_FORMAT_RGBA128",
+	                                                  "GPU_TEXTURE_FORMAT_R8",     "GPU_TEXTURE_FORMAT_R16",       "GPU_TEXTURE_FORMAT_R32",
+	                                                  "GPU_TEXTURE_FORMAT_D32",    "GPU_TEXTURE_FORMAT_RGBA32_BC7"};
+	static const int   gpu_texture_format_values[] = {0, 1, 2, 3, 4, 5, 6, 7};
+	minic_register_enum("gpu_texture_format_t", gpu_texture_format_names, gpu_texture_format_values, 8);
 
 	static const char *ui_handle_fields[]  = {"i",       "f",       "b",       "layout",         "scroll_offset",
 	                                          "color",   "redraws", "text",    "scroll_enabled", "drag_enabled",
@@ -1275,23 +1285,36 @@ void minic_register_builtins() {
 	minic_struct_field_set_type("config_t", "plugins", "string_array_t");
 
 	// context_t
-	static const char *ctx_fields[]  = {"paint_object", "ddirty",         "pdirty",        "rdirty",        "material",       "layer",
-	                                    "brush",        "tool",           "brush_radius",  "brush_opacity", "brush_hardness", "brush_scale",
-	                                    "brush_angle",  "brush_blending", "viewport_mode", "xray"};
-	static const int   ctx_offsets[] = {
-        (int)offsetof(context_t, paint_object),  (int)offsetof(context_t, ddirty),         (int)offsetof(context_t, pdirty),
-        (int)offsetof(context_t, rdirty),        (int)offsetof(context_t, material),       (int)offsetof(context_t, layer),
-        (int)offsetof(context_t, brush),         (int)offsetof(context_t, tool),           (int)offsetof(context_t, brush_radius),
-        (int)offsetof(context_t, brush_opacity), (int)offsetof(context_t, brush_hardness), (int)offsetof(context_t, brush_scale),
-        (int)offsetof(context_t, brush_angle),   (int)offsetof(context_t, brush_blending), (int)offsetof(context_t, viewport_mode),
-        (int)offsetof(context_t, xray),
-    };
-	static const minic_type_t ctx_types[] = {MINIC_T_PTR,   MINIC_T_INT,   MINIC_T_INT,   MINIC_T_INT,   MINIC_T_PTR,   MINIC_T_PTR, MINIC_T_PTR, MINIC_T_INT,
-	                                         MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_INT, MINIC_T_INT};
+	static const char *ctx_fields[] = {
+	    "paint_object",        "ddirty",        "pdirty",         "rdirty",      "material",    "layer",          "brush",         "tool",
+	    "brush_radius",        "brush_opacity", "brush_hardness", "brush_scale", "brush_angle", "brush_blending", "viewport_mode", "xray",
+	    "capturing_screenshot"};
+	static const int ctx_offsets[] = {
+	    (int)offsetof(context_t, paint_object),
+	    (int)offsetof(context_t, ddirty),
+	    (int)offsetof(context_t, pdirty),
+	    (int)offsetof(context_t, rdirty),
+	    (int)offsetof(context_t, material),
+	    (int)offsetof(context_t, layer),
+	    (int)offsetof(context_t, brush),
+	    (int)offsetof(context_t, tool),
+	    (int)offsetof(context_t, brush_radius),
+	    (int)offsetof(context_t, brush_opacity),
+	    (int)offsetof(context_t, brush_hardness),
+	    (int)offsetof(context_t, brush_scale),
+	    (int)offsetof(context_t, brush_angle),
+	    (int)offsetof(context_t, brush_blending),
+	    (int)offsetof(context_t, viewport_mode),
+	    (int)offsetof(context_t, xray),
+	    (int)offsetof(context_t, capturing_screenshot),
+	};
+	static const minic_type_t ctx_types[]       = {MINIC_T_PTR,   MINIC_T_INT, MINIC_T_INT,   MINIC_T_INT,   MINIC_T_PTR,   MINIC_T_PTR,
+	                                               MINIC_T_PTR,   MINIC_T_INT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT,
+	                                               MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_INT,   MINIC_T_INT,   MINIC_T_BOOL};
 	static const minic_type_t ctx_deref_types[] = {MINIC_T_PTR,   MINIC_T_INT, MINIC_T_INT,   MINIC_T_INT,   MINIC_T_PTR,   MINIC_T_PTR,
 	                                               MINIC_T_PTR,   MINIC_T_INT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT,
-	                                               MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_INT,   MINIC_T_INT};
-	minic_register_struct_native("context_t", ctx_fields, ctx_offsets, ctx_types, ctx_deref_types, 16);
+	                                               MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_INT,   MINIC_T_INT,   MINIC_T_BOOL};
+	minic_register_struct_native("context_t", ctx_fields, ctx_offsets, ctx_types, ctx_deref_types, 17);
 	minic_struct_set_size("context_t", (int)sizeof(context_t));
 	minic_struct_field_set_type("context_t", "paint_object", "mesh_object_t");
 
@@ -2030,6 +2053,11 @@ void minic_register_builtins() {
 	R(context_main_object, "p()");
 	R(export_texture_run, "v(p,i)");
 	R(context_select_tool, "v(i)");
+	R(gpu_create_render_target, "p(i,i,i)");
+	R(viewport_capture_screenshot_to, "v(p,f,f,f,f)");
+	R(viewport_save_texture, "v(p)");
+	R(project_reimport_mesh_skinned, "v(i)");
+	R(iron_delay_idle_sleep, "v()");
 
 	// json
 	R(json_parse, "p(p)");

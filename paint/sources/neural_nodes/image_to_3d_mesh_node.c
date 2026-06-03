@@ -22,7 +22,7 @@ void image_to_3d_mesh_node_check_result(ui_node_t *node) {
 			// map_set(neural_node_results, node.id, result);
 			ui_nodes_hwnd->redraws  = 2;
 			ui_view2d_hwnd->redraws = 2;
-			project_import_mesh_box(file, true, true, NULL);
+			project_import_mesh_box(file, true, true, false, NULL);
 		}
 		sys_remove_update(image_to_3d_mesh_node_check_result);
 	}

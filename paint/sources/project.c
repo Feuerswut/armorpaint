@@ -7,6 +7,7 @@ void (*_project_import_mesh_done)(void);
 char *_project_import_mesh_box_path;
 bool  _project_import_mesh_box_replace_existing;
 bool  _project_import_mesh_box_clear_layers;
+bool  _project_import_mesh_box_keep_camera;
 void (*_project_import_mesh_box_done)(void);
 bool     _project_import_asset_hdr_as_envmap;
 bool     _project_import_swatches_replace_existing;
@@ -413,7 +414,7 @@ void project_import_brush() {
 }
 
 void project_import_mesh_on_file_picked(char *path) {
-	project_import_mesh_box(path, _project_import_mesh_replace_existing, true, _project_import_mesh_done);
+	project_import_mesh_box(path, _project_import_mesh_replace_existing, true, false, _project_import_mesh_done);
 }
 
 void project_import_mesh(bool replace_existing, void (*done)(void)) {
@@ -436,6 +437,7 @@ void project_import_mesh_box_draw() {
 	char *path             = _project_import_mesh_box_path;
 	bool  replace_existing = _project_import_mesh_box_replace_existing;
 	bool  clear_layers     = _project_import_mesh_box_clear_layers;
+	bool  keep_camera      = _project_import_mesh_box_keep_camera;
 	void (*done)(void)     = _project_import_mesh_box_done;
 
 	if (ends_with(to_lower_case(path), ".obj") || ends_with(to_lower_case(path), ".fbx")) {
@@ -488,7 +490,7 @@ void project_import_mesh_box_draw() {
 		console_toast(tr("Importing mesh"));
 #endif
 
-		import_mesh_run(path, clear_layers, replace_existing);
+		import_mesh_run(path, clear_layers, replace_existing, keep_camera);
 		if (done != NULL) {
 			done();
 		}
@@ -498,12 +500,13 @@ void project_import_mesh_box_draw() {
 	}
 }
 
-void project_import_mesh_box(char *path, bool replace_existing, bool clear_layers, void (*done)(void)) {
+void project_import_mesh_box(char *path, bool replace_existing, bool clear_layers, bool keep_camera, void (*done)(void)) {
 	gc_unroot(_project_import_mesh_box_path);
 	_project_import_mesh_box_path = string_copy(path);
 	gc_root(_project_import_mesh_box_path);
 	_project_import_mesh_box_replace_existing = replace_existing;
 	_project_import_mesh_box_clear_layers     = clear_layers;
+	_project_import_mesh_box_keep_camera      = keep_camera;
 	gc_unroot(_project_import_mesh_box_done);
 	_project_import_mesh_box_done = done;
 	gc_root(_project_import_mesh_box_done);
@@ -513,10 +516,20 @@ void project_import_mesh_box(char *path, bool replace_existing, bool clear_layer
 
 void project_reimport_mesh() {
 	if (project_mesh_assets != NULL && project_mesh_assets->length > 0 && iron_file_exists(project_mesh_assets->buffer[0])) {
-		project_import_mesh_box(project_mesh_assets->buffer[0], true, false, NULL);
+		project_import_mesh_box(project_mesh_assets->buffer[0], true, false, true, NULL);
 	}
 	else {
 		project_import_asset(NULL, true);
+	}
+}
+
+void project_reimport_mesh_skinned(int frame) {
+	extern bool import_mesh_no_scale;
+	if (project_mesh_assets != NULL && project_mesh_assets->length > 0 && iron_file_exists(project_mesh_assets->buffer[0])) {
+		plugins_skinning_frame = frame;
+		import_mesh_no_scale   = true;
+		import_mesh_run(project_mesh_assets->buffer[0], false, true, true);
+		plugins_skinning_frame = -1;
 	}
 }
 

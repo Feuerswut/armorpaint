@@ -93,20 +93,8 @@ void viewport_update_camera_type(i32 camera_type) {
 	g_context->ddirty = 2;
 }
 
-void viewport_capture_screenshot() {
-	render_target_t *rt  = any_map_get(render_path_render_targets, "last");
-	gpu_texture_t   *tex = rt->_image;
-
-	// let screenshot: gpu_texture_t = gpu_create_render_target(512, 512);
-	// let r: f32                    = sys_w() / sys_h();
-	// draw_begin(screenshot);
-	// draw_scaled_image(tex, -(512 * r - 512) / 2, 0, 512 * r, 512);
-	// draw_end();
-
-	gpu_texture_t *screenshot = gpu_create_render_target(tex->width, tex->height, GPU_TEXTURE_FORMAT_RGBA32);
-	draw_begin(screenshot, false, 0);
-	draw_image(tex, 0, 0);
-	draw_end();
+void viewport_save_texture(gpu_texture_t *screenshot) {
+	// Save into the textures tab
 	if (g_project->packed_assets == NULL) {
 		g_project->packed_assets = any_array_create_from_raw((void *[]){}, 0);
 	}
@@ -126,6 +114,35 @@ void viewport_capture_screenshot() {
 	any_array_push(g_project->packed_assets, pa);
 	any_map_set(data_cached_images, abs, screenshot);
 	import_texture_run(abs, true);
+}
+
+void viewport_capture_screenshot() {
+	render_target_t *rt  = any_map_get(render_path_render_targets, "last");
+	gpu_texture_t   *tex = rt->_image;
+
+	gpu_texture_t *screenshot = gpu_create_render_target(tex->width, tex->height, GPU_TEXTURE_FORMAT_RGBA32);
+	draw_begin(screenshot, false, 0);
+	draw_image(tex, 0, 0);
+	draw_end();
+
+	viewport_save_texture(screenshot);
+	g_context->capturing_screenshot = false;
+	g_context->ddirty               = 2;
+}
+
+void viewport_capture_screenshot_to(gpu_texture_t *target, float x, float y, float w, float h) {
+	render_target_t *rt  = any_map_get(render_path_render_targets, "last");
+	gpu_texture_t   *tex = rt->_image;
+
+	// Crop the viewport texture to a square
+	float size = tex->width < tex->height ? tex->width : tex->height;
+	float sx   = (tex->width - size) / 2.0f;
+	float sy   = (tex->height - size) / 2.0f;
+
+	draw_begin(target, false, 0);
+	draw_scaled_sub_image(tex, sx, sy, size, size, x, y, w, h);
+	draw_end();
+
 	g_context->capturing_screenshot = false;
 	g_context->ddirty               = 2;
 }
