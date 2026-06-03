@@ -1330,9 +1330,10 @@ void layers_set_object_mask() {
 		context_select_paint_object(o);
 	}
 	else {
-		bool is_atlas = slot_layer_get_object_mask(g_context->layer) > project_paint_objects->length;
+		i32  atlas_mask = g_context->layer_filter > project_paint_objects->length ? g_context->layer_filter : slot_layer_get_object_mask(g_context->layer);
+		bool is_atlas   = atlas_mask > project_paint_objects->length;
 		if (g_context->merged_object == NULL || is_atlas || g_context->merged_object_is_atlas) {
-			mesh_object_t_array_t *visibles = is_atlas ? project_get_atlas_objects(slot_layer_get_object_mask(g_context->layer)) : NULL;
+			mesh_object_t_array_t *visibles = is_atlas ? project_get_atlas_objects(atlas_mask) : NULL;
 			util_mesh_merge(visibles);
 		}
 		context_select_paint_object(context_main_object());
