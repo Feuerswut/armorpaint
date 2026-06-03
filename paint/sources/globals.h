@@ -97,8 +97,6 @@ any_map_t       *import_texture_importers;
 
 #ifdef IRON_WINDOWS
 char *ui_files_default_path = "C:\\Users";
-#elif defined(IRON_ANDROID)
-char *ui_files_default_path = "/storage/emulated/0/Download";
 #elif defined(IRON_MACOS)
 char *ui_files_default_path = "/Users";
 #else
