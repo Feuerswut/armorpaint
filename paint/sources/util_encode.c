@@ -185,7 +185,7 @@ buffer_t *util_encode_project(project_t *raw) {
 	buffer_t *encoded = buffer_create(size);
 
 	armpack_encode_start(encoded->buffer);
-	armpack_encode_map(31);
+	armpack_encode_map(32);
 
 	armpack_encode_string("version");
 	armpack_encode_string(raw->version);
@@ -453,6 +453,8 @@ buffer_t *util_encode_project(project_t *raw) {
 	armpack_encode_array_string(raw->atlas_names);
 	armpack_encode_string("script_datas");
 	armpack_encode_array_string(raw->script_datas);
+	armpack_encode_string("script_names");
+	armpack_encode_array_string(raw->script_names);
 
 	armpack_encode_string("timeline_frame_rate");
 	armpack_encode_i32(raw->timeline_frame_rate);

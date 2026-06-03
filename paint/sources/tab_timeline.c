@@ -59,6 +59,10 @@ static i32 tab_timeline_pending_mesh_add_index = -1;
 static i32 tab_timeline_pending_mesh_rm_frame  = -1;
 static i32 tab_timeline_pending_mesh_rm_index  = -1;
 
+static f64 tab_timeline_last_click_time  = 0.0;
+static i32 tab_timeline_last_click_frame = -1;
+static i32 tab_timeline_last_click_row   = -1;
+
 static void tab_timeline_copy_tex(gpu_texture_t *dst, gpu_texture_t *src) {
 	draw_begin(dst, true, 0x00000000);
 	draw_set_pipeline(pipes_copy);
@@ -605,6 +609,79 @@ void tab_timeline_import(project_t *raw) {
 	}
 }
 
+static char *tab_timeline_row_name(i32 row) {
+	i32 layer_count = project_layers->length;
+	if (row >= layer_count) {
+		mesh_object_t *o = project_paint_objects->buffer[row - layer_count];
+		return o->base->name;
+	}
+	slot_layer_t *l = project_layers->buffer[row];
+	return l->name;
+}
+
+static char *tab_timeline_script_name(i32 row, i32 frame) {
+	char *row_name = string_replace_all(tab_timeline_row_name(row), " ", "");
+	char *name     = string("%s_%s.frame", row_name, i32_to_string(frame));
+	return name;
+}
+
+static bool tab_timeline_has_script(i32 row, i32 frame) {
+	if (g_project->script_names == NULL) {
+		return false;
+	}
+	return string_array_index_of(g_project->script_names, tab_timeline_script_name(row, frame)) >= 0;
+}
+
+static void tab_timeline_edit_script(i32 row, i32 frame) {
+	tab_scripts_create(tab_timeline_script_name(row, frame));
+	ui_base_hwnds->buffer[TAB_AREA_SIDEBAR0]->i       = 2; // Scripts tab
+	ui_base_hwnds->buffer[TAB_AREA_SIDEBAR0]->redraws = 2;
+}
+
+static void tab_timeline_run_frame_scripts(i32 frame) {
+	if (g_project->script_names == NULL) {
+		return;
+	}
+	i32 row_count = project_layers->length + project_paint_objects->length;
+	for (i32 ri = 0; ri < row_count; ri++) {
+		i32 i = string_array_index_of(g_project->script_names, tab_timeline_script_name(ri, frame));
+		if (i >= 0) {
+			minic_ctx_free(minic_eval(string("void main() {\n%s\n}", g_project->script_datas->buffer[i])));
+		}
+	}
+}
+
+void tab_timeline_play() {
+	tab_timeline_init();
+	tab_timeline_playing    = true;
+	tab_timeline_play_time  = sys_time();
+	tab_timeline_last_frame = -1; // Ensure frame 0 scripts run
+}
+
+void tab_timeline_player_update() {
+	tab_timeline_init();
+	if (!tab_timeline_playing) {
+		return;
+	}
+	iron_delay_idle_sleep();
+
+	f64   elapsed = sys_time() - tab_timeline_play_time;
+	float frame_f = (float)fmod(elapsed * tab_timeline_frame_rate, tab_timeline_max_frames);
+	i32   frame_i = (i32)frame_f;
+
+	tab_timeline_selected_frame = frame_i;
+
+	if (tab_timeline_mesh_keyframes != NULL) {
+		tab_timeline_load_mesh_from_keyframes(frame_f);
+	}
+
+	if (frame_i != tab_timeline_last_frame) {
+		tab_timeline_last_frame = frame_i;
+		tab_timeline_load_from_keyframes(frame_i);
+		tab_timeline_run_frame_scripts(frame_i);
+	}
+}
+
 void tab_timeline_draw_frame_context_menu() {
 	i32  layer_count = project_layers->length;
 	bool is_mesh     = tab_timeline_selected_row >= layer_count;
@@ -621,19 +698,26 @@ void tab_timeline_draw_frame_context_menu() {
 		has_kf = mesh_kfi >= 0;
 	}
 
-	if (is_mesh && mesh_kfi >= 0) {
-		tab_timeline_mesh_keyframe_t *kf      = tab_timeline_mesh_keyframes->buffer[mesh_kfi];
-		ui_handle_t                  *h_tween = ui_handle(__ID__);
-		h_tween->b                            = kf->tween;
-		ui_check(h_tween, tr("Tween"), "");
-		if (h_tween->changed) {
-			kf->tween         = h_tween->b;
-			ui_menu_keep_open = true;
-		}
+	if (ui_menu_button(tr("Edit Script"), "", ICON_EDIT)) {
+		tab_timeline_edit_script(tab_timeline_selected_row, tab_timeline_selected_frame);
+	}
+
+	ui->enabled                      = has_kf && is_mesh;
+	ui_handle_t *h_tween             = ui_handle(__ID__);
+	h_tween->b                       = false;
+	tab_timeline_mesh_keyframe_t *kf = NULL;
+	if (ui->enabled) {
+		kf         = tab_timeline_mesh_keyframes->buffer[mesh_kfi];
+		h_tween->b = kf->tween;
+	}
+	ui_check(h_tween, tr("Tween"), "");
+	if (ui->enabled && h_tween->changed) {
+		kf->tween         = h_tween->b;
+		ui_menu_keep_open = true;
 	}
 
 	ui->enabled = has_kf;
-	if (ui_menu_button(tr("Remove Keyframe"), "", ICON_MINUS)) {
+	if (ui_menu_button(tr("Delete"), "", ICON_DELETE)) {
 		if (!is_mesh) {
 			tab_timeline_pending_rm_frame = tab_timeline_selected_frame;
 			tab_timeline_pending_rm_layer = tab_timeline_selected_row;
@@ -805,6 +889,11 @@ void tab_timeline_draw(ui_handle_t *htab) {
 				draw_set_color(col);
 				draw_filled_rect(x, row_y, frame_w - 1, strip_h - 1);
 
+				if (tab_timeline_has_script(ri, i)) {
+					draw_set_color(sel_col);
+					draw_rect(x + 1, row_y + 1, frame_w - 2, strip_h - 2, 1 * UI_SCALE());
+				}
+
 				if (i == 0 || (tab_timeline_keyframes != NULL && tab_timeline_find_keyframe(i, ri) >= 0)) {
 					draw_set_color(ui->ops->theme->LABEL_COL);
 					draw_filled_circle(x + frame_w / 2.0f, row_y + strip_h / 2.0f, 3.0f * UI_SCALE(), 12);
@@ -812,6 +901,16 @@ void tab_timeline_draw(ui_handle_t *htab) {
 
 				bool in_cell = !tab_timeline_scrolling && ui->input_x > ui->_window_x + x && ui->input_x < ui->_window_x + x + frame_w &&
 				               ui->input_y > ui->_window_y + row_y && ui->input_y < ui->_window_y + row_y + strip_h;
+				if (in_cell && ui->input_started) {
+					f64  now          = sys_time();
+					bool double_click = now - tab_timeline_last_click_time < 0.3 && tab_timeline_last_click_frame == i && tab_timeline_last_click_row == ri;
+					tab_timeline_last_click_time  = now;
+					tab_timeline_last_click_frame = i;
+					tab_timeline_last_click_row   = ri;
+					if (double_click) {
+						tab_timeline_edit_script(ri, i);
+					}
+				}
 				if (in_cell && ui->input_down) {
 					tab_timeline_selected_frame = i;
 					tab_timeline_selected_row   = ri;
@@ -849,6 +948,11 @@ void tab_timeline_draw(ui_handle_t *htab) {
 				draw_set_color(col);
 				draw_filled_rect(x, row_y, frame_w - 1, strip_h - 1);
 
+				if (tab_timeline_has_script(ri, i)) {
+					draw_set_color(sel_col);
+					draw_rect(x, row_y, frame_w - 1, strip_h - 1, 1 * UI_SCALE());
+				}
+
 				if (i == 0 || (tab_timeline_mesh_keyframes != NULL && tab_timeline_find_mesh_keyframe(i, mi) >= 0)) {
 					draw_set_color(ui->ops->theme->LABEL_COL);
 					draw_filled_circle(x + frame_w / 2.0f, row_y + strip_h / 2.0f, 3.0f * UI_SCALE(), 12);
@@ -856,6 +960,16 @@ void tab_timeline_draw(ui_handle_t *htab) {
 
 				bool in_cell = !tab_timeline_scrolling && ui->input_x > ui->_window_x + x && ui->input_x < ui->_window_x + x + frame_w &&
 				               ui->input_y > ui->_window_y + row_y && ui->input_y < ui->_window_y + row_y + strip_h;
+				if (in_cell && ui->input_started) {
+					f64  now          = sys_time();
+					bool double_click = now - tab_timeline_last_click_time < 0.3 && tab_timeline_last_click_frame == i && tab_timeline_last_click_row == ri;
+					tab_timeline_last_click_time  = now;
+					tab_timeline_last_click_frame = i;
+					tab_timeline_last_click_row   = ri;
+					if (double_click) {
+						tab_timeline_edit_script(ri, i);
+					}
+				}
 				if (in_cell && ui->input_down) {
 					tab_timeline_selected_frame = i;
 					tab_timeline_selected_row   = ri;

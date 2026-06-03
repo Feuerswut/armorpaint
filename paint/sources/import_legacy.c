@@ -232,6 +232,8 @@ project_t *import_arm_from_map_to_arm(any_map_t *old) {
 	project->mesh_transforms     = any_map_get(old, "mesh_transforms");
 	project->atlas_objects       = any_map_get(old, "atlas_objects");
 	project->atlas_names         = any_map_get(old, "atlas_names");
+	project->script_datas        = any_map_get(old, "script_datas");
+	project->script_names        = any_map_get(old, "script_names");
 	project->timeline_frame_rate = armpack_map_get_i32(old, "timeline_frame_rate");
 	project->timeline_max_frames = armpack_map_get_i32(old, "timeline_max_frames");
 
@@ -267,12 +269,17 @@ project_t *import_arm_from_map_to_arm(any_map_t *old) {
 	return project;
 }
 
+project_t *import_arm_from_version_8(any_map_t *old) {
+	any_map_set(old, "script_names", NULL);
+	return import_arm_from_map_to_arm(old);
+}
+
 project_t *import_arm_from_version_7(any_map_t *old) {
 	armpack_map_set_i32(old, "timeline_frame_rate", 24);
 	armpack_map_set_i32(old, "timeline_max_frames", 200);
 	any_map_set(old, "timeline_layers", NULL);
 	any_map_set(old, "timeline_meshes", NULL);
-	return import_arm_from_map_to_arm(old);
+	return import_arm_from_version_8(old);
 }
 
 project_t *import_arm_from_version_6(any_map_t *old) {
@@ -352,6 +359,9 @@ project_t *import_arm_from_version_2(any_map_t *old) {
 
 project_t *import_arm_from_old(buffer_t *b) {
 	any_map_t *old = armpack_decode_to_map(b);
+	if (import_arm_is_version(b, '8')) {
+		return import_arm_from_version_8(old);
+	}
 	if (import_arm_is_version(b, '7')) {
 		return import_arm_from_version_7(old);
 	}

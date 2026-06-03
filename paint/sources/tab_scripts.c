@@ -2,24 +2,37 @@
 #include "global.h"
 
 ui_text_coloring_t *tab_scripts_text_coloring = NULL;
+i32                 tab_scripts_selected      = 0;
 
 void tab_scripts_prepare() {
 	if (g_project->script_datas == NULL) {
 		g_project->script_datas = string_array_create(0);
+		g_project->script_names = string_array_create(0);
 	}
 	if (g_project->script_datas->length == 0) {
-		string_array_push(g_project->script_datas, "");
+		string_array_push(g_project->script_datas, "void main() {\n    \n}\n");
+		string_array_push(g_project->script_names, "main.c");
 	}
 }
 
 char *tab_scripts_get() {
 	tab_scripts_prepare();
-	return g_project->script_datas->buffer[0];
+	return g_project->script_datas->buffer[tab_scripts_selected];
 }
 
 void tab_scripts_set(char *s) {
 	tab_scripts_prepare();
-	g_project->script_datas->buffer[0] = string_copy(s);
+	g_project->script_datas->buffer[tab_scripts_selected] = string_copy(s);
+}
+
+void tab_scripts_create(char *name) {
+	tab_scripts_prepare();
+	i32 i = string_array_index_of(g_project->script_names, name);
+	if (i < 0) {
+		string_array_push(g_project->script_names, string_copy(name));
+		string_array_push(g_project->script_datas, "");
+		tab_scripts_selected = g_project->script_datas->length - 1;
+	}
 }
 
 void tab_scripts_draw_export(char *path) {
@@ -42,9 +55,18 @@ void tab_scripts_draw_import(char *path) {
 }
 
 void tab_scripts_draw_edit() {
+	tab_scripts_prepare();
+
 	if (ui_menu_button(tr("Clear"), "", ICON_ERASE)) {
 		tab_scripts_set("");
 	}
+	ui->enabled = !string_equals(g_project->script_names->buffer[tab_scripts_selected], "main.c");
+	if (ui_menu_button(tr("Delete"), "", ICON_DELETE)) {
+		array_splice((any_array_t *)g_project->script_datas, tab_scripts_selected, 1);
+		array_splice((any_array_t *)g_project->script_names, tab_scripts_selected, 1);
+		tab_scripts_selected = 0;
+	}
+	ui->enabled = true;
 	if (ui_menu_button(tr("Import"), "", ICON_IMPORT)) {
 		ui_files_show("c", false, false, &tab_scripts_draw_import);
 	}
@@ -54,14 +76,14 @@ void tab_scripts_draw_edit() {
 	if (ui_menu_sub_button(ui_handle(__ID__), tr("Templates"))) {
 		ui_menu_sub_begin(2);
 		if (ui_menu_button("hello.c", "", ICON_DRAFT)) {
-			g_project->script_datas->buffer[0] = "\
+			tab_scripts_set("\
 void main() {\n\
 	printf(\"Hello, world!\\n\");\n\
 }\n\
-";
+");
 		}
 		if (ui_menu_button("rotate.c", "", ICON_DRAFT)) {
-			g_project->script_datas->buffer[0] = "\
+			tab_scripts_set("\
 void on_update() {\n\
 	mesh_object_t *o = context_main_object();\n\
 	transform_rotate(o->base->transform, vec4_z_axis(), 0.005);\n\
@@ -71,7 +93,7 @@ void on_update() {\n\
 void main() {\n\
 	script_notify_on_update(on_update);\n\
 }\n\
-";
+");
 		}
 		ui_menu_sub_end();
 	}
@@ -89,11 +111,11 @@ void tab_scripts_draw(ui_handle_t *htab) {
 		    },
 		    3);
 
-// #ifndef NDEBUG
-// 		if (g_config->experimental) {
-// 			f32_array_push(row, -90);
-// 		}
-// #endif
+		// #ifndef NDEBUG
+		// 		if (g_config->experimental) {
+		// 			f32_array_push(row, -90);
+		// 		}
+		// #endif
 
 		ui_row(row);
 
@@ -106,19 +128,16 @@ void tab_scripts_draw(ui_handle_t *htab) {
 			ui_menu_draw(&tab_scripts_draw_edit, -1, -1);
 		}
 
-		string_array_t *ar = any_array_create_from_raw(
-		    (void *[]){
-		        "script.c",
-		    },
-		    1);
+		tab_scripts_prepare();
 		ui_handle_t *file_handle = ui_handle(__ID__);
-		ui_combo(file_handle, ar, tr("File"), false, UI_ALIGN_LEFT, true);
+		file_handle->i           = tab_scripts_selected;
+		tab_scripts_selected     = ui_combo(file_handle, g_project->script_names, tr("File"), false, UI_ALIGN_LEFT, true);
 
-// #ifndef NDEBUG
-// 		if (g_config->experimental && ui_icon_button("Run Tests", ICON_PLAY, UI_ALIGN_CENTER)) {
-// 			minic_tests();
-// 		}
-// #endif
+		// #ifndef NDEBUG
+		// 		if (g_config->experimental && ui_icon_button("Run Tests", ICON_PLAY, UI_ALIGN_CENTER)) {
+		// 			minic_tests();
+		// 		}
+		// #endif
 
 		ui_end_sticky();
 
@@ -135,9 +154,9 @@ void tab_scripts_draw(ui_handle_t *htab) {
 
 		tab_scripts_prepare();
 
-		tab_scripts_hscript->text = g_project->script_datas->buffer[0];
+		tab_scripts_hscript->text = g_project->script_datas->buffer[tab_scripts_selected];
 		ui_text_area(tab_scripts_hscript, UI_ALIGN_LEFT, true, "", false);
-		g_project->script_datas->buffer[0] = tab_scripts_hscript->text;
+		g_project->script_datas->buffer[tab_scripts_selected] = tab_scripts_hscript->text;
 
 		ui_text_area_line_numbers    = false;
 		ui_text_area_scroll_past_end = false;

@@ -553,6 +553,7 @@ typedef struct project_format {
 	struct i32_array                            *atlas_objects;
 	struct string_array                         *atlas_names;
 	struct string_array                         *script_datas;
+	struct string_array                         *script_names;
 	i32                                          timeline_frame_rate;
 	i32                                          timeline_max_frames;
 	struct timeline_layer_keyframe_data_t_array *timeline_layers;

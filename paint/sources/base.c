@@ -65,10 +65,11 @@ void base_init_on_start_arm(void *_) {
 		import_arm_run_project(project_filepath);
 	}
 	g_context->tool = TOOL_TYPE_CURSOR;
-	// Auto-run script
+	// Auto-run main script
 	if (g_project->script_datas != NULL && g_project->script_datas->length > 0) {
 		minic_ctx_t *ctx = minic_eval(g_project->script_datas->buffer[0]);
 	}
+	tab_timeline_play();
 }
 
 void base_save_window_rect() {
@@ -318,7 +319,8 @@ void base_update(void *_) {
 
 	render_compass_update();
 
-	if (g_config->workspace == WORKSPACE_PLAYER) {
+	// if (g_config->workspace == WORKSPACE_PLAYER) {
+	if (args_player) {
 		player_update();
 	}
 }
