@@ -657,8 +657,54 @@ static bool tab_timeline_has_script(i32 row, i32 frame) {
 
 static void tab_timeline_edit_script(i32 row, i32 frame) {
 	tab_scripts_create(tab_timeline_script_name(row, frame));
-	ui_base_hwnds->buffer[TAB_AREA_SIDEBAR0]->i       = 2; // Scripts tab
+	ui_base_htabs->buffer[TAB_AREA_SIDEBAR0]->i       = 2; // Scripts tab
 	ui_base_hwnds->buffer[TAB_AREA_SIDEBAR0]->redraws = 2;
+	g_config->layout_tabs->buffer[TAB_AREA_SIDEBAR0]  = 2;
+}
+
+static void tab_timeline_delete_script(i32 row, i32 frame) {
+	if (g_project->script_names == NULL) {
+		return;
+	}
+	i32 i = string_array_index_of(g_project->script_names, tab_timeline_script_name(row, frame));
+	if (i >= 0) {
+		array_splice((any_array_t *)g_project->script_datas, i, 1);
+		array_splice((any_array_t *)g_project->script_names, i, 1);
+	}
+}
+
+static bool tab_timeline_can_delete() {
+	i32  layer_count = project_layers->length;
+	bool is_mesh     = tab_timeline_selected_row >= layer_count;
+	bool has_kf;
+	if (!is_mesh) {
+		has_kf = tab_timeline_keyframes != NULL && tab_timeline_selected_frame > 0 &&
+		         tab_timeline_find_keyframe(tab_timeline_selected_frame, tab_timeline_selected_row) >= 0;
+	}
+	else {
+		i32 mi = tab_timeline_selected_row - layer_count;
+		has_kf =
+		    tab_timeline_mesh_keyframes != NULL && tab_timeline_selected_frame > 0 && tab_timeline_find_mesh_keyframe(tab_timeline_selected_frame, mi) >= 0;
+	}
+	return has_kf || tab_timeline_has_script(tab_timeline_selected_row, tab_timeline_selected_frame);
+}
+
+static void tab_timeline_delete_selected() {
+	i32  layer_count = project_layers->length;
+	bool is_mesh     = tab_timeline_selected_row >= layer_count;
+
+	if (!is_mesh) {
+		tab_timeline_pending_rm_frame = tab_timeline_selected_frame;
+		tab_timeline_pending_rm_layer = tab_timeline_selected_row;
+		sys_notify_on_next_frame(&tab_timeline_remove_keyframe_on_next_frame, NULL);
+	}
+	else {
+		tab_timeline_pending_mesh_rm_frame = tab_timeline_selected_frame;
+		tab_timeline_pending_mesh_rm_index = tab_timeline_selected_row - layer_count;
+		sys_notify_on_next_frame(&tab_timeline_remove_mesh_keyframe_on_next_frame, NULL);
+	}
+
+	tab_timeline_delete_script(tab_timeline_selected_row, tab_timeline_selected_frame);
 }
 
 static void tab_timeline_run_frame_scripts(i32 frame) {
@@ -739,18 +785,10 @@ void tab_timeline_draw_frame_context_menu() {
 		ui_menu_keep_open = true;
 	}
 
-	ui->enabled = has_kf;
-	if (ui_menu_button(tr("Delete"), "", ICON_DELETE)) {
-		if (!is_mesh) {
-			tab_timeline_pending_rm_frame = tab_timeline_selected_frame;
-			tab_timeline_pending_rm_layer = tab_timeline_selected_row;
-			sys_notify_on_next_frame(&tab_timeline_remove_keyframe_on_next_frame, NULL);
-		}
-		else {
-			tab_timeline_pending_mesh_rm_frame = tab_timeline_selected_frame;
-			tab_timeline_pending_mesh_rm_index = tab_timeline_selected_row - layer_count;
-			sys_notify_on_next_frame(&tab_timeline_remove_mesh_keyframe_on_next_frame, NULL);
-		}
+	bool has_script = tab_timeline_has_script(tab_timeline_selected_row, tab_timeline_selected_frame);
+	ui->enabled     = has_kf || has_script;
+	if (ui_menu_button(tr("Delete"), "delete", ICON_DELETE)) {
+		tab_timeline_delete_selected();
 	}
 	ui->enabled = true;
 }
@@ -1030,6 +1068,14 @@ void tab_timeline_draw(ui_handle_t *htab) {
 			f32 delta           = ui->input_x - tab_timeline_scroll_drag_x;
 			tab_timeline_scroll = (i32)(tab_timeline_scroll_drag_v + delta * max_scroll / (track_w - handle_w));
 			tab_timeline_scroll = (i32)math_min(math_max(tab_timeline_scroll, 0), max_scroll);
+		}
+
+		// Delete keyframe / script
+		bool in_focus = ui->input_x > ui->_window_x && ui->input_x < ui->_window_x + ui->_window_w && ui->input_y > ui->_window_y &&
+		                ui->input_y < ui->_window_y + ui->_window_h;
+		if (in_focus && ui->is_delete_down && tab_timeline_can_delete()) {
+			ui->is_delete_down = false;
+			tab_timeline_delete_selected();
 		}
 
 		// Select frame
