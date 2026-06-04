@@ -219,6 +219,13 @@ node_shader_context_t *make_paint_run(material_t *data, material_context_t *matc
 	node_shader_write_frag(kong, "bsp.x *= constants.aspect_ratio;");
 	node_shader_write_frag(kong, "bsp = bsp * 0.5 + 0.5;");
 
+	// Select tool mask
+	if (g_context->select_active) {
+		node_shader_add_constant(kong, "select_mask: float4", "_select_mask");
+		node_shader_write_frag(kong, "if (sp.x < constants.select_mask.x || sp.x > constants.select_mask.z || sp.y < constants.select_mask.y || sp.y > "
+		                             "constants.select_mask.w) { discard; }");
+	}
+
 	node_shader_add_texture(kong, "gbufferD", NULL);
 
 	kong->frag_out = "float4[4]";

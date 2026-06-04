@@ -234,7 +234,8 @@ typedef enum {
 	TOOL_TYPE_PICKER   = 9,
 	TOOL_TYPE_MATERIAL = 10,
 	TOOL_TYPE_CURSOR   = 11,
-	TOOL_TYPE_BAKE     = 12, // Hidden, used by Bake Texture node
+	TOOL_TYPE_SELECT   = 12,
+	TOOL_TYPE_BAKE     = 13, // Hidden, used by Bake Texture node
 } tool_type_t;
 
 typedef enum {
@@ -320,9 +321,9 @@ typedef enum {
 	ICON_TEXT_PREVIEW     = 18,
 	ICON_PROPERTIES       = 19,
 	ICON_FOLDER_OPEN      = 20,
-	ICON_EMPTY            = 21,
+	ICON_BAKE             = 21,
 	ICON_SMUDGE           = 22,
-	ICON_BAKE             = 23,
+	ICON_SELECT           = 23,
 	ICON_MENU             = 24,
 	ICON_FILE_NEW         = 25,
 	ICON_FOLDER           = 26,

@@ -313,8 +313,9 @@ void _kickstart() {
 	        _tr("Picker"),
 	        _tr("Material"),
 	        _tr("Cursor"),
+	        _tr("Select"),
 	    },
-	    12);
+	    13);
 	gc_root(ui_toolbar_tool_names);
 
 	ui_toolbar_tooltip_extras = any_array_create_from_raw(
@@ -331,8 +332,9 @@ void _kickstart() {
 	        "",
 	        "",
 	        "",
+	        "",
 	    },
-	    12);
+	    13);
 	gc_root(ui_toolbar_tooltip_extras);
 	uniforms_ext_ortho_p = mat4_ortho(-0.5, 0.5, -0.5, 0.5, -0.5, 0.5);
 

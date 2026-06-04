@@ -295,6 +295,14 @@ typedef struct context {
 	f32                         decal_x;
 	f32                         decal_y;
 	bool                        decal_camera_align;
+	bool                        select_active; // Select tool
+	bool                        select_dragging;
+	f32                         select_start_x;
+	f32                         select_start_y;
+	f32                         select_x1;
+	f32                         select_y1;
+	f32                         select_x2;
+	f32                         select_y2;
 	bool                        write_icon_on_export;
 	struct gpu_texture         *text_tool_image;
 	char                       *text_tool_text;

@@ -448,6 +448,19 @@ void base_render(void *_) {
 		draw_end();
 	}
 
+	// Select tool rectangle mask
+	if (g_context->select_active || g_context->select_dragging) {
+		f32 x1 = g_context->select_x1 * sys_w() + sys_x();
+		f32 y1 = g_context->select_y1 * sys_h() + sys_y();
+		f32 x2 = g_context->select_x2 * sys_w() + sys_x();
+		f32 y2 = g_context->select_y2 * sys_h() + sys_y();
+		draw_begin(NULL, false, 0);
+		draw_set_color(g_context->select_dragging ? 0xffffffff : 0xaaffffff);
+		draw_rect(x1, y1, x2 - x1, y2 - y1, 1.0);
+		draw_set_color(0xffffffff);
+		draw_end();
+	}
+
 	bool using_menu = ui_menu_show && mouse_y > ui_header_h;
 	base_ui_enabled = !ui_box_show && !using_menu && ui->combo_selected_handle == NULL;
 
@@ -860,6 +873,49 @@ void ui_base_update_ui() {
 		g_context->brush_stencil_y += (old_h - new_h) / (float)base_h() / 2.0;
 	}
 
+	// Select tool
+	if (g_context->tool == TOOL_TYPE_SELECT) {
+		if (base_ui_enabled && !base_is_dragging && !base_is_resizing) {
+			f32  mx          = mouse_view_x();
+			f32  my          = mouse_view_y();
+			bool in_viewport = mx < sys_w() && mx > 0 && my < sys_h() && my > 0;
+
+			if (mouse_started("left") && in_viewport) {
+				g_context->select_dragging = true;
+				g_context->select_start_x  = mx / (float)sys_w();
+				g_context->select_start_y  = my / (float)sys_h();
+				g_context->select_x1       = g_context->select_start_x;
+				g_context->select_y1       = g_context->select_start_y;
+				g_context->select_x2       = g_context->select_start_x;
+				g_context->select_y2       = g_context->select_start_y;
+			}
+
+			if (g_context->select_dragging && mouse_down("left")) {
+				f32 cx               = math_max(0.0, math_min(1.0, mx / (float)sys_w()));
+				f32 cy               = math_max(0.0, math_min(1.0, my / (float)sys_h()));
+				g_context->select_x1 = math_min(g_context->select_start_x, cx);
+				g_context->select_y1 = math_min(g_context->select_start_y, cy);
+				g_context->select_x2 = math_max(g_context->select_start_x, cx);
+				g_context->select_y2 = math_max(g_context->select_start_y, cy);
+			}
+
+			if (g_context->select_dragging && mouse_released("left")) {
+				g_context->select_dragging = false;
+				f32  dx                    = math_abs(g_context->select_x2 - g_context->select_x1) * sys_w();
+				f32  dy                    = math_abs(g_context->select_y2 - g_context->select_y1) * sys_h();
+				bool was_active            = g_context->select_active;
+				// Drag to enable, click to cancel
+				g_context->select_active = dx > 3 && dy > 3;
+				if (was_active != g_context->select_active) {
+					make_material_parse_paint_material(false);
+				}
+			}
+		}
+	}
+	else {
+		g_context->select_dragging = false;
+	}
+
 	bool set_clone_source =
 	    g_context->tool == TOOL_TYPE_CLONE &&
 	    operator_shortcut(string("%s+%s", any_map_get(config_keymap, "set_clone_source"), any_map_get(config_keymap, "action_paint")), SHORTCUT_TYPE_DOWN);
@@ -880,6 +936,10 @@ void ui_base_update_ui() {
 	}
 
 	if (g_context->tool == TOOL_TYPE_PARTICLE) {
+		down = false;
+	}
+
+	if (g_context->tool == TOOL_TYPE_SELECT) {
 		down = false;
 	}
 
@@ -1198,6 +1258,9 @@ void ui_base_update(void *_) {
 			}
 			else if (operator_shortcut(any_map_get(config_keymap, "tool_cursor"), SHORTCUT_TYPE_STARTED)) {
 				context_select_tool(TOOL_TYPE_CURSOR);
+			}
+			else if (operator_shortcut(any_map_get(config_keymap, "tool_select"), SHORTCUT_TYPE_STARTED)) {
+				context_select_tool(TOOL_TYPE_SELECT);
 			}
 			else if (operator_shortcut(any_map_get(config_keymap, "swap_brush_eraser"), SHORTCUT_TYPE_STARTED)) {
 				context_select_tool(g_context->tool == TOOL_TYPE_BRUSH ? TOOL_TYPE_ERASER : TOOL_TYPE_BRUSH);
