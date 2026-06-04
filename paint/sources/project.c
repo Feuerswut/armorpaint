@@ -290,6 +290,7 @@ void project_new(bool reset_layers) {
 	g_context->picked_color          = project_make_swatch(0xffffffff);
 	g_context->color_picker_callback = NULL;
 	history_reset();
+	tab_timeline_reset();
 
 	make_material_parse_paint_material(true);
 	make_material_parse_brush();

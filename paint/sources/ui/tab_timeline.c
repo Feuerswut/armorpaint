@@ -495,6 +495,29 @@ static void tab_timeline_init() {
 	gc_root(tab_timeline_mesh_origins);
 }
 
+void tab_timeline_reset() {
+	tab_timeline_init();
+
+	gc_unroot(tab_timeline_keyframes);
+	tab_timeline_keyframes = any_array_create_from_raw((void *[]){}, 0);
+	gc_root(tab_timeline_keyframes);
+	gc_unroot(tab_timeline_origins);
+	tab_timeline_origins = any_array_create_from_raw((void *[]){}, 0);
+	gc_root(tab_timeline_origins);
+	gc_unroot(tab_timeline_mesh_keyframes);
+	tab_timeline_mesh_keyframes = any_array_create_from_raw((void *[]){}, 0);
+	gc_root(tab_timeline_mesh_keyframes);
+	gc_unroot(tab_timeline_mesh_origins);
+	tab_timeline_mesh_origins = any_array_create_from_raw((void *[]){}, 0);
+	gc_root(tab_timeline_mesh_origins);
+
+	tab_timeline_selected_frame = 0;
+	tab_timeline_selected_row   = 0;
+	tab_timeline_last_frame     = 0;
+	tab_timeline_playing        = false;
+	tab_timeline_scroll         = 0;
+}
+
 static i32 _tab_timeline_frame = 0;
 
 void tab_timeline_prepare_save() {
@@ -576,26 +599,7 @@ static gpu_texture_t *tab_timeline_tex_from_buffer(buffer_t *buf, bool is_bgra) 
 }
 
 void tab_timeline_import(project_t *raw) {
-	tab_timeline_init();
-
-	gc_unroot(tab_timeline_keyframes);
-	tab_timeline_keyframes = any_array_create_from_raw((void *[]){}, 0);
-	gc_root(tab_timeline_keyframes);
-	gc_unroot(tab_timeline_origins);
-	tab_timeline_origins = any_array_create_from_raw((void *[]){}, 0);
-	gc_root(tab_timeline_origins);
-	gc_unroot(tab_timeline_mesh_keyframes);
-	tab_timeline_mesh_keyframes = any_array_create_from_raw((void *[]){}, 0);
-	gc_root(tab_timeline_mesh_keyframes);
-	gc_unroot(tab_timeline_mesh_origins);
-	tab_timeline_mesh_origins = any_array_create_from_raw((void *[]){}, 0);
-	gc_root(tab_timeline_mesh_origins);
-
-	tab_timeline_selected_frame = 0;
-	tab_timeline_selected_row   = 0;
-	tab_timeline_last_frame     = 0;
-	tab_timeline_playing        = false;
-	tab_timeline_scroll         = 0;
+	tab_timeline_reset();
 
 	if (raw->timeline_max_frames > 0) {
 		tab_timeline_frame_rate = raw->timeline_frame_rate;

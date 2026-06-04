@@ -131,6 +131,7 @@ void                      import_blend_mesh_run(char *path, bool replace_existin
 void                      tab_timeline_draw(ui_handle_t *htab);
 void                      tab_timeline_export(project_t *raw);
 void                      tab_timeline_import(project_t *raw);
+void                      tab_timeline_reset();
 void                      tab_timeline_prepare_save();
 void                      tab_timeline_finish_save();
 void                      tab_timeline_play();

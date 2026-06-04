@@ -197,6 +197,8 @@ void import_mesh_make_mesh(raw_mesh_t *mesh) {
 	md->_->handle = string_copy(raw->name);
 	any_map_set(data_cached_meshes, md->_->handle, md);
 
+	tab_timeline_reset();
+
 	g_context->ddirty = 4;
 
 	ui_base_hwnds->buffer[TAB_AREA_SIDEBAR0]->redraws = 2;
