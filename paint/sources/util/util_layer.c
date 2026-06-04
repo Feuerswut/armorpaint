@@ -422,6 +422,43 @@ void util_layer_repaint_path(slot_layer_t *l) {
 	}
 }
 
+static void path_point_move(slot_layer_t *l, i32 idx, f32 new_x, f32 new_y) {
+	f32_array_t *points        = l->path_points;
+	f32_array_t *points_world  = l->path_points_world;
+	f32_array_t *points_camera = l->path_points_camera;
+
+	points->buffer[idx * 2]     = new_x;
+	points->buffer[idx * 2 + 1] = new_y;
+
+	// Pick world position at new screen location
+	f32 saved_pvx          = g_context->paint_vec.x;
+	f32 saved_pvy          = g_context->paint_vec.y;
+	g_context->paint_vec.x = new_x;
+	g_context->paint_vec.y = new_y;
+	util_render_pick_pos_nor_tex();
+	g_context->paint_vec.x = saved_pvx;
+	g_context->paint_vec.y = saved_pvy;
+
+	if (math_abs(g_context->posx_picked) < 50.0f) {
+		points_world->buffer[idx * 3]     = g_context->posx_picked;
+		points_world->buffer[idx * 3 + 1] = g_context->posy_picked;
+		points_world->buffer[idx * 3 + 2] = g_context->posz_picked;
+		if (points_camera->length >= (idx + 1) * 9) {
+			vec4_t loc                         = scene_camera->base->transform->loc;
+			quat_t rot                         = scene_camera->base->transform->rot;
+			points_camera->buffer[idx * 9 + 0] = loc.x;
+			points_camera->buffer[idx * 9 + 1] = loc.y;
+			points_camera->buffer[idx * 9 + 2] = loc.z;
+			points_camera->buffer[idx * 9 + 3] = loc.w;
+			points_camera->buffer[idx * 9 + 4] = rot.x;
+			points_camera->buffer[idx * 9 + 5] = rot.y;
+			points_camera->buffer[idx * 9 + 6] = rot.z;
+			points_camera->buffer[idx * 9 + 7] = rot.w;
+			points_camera->buffer[idx * 9 + 8] = sys_w() / (f32)sys_h();
+		}
+	}
+}
+
 void util_layer_update_path() {
 	if (g_config->workspace == WORKSPACE_PLAYER || g_context->paint2d) {
 		return;
@@ -508,36 +545,16 @@ void util_layer_update_path() {
 		f32 old_y = points->buffer[path_point_dragging * 2 + 1];
 
 		if (math_abs(new_x - old_x) > 0.0005f || math_abs(new_y - old_y) > 0.0005f) {
-			points->buffer[path_point_dragging * 2]     = new_x;
-			points->buffer[path_point_dragging * 2 + 1] = new_y;
-
-			// Pick world position at new screen location
-			f32 saved_pvx          = g_context->paint_vec.x;
-			f32 saved_pvy          = g_context->paint_vec.y;
-			g_context->paint_vec.x = new_x;
-			g_context->paint_vec.y = new_y;
-			util_render_pick_pos_nor_tex();
-			g_context->paint_vec.x = saved_pvx;
-			g_context->paint_vec.y = saved_pvy;
-
-			if (math_abs(g_context->posx_picked) < 50.0f) {
-				points_world->buffer[path_point_dragging * 3]     = g_context->posx_picked;
-				points_world->buffer[path_point_dragging * 3 + 1] = g_context->posy_picked;
-				points_world->buffer[path_point_dragging * 3 + 2] = g_context->posz_picked;
-				f32_array_t *points_camera                        = l->path_points_camera;
-				if (points_camera->length >= (path_point_dragging + 1) * 9) {
-					vec4_t loc                                         = scene_camera->base->transform->loc;
-					quat_t rot                                         = scene_camera->base->transform->rot;
-					points_camera->buffer[path_point_dragging * 9 + 0] = loc.x;
-					points_camera->buffer[path_point_dragging * 9 + 1] = loc.y;
-					points_camera->buffer[path_point_dragging * 9 + 2] = loc.z;
-					points_camera->buffer[path_point_dragging * 9 + 3] = loc.w;
-					points_camera->buffer[path_point_dragging * 9 + 4] = rot.x;
-					points_camera->buffer[path_point_dragging * 9 + 5] = rot.y;
-					points_camera->buffer[path_point_dragging * 9 + 6] = rot.z;
-					points_camera->buffer[path_point_dragging * 9 + 7] = rot.w;
-					points_camera->buffer[path_point_dragging * 9 + 8] = sys_w() / (f32)sys_h();
+			if (keyboard_down("control")) {
+				// Move all points
+				f32 dx = new_x - old_x;
+				f32 dy = new_y - old_y;
+				for (i32 i = 0; i < num_points; i++) {
+					path_point_move(l, i, points->buffer[i * 2] + dx, points->buffer[i * 2 + 1] + dy);
 				}
+			}
+			else {
+				path_point_move(l, path_point_dragging, new_x, new_y);
 			}
 
 			util_layer_repaint_path(l);
