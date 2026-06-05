@@ -20,7 +20,7 @@ void inpaint_image_node_button_on_next_frame(ui_node_t *node) {
 		char *dir = neural_node_dir();
 		if (model == 0) {
 #ifdef IRON_BGRA
-			buffer_t *input_buf = export_arm_bgra_swap(gpu_get_texture_pixels(input)); // Vulkan non-rt textures need a flip
+			buffer_t *input_buf = buffer_bgra_swap(gpu_get_texture_pixels(input)); // Vulkan non-rt textures need a flip
 #else
 			buffer_t *input_buf = gpu_get_texture_pixels(input);
 #endif

@@ -976,7 +976,7 @@ void ui_base_update_ui() {
 						g_context->clone_delta_y = (g_context->clone_start_y - my) / (float)sys_h();
 						g_context->clone_start_x = -1;
 					}
-					else if (g_context->tool == TOOL_TYPE_FILL && g_context->fill_type_handle->i == FILL_TYPE_UV_ISLAND) {
+					else if (g_context->tool == TOOL_TYPE_FILL && g_context->fill_type == FILL_TYPE_UV_ISLAND) {
 						util_uv_uvislandmap_cached = false;
 					}
 				}
@@ -1171,7 +1171,6 @@ void ui_base_update(void *_) {
 					g_context->brush_opacity += mouse_movement_x / 500.0;
 					g_context->brush_opacity           = math_max(0.0, math_min(1.0, g_context->brush_opacity));
 					g_context->brush_opacity           = math_round(g_context->brush_opacity * 100) / 100.0;
-					g_context->brush_opacity_handle->f = g_context->brush_opacity;
 				}
 				else if (operator_shortcut(any_map_get(config_keymap, "brush_angle"), SHORTCUT_TYPE_DOWN)) {
 					g_context->brush_angle += mouse_movement_x / 5.0;
@@ -1179,15 +1178,13 @@ void ui_base_update(void *_) {
 					g_context->brush_angle = i % 360;
 					if (g_context->brush_angle < 0)
 						g_context->brush_angle += 360;
-					g_context->brush_angle_handle->f = g_context->brush_angle;
 					make_material_parse_paint_material(true);
 				}
 				else if (decal_mask && operator_shortcut(string("%s+%s", any_map_get(config_keymap, "decal_mask"), any_map_get(config_keymap, "brush_radius")),
 				                                         SHORTCUT_TYPE_DOWN)) {
 					g_context->brush_decal_mask_radius += mouse_movement_x / 150.0;
-					g_context->brush_decal_mask_radius           = math_max(0.01, math_min(4.0, g_context->brush_decal_mask_radius));
-					g_context->brush_decal_mask_radius           = math_round(g_context->brush_decal_mask_radius * 100) / 100.0;
-					g_context->brush_decal_mask_radius_handle->f = g_context->brush_decal_mask_radius;
+					g_context->brush_decal_mask_radius = math_max(0.01, math_min(4.0, g_context->brush_decal_mask_radius));
+					g_context->brush_decal_mask_radius = math_round(g_context->brush_decal_mask_radius * 100) / 100.0;
 				}
 				else {
 					g_context->brush_radius += mouse_movement_x / 150.0;
@@ -1295,16 +1292,14 @@ void ui_base_update(void *_) {
 				if (operator_shortcut(string("%s+%s", any_map_get(config_keymap, "decal_mask"), any_map_get(config_keymap, "brush_radius_decrease")),
 				                      SHORTCUT_TYPE_REPEAT)) {
 					g_context->brush_decal_mask_radius -= ui_base_get_radius_increment();
-					g_context->brush_decal_mask_radius           = math_max(math_round(g_context->brush_decal_mask_radius * 100) / 100.0, 0.01);
-					g_context->brush_decal_mask_radius_handle->f = g_context->brush_decal_mask_radius;
-					ui_header_handle->redraws                    = 2;
+					g_context->brush_decal_mask_radius = math_max(math_round(g_context->brush_decal_mask_radius * 100) / 100.0, 0.01);
+					ui_header_handle->redraws          = 2;
 				}
 				else if (operator_shortcut(string("%s+%s", any_map_get(config_keymap, "decal_mask"), any_map_get(config_keymap, "brush_radius_increase")),
 				                           SHORTCUT_TYPE_REPEAT)) {
 					g_context->brush_decal_mask_radius += ui_base_get_radius_increment();
-					g_context->brush_decal_mask_radius           = math_round(g_context->brush_decal_mask_radius * 100) / 100.0;
-					g_context->brush_decal_mask_radius_handle->f = g_context->brush_decal_mask_radius;
-					ui_header_handle->redraws                    = 2;
+					g_context->brush_decal_mask_radius = math_round(g_context->brush_decal_mask_radius * 100) / 100.0;
+					ui_header_handle->redraws          = 2;
 				}
 			}
 		}
@@ -1335,8 +1330,7 @@ void ui_base_update(void *_) {
 				viewport_set_view(0, 0, -1, math_pi(), 0, math_pi());
 			}
 			else if (operator_shortcut(any_map_get(config_keymap, "view_camera_type"), SHORTCUT_TYPE_STARTED)) {
-				g_context->camera_type   = g_context->camera_type == CAMERA_TYPE_PERSPECTIVE ? CAMERA_TYPE_ORTHOGRAPHIC : CAMERA_TYPE_PERSPECTIVE;
-				g_context->cam_handle->i = g_context->camera_type;
+				g_context->camera_type = g_context->camera_type == CAMERA_TYPE_PERSPECTIVE ? CAMERA_TYPE_ORTHOGRAPHIC : CAMERA_TYPE_PERSPECTIVE;
 				viewport_update_camera_type(g_context->camera_type);
 			}
 			else if (operator_shortcut(any_map_get(config_keymap, "view_orbit_left"), SHORTCUT_TYPE_REPEAT)) {
@@ -1549,7 +1543,7 @@ void ui_base_update(void *_) {
 			g_context->layer_preview_dirty = true;
 		}
 
-#ifdef arm_physics
+#ifdef WITH_PHYSICS
 		if (!particle_just_fired) {
 			for (i32 i = 0; i < 32; ++i) {
 				if (g_context->particles[i].timer == NULL) {

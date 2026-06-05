@@ -405,10 +405,8 @@ void ui_view2d_render(void *_) {
 		ui->_w = ew;
 
 		if (ui_view2d_type == VIEW_2D_TYPE_LAYER) {
-			ui_handle_t *h_layer_mode = ui_handle(__ID__);
-			if (h_layer_mode->init) {
-				h_layer_mode->i = ui_view2d_layer_mode;
-			}
+			ui_handle_t *h_layer_mode        = ui_handle(__ID__);
+			h_layer_mode->i                  = ui_view2d_layer_mode;
 			string_array_t *layer_mode_combo = any_array_create_from_raw(
 			    (void *[]){
 			        tr("Visible"),
@@ -420,10 +418,8 @@ void ui_view2d_render(void *_) {
 			ui->_y = 2 + start_y;
 
 			if (!slot_layer_is_mask(g_context->layer)) {
-				ui_handle_t *h_tex_type = ui_handle(__ID__);
-				if (h_tex_type->init) {
-					h_tex_type->i = ui_view2d_tex_type;
-				}
+				ui_handle_t *h_tex_type        = ui_handle(__ID__);
+				h_tex_type->i                  = ui_view2d_tex_type;
 				string_array_t *tex_type_combo = any_array_create_from_raw(
 				    (void *[]){
 				        tr("Base Color"),

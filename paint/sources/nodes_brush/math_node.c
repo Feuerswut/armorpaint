@@ -1,6 +1,12 @@
 
 #include "../global.h"
 
+typedef struct math_node {
+	struct logic_node *base;
+	char              *operation;
+	bool               use_clamp;
+} math_node_t;
+
 logic_node_value_t *math_node_get(math_node_t *self, i32 from) {
 	f32   v1 = logic_node_input_get(self->base->inputs->buffer[0])->_f32;
 	f32   v2 = logic_node_input_get(self->base->inputs->buffer[1])->_f32;
@@ -120,7 +126,7 @@ logic_node_value_t *math_node_get(math_node_t *self, i32 from) {
 	return v;
 }
 
-math_node_t *math_node_create(ui_node_t *raw, f32_array_t *args) {
+void *math_node_create(ui_node_t *raw, f32_array_t *args) {
 	math_node_t *n = GC_ALLOC_INIT(math_node_t, {0});
 	n->base        = logic_node_create(n);
 	n->base->get   = math_node_get;

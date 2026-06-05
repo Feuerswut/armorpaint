@@ -409,7 +409,7 @@ char *ui_files_file_browser(ui_handle_t *handle, bool drag_files, char *search, 
 					if (raw->material_icons != NULL) {
 						buffer_t *bytes_icon = raw->material_icons->buffer[0];
 #ifdef IRON_BGRA
-						buffer_t *buf = export_arm_bgra64_swap(lz4_decode(bytes_icon, 256 * 256 * 8));
+						buffer_t *buf = buffer_bgra64_swap(lz4_decode(bytes_icon, 256 * 256 * 8));
 #else
 						buffer_t *buf = lz4_decode(bytes_icon, 256 * 256 * 8);
 #endif

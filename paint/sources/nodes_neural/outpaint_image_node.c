@@ -27,7 +27,7 @@ void outpaint_image_node_button_on_next_frame(ui_node_t *node) {
 		draw_end();
 
 		// #ifdef IRON_BGRA
-		// let input_buf: buffer_t = export_arm_bgra_swap(gpu_get_texture_pixels(input)); // Vulkan non-rt textures need a flip
+		// let input_buf: buffer_t = buffer_bgra_swap(gpu_get_texture_pixels(input)); // Vulkan non-rt textures need a flip
 		// #else
 		// let input_buf: buffer_t = gpu_get_texture_pixels(input);
 		// #endif

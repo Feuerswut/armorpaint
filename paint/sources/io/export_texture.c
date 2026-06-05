@@ -1,9 +1,9 @@
 
 #include "../global.h"
 
-f32 export_texture_gamma = 1.0 / 2.2;
+static f32 export_texture_gamma = 1.0 / 2.2;
 
-void export_texture_write_texture(char *file, buffer_t *pixels, i32 type, i32 off) {
+static void export_texture_write_texture(char *file, buffer_t *pixels, i32 type, i32 off) {
 	i32 res_x       = config_get_texture_res_x();
 	i32 res_y       = config_get_texture_res_y();
 	i32 bits_handle = base_bits_handle->i;
@@ -28,7 +28,7 @@ void export_texture_write_texture(char *file, buffer_t *pixels, i32 type, i32 of
 	if (g_context->layers_destination == EXPORT_DESTINATION_PACK_INTO_PROJECT) {
 #ifdef IRON_BGRA
 		if (format == 2) { // RGB1
-			export_arm_bgra_swap(pixels);
+			buffer_bgra_swap(pixels);
 		}
 #endif
 		gpu_texture_t *image = gpu_create_texture_from_bytes(pixels, res_x, res_y, GPU_TEXTURE_FORMAT_RGBA32);
@@ -64,19 +64,17 @@ void export_texture_write_texture(char *file, buffer_t *pixels, i32 type, i32 of
 	}
 }
 
-void export_texture_to_srgb(buffer_t *to, i32 to_channel) {
+static void export_texture_to_srgb(buffer_t *to, i32 to_channel) {
 	for (i32 i = 0; i < math_floor((to->length) / 4.0); ++i) {
 		buffer_set_u8(to, i * 4 + to_channel, math_floor(math_pow(buffer_get_u8(to, i * 4 + to_channel) / 255.0, export_texture_gamma) * 255));
 	}
 }
 
-#ifdef IRON_BGRA
-i32 _export_texture_channel_bgra_swap(i32 c) {
+static i32 _export_texture_channel_bgra_swap(i32 c) {
 	return c == 0 ? 2 : c == 2 ? 0 : c;
 }
-#endif
 
-void export_texture_copy_channel(buffer_t *from, i32 from_channel, buffer_t *to, i32 to_channel, bool linear) {
+static void export_texture_copy_channel(buffer_t *from, i32 from_channel, buffer_t *to, i32 to_channel, bool linear) {
 #ifdef IRON_BGRA
 	from_channel = _export_texture_channel_bgra_swap(from_channel);
 #endif
@@ -88,7 +86,7 @@ void export_texture_copy_channel(buffer_t *from, i32 from_channel, buffer_t *to,
 	}
 }
 
-void export_texture_copy_channel_inv(buffer_t *from, i32 from_channel, buffer_t *to, i32 to_channel, bool linear) {
+static void export_texture_copy_channel_inv(buffer_t *from, i32 from_channel, buffer_t *to, i32 to_channel, bool linear) {
 #ifdef IRON_BGRA
 	from_channel = _export_texture_channel_bgra_swap(from_channel);
 #endif
@@ -100,7 +98,7 @@ void export_texture_copy_channel_inv(buffer_t *from, i32 from_channel, buffer_t 
 	}
 }
 
-void export_texture_extract_channel(buffer_t *from, i32 from_channel, buffer_t *to, i32 to_channel, i32 step, i32 mask, bool linear) {
+static void export_texture_extract_channel(buffer_t *from, i32 from_channel, buffer_t *to, i32 to_channel, i32 step, i32 mask, bool linear) {
 #ifdef IRON_BGRA
 	from_channel = _export_texture_channel_bgra_swap(from_channel);
 #endif
@@ -112,8 +110,8 @@ void export_texture_extract_channel(buffer_t *from, i32 from_channel, buffer_t *
 	}
 }
 
-void export_texture_compute_diff_spec_channel(buffer_t *from_albedo, buffer_t *from_pack, i32 albedo_channel, buffer_t *to, i32 to_channel, bool linear,
-                                              bool is_specular) {
+static void export_texture_compute_diff_spec_channel(buffer_t *from_albedo, buffer_t *from_pack, i32 albedo_channel, buffer_t *to, i32 to_channel, bool linear,
+                                                     bool is_specular) {
 #ifdef IRON_BGRA
 	albedo_channel    = _export_texture_channel_bgra_swap(albedo_channel);
 	to_channel        = _export_texture_channel_bgra_swap(to_channel);
@@ -138,7 +136,7 @@ void export_texture_compute_diff_spec_channel(buffer_t *from_albedo, buffer_t *f
 	}
 }
 
-void export_texture_set_channel(i32 value, buffer_t *to, i32 to_channel, bool linear) {
+static void export_texture_set_channel(i32 value, buffer_t *to, i32 to_channel, bool linear) {
 	for (i32 i = 0; i < math_floor((to->length) / 4.0); ++i) {
 		buffer_set_u8(to, i * 4 + to_channel, value);
 	}
@@ -147,8 +145,7 @@ void export_texture_set_channel(i32 value, buffer_t *to, i32 to_channel, bool li
 	}
 }
 
-void export_texture_run_layers(char *path, slot_layer_t_array_t *layers, char *object_name, bool bake_material) {
-
+static void export_texture_run_layers(char *path, slot_layer_t_array_t *layers, char *object_name, bool bake_material) {
 	i32 texture_size_x = config_get_texture_res_x();
 	i32 texture_size_y = config_get_texture_res_y();
 #if defined(IRON_ANDROID) || defined(IRON_IOS)
@@ -448,7 +445,7 @@ void export_texture_run_layers(char *path, slot_layer_t_array_t *layers, char *o
 	// texpaint_pack->pixels = NULL;
 }
 
-void export_texture_run_bake_material(char *path) {
+static void export_texture_run_bake_material(char *path) {
 	if (render_path_paint_live_layer == NULL) {
 		gc_unroot(render_path_paint_live_layer);
 		render_path_paint_live_layer = slot_layer_create("_live", LAYER_SLOT_TYPE_LAYER, NULL);

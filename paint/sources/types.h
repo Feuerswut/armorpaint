@@ -200,11 +200,8 @@ typedef struct context {
 	struct gpu_texture         *preview_envmap;
 	bool                        envmap_loaded;
 	bool                        show_envmap;
-	struct ui_handle           *show_envmap_handle;
 	bool                        show_envmap_blur;
-	struct ui_handle           *show_envmap_blur_handle;
 	bool                        show_envmap_spheres;
-	struct ui_handle           *show_envmap_spheres_handle;
 	bool                        capturing_screenshot;
 	bool                        capture_background;
 	f32                         envmap_angle;
@@ -244,8 +241,6 @@ typedef struct context {
 	bool                        paint2d_view;
 	bool                        brush_locked;
 	camera_type_t               camera_type;
-	struct ui_handle           *cam_handle;
-	struct ui_handle           *fov_handle;
 	char                       *texture_export_path;
 	i32                         last_status_position;
 	camera_pivot_t              camera_pivot;
@@ -275,7 +270,7 @@ typedef struct context {
 	f32                         uvx_picked;
 	f32                         uvy_picked;
 	bool                        picker_select_material;
-	struct ui_handle           *picker_mask_handle;
+	i32                         picker_mask;
 	bool                        pick_pos_nor_tex;
 	bool                        pick_object_id;
 	f32                         posx_picked;
@@ -285,10 +280,8 @@ typedef struct context {
 	f32                         nory_picked;
 	f32                         norz_picked;
 	bool                        draw_wireframe;
-	struct ui_handle           *wireframe_handle;
 	bool                        draw_texels;
-	struct ui_handle           *texels_handle;
-	struct ui_handle           *colorid_handle;
+	i32                         colorid;
 	export_mode_t               layers_export;
 	struct gpu_texture         *decal_image;
 	bool                        decal_preview;
@@ -350,14 +343,10 @@ typedef struct context {
 	f32                         brush_radius;
 	f32                         brush_scale_x;
 	f32                         brush_decal_mask_radius;
-	struct ui_handle           *brush_decal_mask_radius_handle;
-	struct ui_handle           *brush_scale_x_handle;
 	blend_type_t                brush_blending;
 	f32                         brush_opacity;
-	struct ui_handle           *brush_opacity_handle;
 	f32                         brush_scale;
 	f32                         brush_angle;
-	struct ui_handle           *brush_angle_handle;
 	f32                         brush_hardness;
 	f32                         brush_lazy_radius;
 	f32                         brush_lazy_step;
@@ -381,8 +370,7 @@ typedef struct context {
 	bool                        sym_x;
 	bool                        sym_y;
 	bool                        sym_z;
-	struct ui_handle           *fill_type_handle;
-	struct ui_handle           *blur_type_handle;
+	i32                         fill_type;
 	i32                         blur_type;
 	bool                        paint2d;
 	i32                         maximized_sidebar_width;
@@ -532,7 +520,7 @@ typedef struct node_group {
 	struct ui_node_canvas *canvas;
 } node_group_t;
 
-typedef struct project_format {
+typedef struct project {
 	char                                        *version;
 	struct string_array                         *assets;  // texture_assets
 	bool                                         is_bgra; // Swapped red and blue channels for layer textures
@@ -703,80 +691,11 @@ typedef struct neural_node_model {
 	char                *license;
 } neural_node_model_t;
 
-typedef struct tex_image_node {
-	struct logic_node *base;
-	struct ui_node    *raw;
-} tex_image_node_t;
-
-typedef struct random_node {
-	struct logic_node *base;
-} random_node_t;
-
-typedef struct boolean_node {
-	struct logic_node *base;
-	bool               value;
-} boolean_node_t;
-
-typedef struct input_node {
-	struct logic_node *base;
-} input_node_t;
-
-typedef struct math_node {
-	struct logic_node *base;
-	char              *operation;
-	bool               use_clamp;
-} math_node_t;
-
-typedef struct vector_node {
-	struct logic_node  *base;
-	vec4_t              value;
-	struct gpu_texture *image;
-} vector_node_t;
-
-typedef struct color_node {
-	struct logic_node  *base;
-	vec4_t              value;
-	struct gpu_texture *image;
-} color_node_t;
-
-typedef struct string_node {
-	struct logic_node *base;
-	char              *value;
-} string_node_t;
-
-typedef struct null_node {
-	struct logic_node *base;
-} null_node_t;
-
-typedef struct time_node {
-	struct logic_node *base;
-} time_node_t;
-
-typedef struct vector_math_node {
-	struct logic_node *base;
-	char              *operation;
-	vec4_t             v;
-} vector_math_node_t;
-
 typedef struct float_node {
 	struct logic_node  *base;
 	f32                 value;
 	struct gpu_texture *image;
 } float_node_t;
-
-typedef struct integer_node {
-	struct logic_node *base;
-	i32                value;
-} integer_node_t;
-
-typedef struct separate_vector_node {
-	struct logic_node *base;
-} separate_vector_node_t;
-
-typedef struct brush_output_node {
-	struct logic_node *base;
-	struct ui_node    *raw;
-} brush_output_node_t;
 
 typedef struct node_group_t_array {
 	node_group_t **buffer;
@@ -862,16 +781,13 @@ typedef struct gpu_texture_t_array {
 	int             capacity;
 } gpu_texture_t_array_t;
 
-#ifdef arm_physics
-
+#ifdef WITH_PHYSICS
 #include "../libs/asim.h"
-
 typedef struct physics_pair_t_array {
 	physics_pair_t **buffer;
 	int              length;
 	int              capacity;
 } physics_pair_t_array_t;
-
 #endif
 
 typedef struct ui_node_socket_t_array {

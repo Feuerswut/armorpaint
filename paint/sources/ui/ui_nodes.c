@@ -388,7 +388,7 @@ void ui_viewnodes_on_canvas_context_menu() {
 		if (ui_menu_button(tr("Add Swatch"), "", ICON_PALETTE)) {
 			f32_array_t    *color      = selected->outputs->buffer[0]->default_value;
 			swatch_color_t *new_swatch = project_make_swatch(color_from_floats(color->buffer[0], color->buffer[1], color->buffer[2], color->buffer[3]));
-			context_set_swatch(new_swatch);
+			g_context->swatch = new_swatch;
 			any_array_push(g_project->swatches, new_swatch);
 			ui_base_hwnds->buffer[TAB_AREA_STATUS]->redraws = 1;
 		}

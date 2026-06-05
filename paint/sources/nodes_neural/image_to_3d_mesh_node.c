@@ -46,7 +46,7 @@ void image_to_3d_mesh_node_button(i32 node_id) {
 			char *dir = neural_node_dir();
 
 #ifdef IRON_BGRA
-			buffer_t *input_buf = image_to_3d_mesh_node_remove_background(export_arm_bgra_swap(gpu_get_texture_pixels(input)));
+			buffer_t *input_buf = image_to_3d_mesh_node_remove_background(buffer_bgra_swap(gpu_get_texture_pixels(input)));
 #else
 			buffer_t *input_buf = image_to_3d_mesh_node_remove_background(gpu_get_texture_pixels(input));
 #endif

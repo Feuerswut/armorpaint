@@ -1093,7 +1093,7 @@ void layers_update_fill_layers() {
 
 	slot_layer_t  *_layer     = g_context->layer;
 	tool_type_t    _tool      = g_context->tool;
-	i32            _fill_type = g_context->fill_type_handle->i;
+	i32            _fill_type = g_context->fill_type;
 	gpu_texture_t *current    = NULL;
 
 	if (g_context->tool == TOOL_TYPE_MATERIAL) {
@@ -1108,8 +1108,8 @@ void layers_update_fill_layers() {
 		if (in_use)
 			draw_end();
 
-		g_context->tool                = TOOL_TYPE_FILL;
-		g_context->fill_type_handle->i = FILL_TYPE_OBJECT;
+		g_context->tool      = TOOL_TYPE_FILL;
+		g_context->fill_type = FILL_TYPE_OBJECT;
 		render_path_paint_set_plane_mesh();
 		make_material_parse_paint_material(false);
 		g_context->pdirty = 1;
@@ -1117,10 +1117,10 @@ void layers_update_fill_layers() {
 		render_path_paint_commands_paint(false);
 		render_path_paint_dilate(true, true);
 		render_path_paint_use_live_layer(false);
-		g_context->tool                = _tool;
-		g_context->fill_type_handle->i = _fill_type;
-		g_context->pdirty              = 0;
-		g_context->rdirty              = 2;
+		g_context->tool      = _tool;
+		g_context->fill_type = _fill_type;
+		g_context->pdirty    = 0;
+		g_context->rdirty    = 2;
 		render_path_paint_restore_plane_mesh();
 		make_material_parse_paint_material(true);
 		ui_view2d_hwnd->redraws = 2;
@@ -1150,9 +1150,9 @@ void layers_update_fill_layers() {
 		bool in_use = gpu_in_use;
 		if (in_use)
 			draw_end();
-		g_context->pdirty              = 1;
-		g_context->tool                = TOOL_TYPE_FILL;
-		g_context->fill_type_handle->i = FILL_TYPE_OBJECT;
+		g_context->pdirty    = 1;
+		g_context->tool      = TOOL_TYPE_FILL;
+		g_context->fill_type = FILL_TYPE_OBJECT;
 
 		if (has_fill_layer) {
 			bool first = true;
@@ -1207,8 +1207,8 @@ void layers_update_fill_layers() {
 			draw_begin(current, false, 0);
 		g_context->layer = _layer;
 		layers_set_object_mask();
-		g_context->tool                = _tool;
-		g_context->fill_type_handle->i = _fill_type;
+		g_context->tool      = _tool;
+		g_context->fill_type = _fill_type;
 		make_material_parse_paint_material(false);
 	}
 }
@@ -1239,11 +1239,11 @@ void layers_update_fill_layer(bool parse_paint) {
 	if (in_use)
 		draw_end();
 
-	tool_type_t _tool              = g_context->tool;
-	i32         _fill_type         = g_context->fill_type_handle->i;
-	g_context->tool                = TOOL_TYPE_FILL;
-	g_context->fill_type_handle->i = FILL_TYPE_OBJECT;
-	g_context->pdirty              = 1;
+	tool_type_t _tool      = g_context->tool;
+	i32         _fill_type = g_context->fill_type;
+	g_context->tool        = TOOL_TYPE_FILL;
+	g_context->fill_type   = FILL_TYPE_OBJECT;
+	g_context->pdirty      = 1;
 
 	if (g_context->layer->texpaint_sculpt != NULL) {
 		i32 tid = g_context->layer->id;
@@ -1266,9 +1266,9 @@ void layers_update_fill_layer(bool parse_paint) {
 		render_path_paint_dilate(true, true);
 	}
 
-	g_context->rdirty              = 2;
-	g_context->tool                = _tool;
-	g_context->fill_type_handle->i = _fill_type;
+	g_context->rdirty    = 2;
+	g_context->tool      = _tool;
+	g_context->fill_type = _fill_type;
 	if (in_use)
 		draw_begin(current, false, 0);
 }

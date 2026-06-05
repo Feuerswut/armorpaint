@@ -177,8 +177,8 @@ node_shader_context_t *make_paint_run(material_t *data, material_context_t *matc
 		return con_paint;
 	}
 
-	bool face_fill      = g_context->tool == TOOL_TYPE_FILL && g_context->fill_type_handle->i == FILL_TYPE_FACE;
-	bool uv_island_fill = g_context->tool == TOOL_TYPE_FILL && g_context->fill_type_handle->i == FILL_TYPE_UV_ISLAND;
+	bool face_fill      = g_context->tool == TOOL_TYPE_FILL && g_context->fill_type == FILL_TYPE_FACE;
+	bool uv_island_fill = g_context->tool == TOOL_TYPE_FILL && g_context->fill_type == FILL_TYPE_UV_ISLAND;
 	bool decal          = context_is_decal();
 
 	if (g_context->layer->uv_map == 1) {
@@ -258,7 +258,7 @@ node_shader_context_t *make_paint_run(material_t *data, material_context_t *matc
 	}
 	else { // Fill, Bake
 		node_shader_write_frag(kong, "var dist: float = 0.0;");
-		bool angle_fill = g_context->tool == TOOL_TYPE_FILL && g_context->fill_type_handle->i == FILL_TYPE_ANGLE;
+		bool angle_fill = g_context->tool == TOOL_TYPE_FILL && g_context->fill_type == FILL_TYPE_ANGLE;
 		if (angle_fill) {
 			node_shader_add_function(kong, str_octahedron_wrap);
 			node_shader_add_texture(kong, "gbuffer0", NULL);
@@ -293,7 +293,7 @@ node_shader_context_t *make_paint_run(material_t *data, material_context_t *matc
 		}
 	}
 
-	if (g_context->picker_mask_handle->i == PICKER_MASK_MATERIAL) {
+	if (g_context->picker_mask == PICKER_MASK_MATERIAL) {
 		make_discard_material_id(kong);
 	}
 
@@ -482,7 +482,7 @@ node_shader_context_t *make_paint_run(material_t *data, material_context_t *matc
 	node_shader_write_frag(kong, "var sample_undo: float4 = sample_lod(texpaint_undo, sampler_linear, sample_tc, 0.0);");
 
 	f32 matid = g_context->material->id / 255.0;
-	if (g_context->picker_mask_handle->i == PICKER_MASK_MATERIAL) {
+	if (g_context->picker_mask == PICKER_MASK_MATERIAL) {
 		matid = g_context->materialid_picked / 255.0; // Keep existing material id in place when mask is set
 	}
 	char *matid_string = parser_material_vec1(matid * 3.0);

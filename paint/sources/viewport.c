@@ -28,7 +28,7 @@ void viewport_reset() {
 			cam->base->transform->local = mat4_from_f32_array(o->transform, 0);
 			transform_decompose(cam->base->transform);
 			cam->data->fov           = g_config->camera_fov;
-			g_context->cam_handle->i = 0;
+			g_context->camera_type   = 0;
 			cam->data->ortho         = NULL;
 			camera_object_build_proj(cam, -1.0);
 			g_context->ddirty = 2;
@@ -151,7 +151,7 @@ void viewport_capture_video_update(void *_) {
 	render_target_t *rt     = any_map_get(render_path_render_targets, "last");
 	buffer_t        *pixels = gpu_get_texture_pixels(rt->_image);
 #ifdef IRON_BGRA
-	export_arm_bgra_swap(pixels);
+	buffer_bgra_swap(pixels);
 #endif
 	iron_mp4_encode(pixels);
 }

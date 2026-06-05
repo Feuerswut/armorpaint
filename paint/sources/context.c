@@ -1,196 +1,175 @@
 
 #include "global.h"
 
-context_t *context_create() {
-	context_t *c                  = GC_ALLOC_INIT(context_t, {0});
-	c->merged_object_is_atlas     = false; // Only objects referenced by atlas are merged
-	c->ddirty                     = 0;     // depth
-	c->pdirty                     = 0;     // paint
-	c->rdirty                     = 0;     // render
-	c->brush_blend_dirty          = true;
-	c->split_view                 = false;
-	c->view_index                 = -1;
-	c->view_index_last            = -1;
-	c->picked_color               = project_make_swatch(0xffffffff);
-	c->envmap_loaded              = false;
-	c->show_envmap                = false;
-	c->show_envmap_handle         = ui_handle_create();
-	c->show_envmap_blur           = false;
-	c->show_envmap_blur_handle    = ui_handle_create();
-	c->show_envmap_spheres        = false;
-	c->show_envmap_spheres_handle = ui_handle_create();
-	c->capturing_screenshot       = false;
-	c->capture_background         = false;
-	c->envmap_angle               = 0.0;
-	c->light_angle                = 0.0;
-	c->cull_backfaces             = true;
-	c->texture_filter             = true;
-	c->format_type                = TEXTURE_LDR_FORMAT_PNG;
-	c->format_quality             = 100.0;
-	c->layers_destination         = EXPORT_DESTINATION_DISK;
-	c->split_by                   = SPLIT_TYPE_OBJECT;
-	c->select_time                = 0.0;
-	c->viewport_mode              = g_config->viewport_mode;
-	c->hscale_was_changed         = false;
-	c->export_mesh_format         = MESH_FORMAT_OBJ;
-	c->export_mesh_index          = 0;
-	c->pack_assets_on_export      = true;
-	c->pack_assets_on_save        = false;
-	c->paint_vec                  = (vec4_t){0.0, 0.0, 0.0, 1.0};
-	c->last_paint_x               = -1.0;
-	c->last_paint_y               = -1.0;
-	c->foreground_event           = false;
-	c->painted                    = 0;
-	c->brush_time                 = 0.0;
-	c->clone_start_x              = -1.0;
-	c->clone_start_y              = -1.0;
-	c->clone_delta_x              = 0.0;
-	c->clone_delta_y              = 0.0;
-	c->show_compass               = true;
-	c->last_paint_vec_x           = -1.0;
-	c->last_paint_vec_y           = -1.0;
-	c->prev_paint_vec_x           = -1.0;
-	c->prev_paint_vec_y           = -1.0;
-	c->frame                      = 0;
-	c->paint2d_view               = false;
-	c->brush_locked               = false;
-	c->camera_type                = CAMERA_TYPE_PERSPECTIVE;
-	c->cam_handle                 = ui_handle_create();
-	c->fov_handle                 = ui_handle_create();
-	c->texture_export_path        = "";
-	c->last_status_position       = 0;
-	c->camera_pivot               = CAMERA_PIVOT_CURSOR;
-	c->camera_controls            = CAMERA_CONTROLS_ORBIT;
-	c->pen_painting_only          = false; // Reject painting with finger when using pen
-	c->layer_preview_dirty        = true;
-	c->layers_preview_dirty       = false;
-	c->node_preview_name          = "";
-	c->node_preview_socket_map    = any_map_create();
-	c->node_preview_map           = any_map_create();
-	c->selected_node_preview      = true;
-	c->colorid_picked             = false;
-	c->material_preview           = false; // Drawing material previews
-	c->saved_camera               = mat4_identity();
-	c->materialid_picked          = 0;
-	c->uvx_picked                 = 0.0;
-	c->uvy_picked                 = 0.0;
-	c->picker_select_material     = false;
-	c->picker_mask_handle         = ui_handle_create();
-	c->pick_pos_nor_tex           = false;
-	c->pick_object_id             = false;
-	c->posx_picked                = 0.0;
-	c->posy_picked                = 0.0;
-	c->posz_picked                = 0.0;
-	c->norx_picked                = 0.0;
-	c->nory_picked                = 0.0;
-	c->norz_picked                = 0.0;
-	c->draw_wireframe             = false;
-	c->wireframe_handle           = ui_handle_create();
-	c->draw_texels                = false;
-	c->texels_handle              = ui_handle_create();
-	c->colorid_handle             = ui_handle_create();
-	c->layers_export              = EXPORT_MODE_VISIBLE;
-	c->decal_preview              = false;
-	c->decal_x                    = 0.0;
-	c->decal_y                    = 0.0;
-	// c.cache_draws = false;
-	c->write_icon_on_export              = false;
-	c->particle_hit_x                    = 0.0;
-	c->particle_hit_y                    = 0.0;
-	c->particle_hit_z                    = 0.0;
-	c->last_particle_hit_x               = 0.0;
-	c->last_particle_hit_y               = 0.0;
-	c->last_particle_hit_z               = 0.0;
-	c->particle_friction                 = 0.1;
-	c->particle_bounciness               = 0.0;
-	c->particle_gravity_x                = 0.0;
-	c->particle_gravity_y                = 0.0;
-	c->particle_gravity_z                = -9.81;
-	c->particle_lifetime                 = 5.0;
-	c->particle_mass                     = 1.0;
-	c->particle_random                   = 0.1;
-	c->particle_spawn_distance           = 0.3;
-	c->layer_filter                      = 0;
-	c->gizmo_started                     = false;
-	c->gizmo_offset                      = 0.0;
-	c->gizmo_drag                        = 0.0;
-	c->gizmo_drag_last                   = 0.0;
-	c->translate_x                       = false;
-	c->translate_y                       = false;
-	c->translate_z                       = false;
-	c->scale_x                           = false;
-	c->scale_y                           = false;
-	c->scale_z                           = false;
-	c->rotate_x                          = false;
-	c->rotate_y                          = false;
-	c->rotate_z                          = false;
-	c->brush_nodes_radius                = 1.0;
-	c->brush_nodes_opacity               = 1.0;
-	c->brush_nodes_uses_random           = false;
-	c->brush_mask_image_is_alpha         = false;
-	c->brush_stencil_image_is_alpha      = false;
-	c->brush_stencil_x                   = 0.02;
-	c->brush_stencil_y                   = 0.02;
-	c->brush_stencil_scale               = 0.9;
-	c->brush_stencil_scaling             = false;
-	c->brush_stencil_angle               = 0.0;
-	c->brush_stencil_rotating            = false;
-	c->brush_nodes_scale                 = 1.0;
-	c->brush_nodes_angle                 = 0.0;
-	c->brush_nodes_hardness              = 1.0;
-	c->brush_directional                 = false;
-	c->brush_scale_x                     = 1.0;
-	c->brush_decal_mask_radius           = 0.5;
-	c->brush_decal_mask_radius_handle    = ui_handle_create();
-	c->brush_decal_mask_radius_handle->f = 0.5;
-	c->brush_scale_x_handle              = ui_handle_create();
-	c->brush_scale_x_handle->f           = 1.0;
-	c->brush_blending                    = BLEND_TYPE_MIX;
-	c->brush_opacity                     = 1.0;
-	c->brush_opacity_handle              = ui_handle_create();
-	c->brush_opacity_handle->f           = 1.0;
-	c->brush_scale                       = 1.0;
-	c->brush_angle                       = 0.0;
-	c->brush_angle_handle                = ui_handle_create();
-	c->brush_angle_handle->f             = 0.0;
-	c->brush_lazy_radius                 = 0.0;
-	c->brush_lazy_step                   = 0.0;
-	c->brush_lazy_x                      = 0.0;
-	c->brush_lazy_y                      = 0.0;
-	c->brush_paint                       = UV_TYPE_UVMAP;
-	c->brush_angle_reject_dot            = 0.5;
-	c->bake_type                         = BAKE_TYPE_CURVATURE;
-	c->bake_axis                         = BAKE_AXIS_XYZ;
-	c->bake_up_axis                      = BAKE_UP_AXIS_Z;
-	c->bake_samples                      = 128;
-	c->bake_ao_strength                  = 1.0;
-	c->bake_ao_radius                    = 1.0;
-	c->bake_ao_offset                    = 1.0;
-	c->bake_curv_strength                = 1.0;
-	c->bake_curv_radius                  = 1.0;
-	c->bake_curv_offset                  = 0.0;
-	c->bake_curv_smooth                  = 1;
-	c->bake_high_poly                    = 0;
-	c->xray                              = false;
-	c->sym_x                             = false;
-	c->sym_y                             = false;
-	c->sym_z                             = false;
-	c->fill_type_handle                  = ui_handle_create();
-	c->blur_type_handle                  = ui_handle_create();
-	c->blur_type                         = BLUR_TYPE_BLUR;
-	c->paint2d                           = false;
-	c->maximized_sidebar_width           = 0;
-	c->drag_dest                         = 0;
-	return c;
-}
-
 void context_init() {
-	g_context = context_create();
+	g_context = GC_ALLOC_INIT(context_t, {0});
 	gc_root(g_context);
-	g_context->tool                       = TOOL_TYPE_BRUSH;
-	g_context->color_picker_previous_tool = TOOL_TYPE_BRUSH;
-	g_context->brush_radius               = 0.5;
-	g_context->brush_hardness             = 1.0;
+
+	g_context->merged_object_is_atlas            = false; // Only objects referenced by atlas are merged
+	g_context->ddirty                            = 0;     // depth
+	g_context->pdirty                            = 0;     // paint
+	g_context->rdirty                            = 0;     // render
+	g_context->brush_blend_dirty                 = true;
+	g_context->split_view                        = false;
+	g_context->view_index                        = -1;
+	g_context->view_index_last                   = -1;
+	g_context->picked_color                      = project_make_swatch(0xffffffff);
+	g_context->envmap_loaded                     = false;
+	g_context->show_envmap                       = false;
+	g_context->show_envmap_blur                  = false;
+	g_context->show_envmap_spheres               = false;
+	g_context->capturing_screenshot              = false;
+	g_context->capture_background                = false;
+	g_context->envmap_angle                      = 0.0;
+	g_context->light_angle                       = 0.0;
+	g_context->cull_backfaces                    = true;
+	g_context->texture_filter                    = true;
+	g_context->format_type                       = TEXTURE_LDR_FORMAT_PNG;
+	g_context->format_quality                    = 100.0;
+	g_context->layers_destination                = EXPORT_DESTINATION_DISK;
+	g_context->split_by                          = SPLIT_TYPE_OBJECT;
+	g_context->select_time                       = 0.0;
+	g_context->viewport_mode                     = g_config->viewport_mode;
+	g_context->hscale_was_changed                = false;
+	g_context->export_mesh_format                = MESH_FORMAT_OBJ;
+	g_context->export_mesh_index                 = 0;
+	g_context->pack_assets_on_export             = true;
+	g_context->pack_assets_on_save               = false;
+	g_context->paint_vec                         = (vec4_t){0.0, 0.0, 0.0, 1.0};
+	g_context->last_paint_x                      = -1.0;
+	g_context->last_paint_y                      = -1.0;
+	g_context->foreground_event                  = false;
+	g_context->painted                           = 0;
+	g_context->brush_time                        = 0.0;
+	g_context->clone_start_x                     = -1.0;
+	g_context->clone_start_y                     = -1.0;
+	g_context->clone_delta_x                     = 0.0;
+	g_context->clone_delta_y                     = 0.0;
+	g_context->show_compass                      = true;
+	g_context->last_paint_vec_x                  = -1.0;
+	g_context->last_paint_vec_y                  = -1.0;
+	g_context->prev_paint_vec_x                  = -1.0;
+	g_context->prev_paint_vec_y                  = -1.0;
+	g_context->frame                             = 0;
+	g_context->paint2d_view                      = false;
+	g_context->brush_locked                      = false;
+	g_context->camera_type                       = CAMERA_TYPE_PERSPECTIVE;
+	g_context->texture_export_path               = "";
+	g_context->last_status_position              = 0;
+	g_context->camera_pivot                      = CAMERA_PIVOT_CURSOR;
+	g_context->camera_controls                   = CAMERA_CONTROLS_ORBIT;
+	g_context->pen_painting_only                 = false; // Reject painting with finger when using pen
+	g_context->layer_preview_dirty               = true;
+	g_context->layers_preview_dirty              = false;
+	g_context->node_preview_name                 = "";
+	g_context->node_preview_socket_map           = any_map_create();
+	g_context->node_preview_map                  = any_map_create();
+	g_context->selected_node_preview             = true;
+	g_context->material_preview                  = false; // Drawing material previews
+	g_context->saved_camera                      = mat4_identity();
+	g_context->materialid_picked                 = 0;
+	g_context->uvx_picked                        = 0.0;
+	g_context->uvy_picked                        = 0.0;
+	g_context->picker_select_material            = false;
+	g_context->picker_mask                       = 0;
+	g_context->pick_pos_nor_tex                  = false;
+	g_context->pick_object_id                    = false;
+	g_context->posx_picked                       = 0.0;
+	g_context->posy_picked                       = 0.0;
+	g_context->posz_picked                       = 0.0;
+	g_context->norx_picked                       = 0.0;
+	g_context->nory_picked                       = 0.0;
+	g_context->norz_picked                       = 0.0;
+	g_context->draw_wireframe                    = false;
+	g_context->draw_texels                       = false;
+	g_context->colorid                           = 0;
+	g_context->colorid_picked                    = false;
+	g_context->layers_export                     = EXPORT_MODE_VISIBLE;
+	g_context->decal_preview                     = false;
+	g_context->decal_x                           = 0.0;
+	g_context->decal_y                           = 0.0;
+	g_context->write_icon_on_export              = false;
+	g_context->particle_hit_x                    = 0.0;
+	g_context->particle_hit_y                    = 0.0;
+	g_context->particle_hit_z                    = 0.0;
+	g_context->last_particle_hit_x               = 0.0;
+	g_context->last_particle_hit_y               = 0.0;
+	g_context->last_particle_hit_z               = 0.0;
+	g_context->particle_friction                 = 0.1;
+	g_context->particle_bounciness               = 0.0;
+	g_context->particle_gravity_x                = 0.0;
+	g_context->particle_gravity_y                = 0.0;
+	g_context->particle_gravity_z                = -9.81;
+	g_context->particle_lifetime                 = 5.0;
+	g_context->particle_mass                     = 1.0;
+	g_context->particle_random                   = 0.1;
+	g_context->particle_spawn_distance           = 0.3;
+	g_context->layer_filter                      = 0;
+	g_context->gizmo_started                     = false;
+	g_context->gizmo_offset                      = 0.0;
+	g_context->gizmo_drag                        = 0.0;
+	g_context->gizmo_drag_last                   = 0.0;
+	g_context->translate_x                       = false;
+	g_context->translate_y                       = false;
+	g_context->translate_z                       = false;
+	g_context->scale_x                           = false;
+	g_context->scale_y                           = false;
+	g_context->scale_z                           = false;
+	g_context->rotate_x                          = false;
+	g_context->rotate_y                          = false;
+	g_context->rotate_z                          = false;
+	g_context->brush_nodes_radius                = 1.0;
+	g_context->brush_nodes_opacity               = 1.0;
+	g_context->brush_nodes_uses_random           = false;
+	g_context->brush_mask_image_is_alpha         = false;
+	g_context->brush_stencil_image_is_alpha      = false;
+	g_context->brush_stencil_x                   = 0.02;
+	g_context->brush_stencil_y                   = 0.02;
+	g_context->brush_stencil_scale               = 0.9;
+	g_context->brush_stencil_scaling             = false;
+	g_context->brush_stencil_angle               = 0.0;
+	g_context->brush_stencil_rotating            = false;
+	g_context->brush_nodes_scale                 = 1.0;
+	g_context->brush_nodes_angle                 = 0.0;
+	g_context->brush_nodes_hardness              = 1.0;
+	g_context->brush_directional                 = false;
+	g_context->brush_scale_x                     = 1.0;
+	g_context->brush_decal_mask_radius           = 0.5;
+	g_context->brush_blending                    = BLEND_TYPE_MIX;
+	g_context->brush_opacity                     = 1.0;
+	g_context->brush_scale                       = 1.0;
+	g_context->brush_angle                       = 0.0;
+	g_context->brush_lazy_radius                 = 0.0;
+	g_context->brush_lazy_step                   = 0.0;
+	g_context->brush_lazy_x                      = 0.0;
+	g_context->brush_lazy_y                      = 0.0;
+	g_context->brush_paint                       = UV_TYPE_UVMAP;
+	g_context->brush_angle_reject_dot            = 0.5;
+	g_context->bake_type                         = BAKE_TYPE_CURVATURE;
+	g_context->bake_axis                         = BAKE_AXIS_XYZ;
+	g_context->bake_up_axis                      = BAKE_UP_AXIS_Z;
+	g_context->bake_samples                      = 128;
+	g_context->bake_ao_strength                  = 1.0;
+	g_context->bake_ao_radius                    = 1.0;
+	g_context->bake_ao_offset                    = 1.0;
+	g_context->bake_curv_strength                = 1.0;
+	g_context->bake_curv_radius                  = 1.0;
+	g_context->bake_curv_offset                  = 0.0;
+	g_context->bake_curv_smooth                  = 1;
+	g_context->bake_high_poly                    = 0;
+	g_context->xray                              = false;
+	g_context->sym_x                             = false;
+	g_context->sym_y                             = false;
+	g_context->sym_z                             = false;
+	g_context->fill_type                         = FILL_TYPE_OBJECT;
+	g_context->blur_type                         = BLUR_TYPE_BLUR;
+	g_context->paint2d                           = false;
+	g_context->maximized_sidebar_width           = 0;
+	g_context->drag_dest                         = 0;
+	g_context->tool                              = TOOL_TYPE_BRUSH;
+	g_context->color_picker_previous_tool        = TOOL_TYPE_BRUSH;
+	g_context->brush_radius                      = 0.5;
+	g_context->brush_hardness                    = 1.0;
 }
 
 bool context_use_deferred() {
@@ -384,15 +363,6 @@ bool context_in_materials() {
 	return string_equals(tab, tr("Materials"));
 }
 
-bool context_in_2d_view(view_2d_type_t type) {
-	return ui_view2d_show && ui_view2d_type == type && mouse_x > ui_view2d_wx && mouse_x < ui_view2d_wx + ui_view2d_ww && mouse_y > ui_view2d_wy &&
-	       mouse_y < ui_view2d_wy + ui_view2d_wh;
-}
-
-bool context_in_nodes() {
-	return ui_nodes_show && mouse_x > ui_nodes_wx && mouse_x < ui_nodes_wx + ui_nodes_ww && mouse_y > ui_nodes_wy && mouse_y < ui_nodes_wy + ui_nodes_wh;
-}
-
 bool context_in_swatches() {
 	char *tab = ui_hovered_tab_name();
 	return string_equals(tab, tr("Swatches"));
@@ -416,6 +386,15 @@ bool context_in_textures() {
 bool context_in_browser() {
 	char *tab = ui_hovered_tab_name();
 	return string_equals(tab, tr("Browser"));
+}
+
+bool context_in_2d_view(view_2d_type_t type) {
+	return ui_view2d_show && ui_view2d_type == type && mouse_x > ui_view2d_wx && mouse_x < ui_view2d_wx + ui_view2d_ww && mouse_y > ui_view2d_wy &&
+	       mouse_y < ui_view2d_wy + ui_view2d_wh;
+}
+
+bool context_in_nodes() {
+	return ui_nodes_show && mouse_x > ui_nodes_wx && mouse_x < ui_nodes_wx + ui_nodes_ww && mouse_y > ui_nodes_wy && mouse_y < ui_nodes_wy + ui_nodes_wh;
 }
 
 bool context_is_decal() {
@@ -533,8 +512,4 @@ bool context_enable_import_plugin(char *file) {
 		}
 	}
 	return false;
-}
-
-void context_set_swatch(swatch_color_t *s) {
-	g_context->swatch = s;
 }

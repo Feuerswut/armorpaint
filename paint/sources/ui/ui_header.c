@@ -38,70 +38,52 @@ void ui_header_render_ui() {
 }
 
 void ui_header_particle_menu_draw() {
-	ui_handle_t *hlifetime = ui_handle(__ID__);
-	if (hlifetime->init) {
-		hlifetime->f = g_context->particle_lifetime;
-	}
+	ui_handle_t *hlifetime       = ui_handle(__ID__);
+	hlifetime->f                 = g_context->particle_lifetime;
 	g_context->particle_lifetime = ui_slider(hlifetime, tr("Lifetime"), 0.0, 10.0, true, 1.0, true, UI_ALIGN_RIGHT, true);
 
-	ui_handle_t *hspawn_distance = ui_handle(__ID__);
-	if (hspawn_distance->init) {
-		hspawn_distance->f = g_context->particle_spawn_distance;
-	}
+	ui_handle_t *hspawn_distance       = ui_handle(__ID__);
+	hspawn_distance->f                 = g_context->particle_spawn_distance;
 	g_context->particle_spawn_distance = ui_slider(hspawn_distance, tr("Distance"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 
-	ui_handle_t *hmass = ui_handle(__ID__);
-	if (hmass->init) {
-		hmass->f = g_context->particle_mass;
-	}
+	ui_handle_t *hmass       = ui_handle(__ID__);
+	hmass->f                 = g_context->particle_mass;
 	g_context->particle_mass = ui_slider(hmass, tr("Mass"), 0.0, 3.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 
-	ui_handle_t *hrandom = ui_handle(__ID__);
-	if (hrandom->init) {
-		hrandom->f = g_context->particle_random;
-	}
+	ui_handle_t *hrandom       = ui_handle(__ID__);
+	hrandom->f                 = g_context->particle_random;
 	g_context->particle_random = ui_slider(hrandom, tr("Random"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 
-	ui_handle_t *hfriction = ui_handle(__ID__);
-	if (hfriction->init) {
-		hfriction->f = g_context->particle_friction;
-	}
+	ui_handle_t *hfriction       = ui_handle(__ID__);
+	hfriction->f                 = g_context->particle_friction;
 	g_context->particle_friction = ui_slider(hfriction, tr("Friction"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 	if (hfriction->changed) {
 		asim_set_friction(g_context->particle_friction);
 	}
 
-	ui_handle_t *hbounciness = ui_handle(__ID__);
-	if (hbounciness->init) {
-		hbounciness->f = g_context->particle_bounciness;
-	}
+	ui_handle_t *hbounciness       = ui_handle(__ID__);
+	hbounciness->f                 = g_context->particle_bounciness;
 	g_context->particle_bounciness = ui_slider(hbounciness, tr("Bounce"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 	if (hbounciness->changed) {
 		asim_set_bounciness(g_context->particle_bounciness);
 	}
 
-	ui_handle_t *hgravx = ui_handle(__ID__);
-	if (hgravx->init) {
-		hgravx->f = g_context->particle_gravity_x;
-	}
+	ui_handle_t *hgravx           = ui_handle(__ID__);
+	hgravx->f                     = g_context->particle_gravity_x;
 	g_context->particle_gravity_x = ui_slider(hgravx, tr("Gravity X"), -10.0, 10.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 	if (hgravx->changed) {
 		asim_set_gravity(g_context->particle_gravity_x, g_context->particle_gravity_y, g_context->particle_gravity_z);
 	}
 
-	ui_handle_t *hgravy = ui_handle(__ID__);
-	if (hgravy->init) {
-		hgravy->f = g_context->particle_gravity_y;
-	}
+	ui_handle_t *hgravy           = ui_handle(__ID__);
+	hgravy->f                     = g_context->particle_gravity_y;
 	g_context->particle_gravity_y = ui_slider(hgravy, tr("Gravity Y"), -10.0, 10.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 	if (hgravy->changed) {
 		asim_set_gravity(g_context->particle_gravity_x, g_context->particle_gravity_y, g_context->particle_gravity_z);
 	}
 
-	ui_handle_t *hgravz = ui_handle(__ID__);
-	if (hgravz->init) {
-		hgravz->f = g_context->particle_gravity_z;
-	}
+	ui_handle_t *hgravz           = ui_handle(__ID__);
+	hgravz->f                     = g_context->particle_gravity_z;
 	g_context->particle_gravity_z = ui_slider(hgravz, tr("Gravity Z"), -10.0, 10.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 	if (hgravz->changed) {
 		asim_set_gravity(g_context->particle_gravity_x, g_context->particle_gravity_y, g_context->particle_gravity_z);
@@ -143,7 +125,7 @@ void ui_header_draw_tool_properties_to_mask(slot_layer_t *m) {
 	gpu_set_pipeline(pipes_colorid_to_mask);
 	render_target_t *rt = any_map_get(render_path_render_targets, "texpaint_colorid");
 	gpu_set_texture(pipes_texpaint_colorid, rt->_image);
-	gpu_set_texture(pipes_tex_colorid, project_get_image(project_assets->buffer[g_context->colorid_handle->i]));
+	gpu_set_texture(pipes_tex_colorid, project_get_image(project_assets->buffer[g_context->colorid]));
 	gpu_set_vertex_buffer(const_data_screen_aligned_vb);
 	gpu_set_index_buffer(const_data_screen_aligned_ib);
 	gpu_draw();
@@ -157,12 +139,12 @@ void ui_header_draw_tool_properties_to_mask(slot_layer_t *m) {
 
 void ui_header_draw_tool_properties_import(char *path) {
 	import_asset_run(path, -1.0, -1.0, true, false, NULL);
-	g_context->colorid_handle->i = project_asset_names->length - 1;
+	g_context->colorid = project_asset_names->length - 1;
 	for (i32 i = 0; i < project_assets->length; ++i) {
 		asset_t *a = project_assets->buffer[i];
 		// Already imported
 		if (string_equals(a->file, path)) {
-			g_context->colorid_handle->i = array_index_of(project_assets, a);
+			g_context->colorid = array_index_of(project_assets, a);
 		}
 	}
 	g_context->ddirty                 = 2;
@@ -186,18 +168,20 @@ void ui_header_draw_tool_properties() {
 		ui->enabled = true;
 		ui_text(tr("Color ID Map"), UI_ALIGN_LEFT, 0x00000000);
 		if (project_asset_names->length > 0) {
-			i32 cid = ui_combo(g_context->colorid_handle, base_combo_enum_texts("TEX_IMAGE"), tr("Color ID"), false, UI_ALIGN_LEFT, true);
-			if (g_context->colorid_handle == ui->combo_selected_handle) {
+			ui_handle_t *colorid_handle = ui_handle(__ID__);
+			colorid_handle->i           = g_context->colorid;
+			g_context->colorid          = ui_combo(colorid_handle, base_combo_enum_texts("TEX_IMAGE"), tr("Color ID"), false, UI_ALIGN_LEFT, true);
+			if (colorid_handle == ui->combo_selected_handle) {
 				ui->combo_selected_images = base_combo_enum_images("TEX_IMAGE");
 			}
-			if (g_context->colorid_handle->changed) {
+			if (colorid_handle->changed) {
 				g_context->ddirty          = 2;
 				g_context->colorid_picked  = false;
 				ui_toolbar_handle->redraws = 1;
 			}
-			ui_image(project_get_image(project_assets->buffer[cid]), 0xffffffff, -1.0);
+			ui_image(project_get_image(project_assets->buffer[g_context->colorid]), 0xffffffff, -1.0);
 			if (ui->is_hovered) {
-				ui_tooltip_image(project_get_image(project_assets->buffer[cid]), 256);
+				ui_tooltip_image(project_get_image(project_assets->buffer[g_context->colorid]), 256);
 			}
 		}
 		if (ui_icon_button(tr("Import"), ICON_FOLDER_OPEN, UI_ALIGN_CENTER)) {
@@ -244,7 +228,7 @@ void ui_header_draw_tool_properties() {
 		}
 		if (ui_icon_button(tr("Add Swatch"), ICON_PLUS, UI_ALIGN_CENTER)) {
 			swatch_color_t *new_swatch = project_clone_swatch(g_context->picked_color);
-			context_set_swatch(new_swatch);
+			g_context->swatch          = new_swatch;
 			any_array_push(g_project->swatches, new_swatch);
 			ui_base_hwnds->buffer[2]->redraws = 1;
 		}
@@ -290,10 +274,8 @@ void ui_header_draw_tool_properties() {
 		hopac->f                         = g_context->picked_color->opacity;
 		g_context->picked_color->opacity = ui_slider(hopac, tr("Opacity"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 
-		ui_handle_t *h_select_mat = ui_handle(__ID__);
-		if (h_select_mat->init) {
-			h_select_mat->b = g_context->picker_select_material;
-		}
+		ui_handle_t *h_select_mat         = ui_handle(__ID__);
+		h_select_mat->b                   = g_context->picker_select_material;
 		g_context->picker_select_material = ui_check(h_select_mat, tr("Select Material"), "");
 
 		string_array_t *picker_mask_combo = any_array_create_from_raw(
@@ -302,8 +284,11 @@ void ui_header_draw_tool_properties() {
 		        tr("Material"),
 		    },
 		    2);
-		ui_combo(g_context->picker_mask_handle, picker_mask_combo, tr("Mask"), true, UI_ALIGN_LEFT, true);
-		if (g_context->picker_mask_handle->changed) {
+
+		ui_handle_t *picker_mask_handle = ui_handle(__ID__);
+		picker_mask_handle->i           = g_context->picker_mask;
+		g_context->picker_mask          = ui_combo(picker_mask_handle, picker_mask_combo, tr("Mask"), true, UI_ALIGN_LEFT, true);
+		if (picker_mask_handle->changed) {
 			make_material_parse_paint_material(true);
 		}
 	}
@@ -313,8 +298,10 @@ void ui_header_draw_tool_properties() {
 		bool decal_mask = context_is_decal_mask();
 		if (g_context->tool != TOOL_TYPE_FILL) {
 			if (decal_mask) {
+				ui_handle_t *brush_decal_mask_radius_handle = ui_handle(__ID__);
+				brush_decal_mask_radius_handle->f           = g_context->brush_decal_mask_radius;
 				g_context->brush_decal_mask_radius =
-				    ui_slider(g_context->brush_decal_mask_radius_handle, tr("Radius"), 0.01, 2.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
+				    ui_slider(brush_decal_mask_radius_handle, tr("Radius"), 0.01, 2.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 				if (ui->is_hovered) {
 					any_map_t *vars = any_map_create();
 					any_map_set(vars, "brush_radius", any_map_get(config_keymap, "brush_radius"));
@@ -344,16 +331,16 @@ void ui_header_draw_tool_properties() {
 		}
 
 		if (g_context->tool == TOOL_TYPE_DECAL || g_context->tool == TOOL_TYPE_TEXT) {
-			g_context->brush_scale_x = ui_slider(g_context->brush_scale_x_handle, tr("Scale X"), 0.01, 2.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
+			ui_handle_t *brush_scale_x_handle = ui_handle(__ID__);
+			brush_scale_x_handle->f           = g_context->brush_scale_x;
+			g_context->brush_scale_x          = ui_slider(brush_scale_x_handle, tr("Scale X"), 0.01, 2.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 		}
 
 		if (g_context->tool == TOOL_TYPE_BRUSH || g_context->tool == TOOL_TYPE_FILL || g_context->tool == TOOL_TYPE_DECAL ||
 		    g_context->tool == TOOL_TYPE_TEXT) {
 			ui_handle_t *brush_scale_handle = ui_handle(__ID__);
-			if (brush_scale_handle->init) {
-				brush_scale_handle->f = g_context->brush_scale;
-			}
-			g_context->brush_scale = ui_slider(brush_scale_handle, tr("UV Scale"), 0.01, 5.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
+			brush_scale_handle->f           = g_context->brush_scale;
+			g_context->brush_scale          = ui_slider(brush_scale_handle, tr("UV Scale"), 0.01, 5.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 			if (brush_scale_handle->changed) {
 				if (g_context->tool == TOOL_TYPE_DECAL || g_context->tool == TOOL_TYPE_TEXT) {
 					gpu_texture_t *current = _draw_current;
@@ -363,7 +350,9 @@ void ui_header_draw_tool_properties() {
 				}
 			}
 
-			g_context->brush_angle = ui_slider(g_context->brush_angle_handle, tr("Angle"), 0.0, 360.0, true, 1, true, UI_ALIGN_RIGHT, true);
+			ui_handle_t *brush_angle_handle = ui_handle(__ID__);
+			brush_angle_handle->f           = g_context->brush_angle;
+			g_context->brush_angle          = ui_slider(brush_angle_handle, tr("Angle"), 0.0, 360.0, true, 1, true, UI_ALIGN_RIGHT, true);
 			if (ui->is_hovered) {
 				any_map_t *vars = any_map_create();
 				any_map_set(vars, "brush_angle", any_map_get(config_keymap, "brush_angle"));
@@ -372,12 +361,14 @@ void ui_header_draw_tool_properties() {
 				    vars));
 			}
 
-			if (g_context->brush_angle_handle->changed) {
+			if (brush_angle_handle->changed) {
 				make_material_parse_paint_material(true);
 			}
 		}
 
-		g_context->brush_opacity = ui_slider(g_context->brush_opacity_handle, tr("Opacity"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
+		ui_handle_t *brush_opacity_handle = ui_handle(__ID__);
+		brush_opacity_handle->f           = g_context->brush_opacity;
+		g_context->brush_opacity          = ui_slider(brush_opacity_handle, tr("Opacity"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 		if (ui->is_hovered) {
 			any_map_t *vars = any_map_create();
 			any_map_set(vars, "brush_opacity", any_map_get(config_keymap, "brush_opacity"));
@@ -388,18 +379,14 @@ void ui_header_draw_tool_properties() {
 
 		if (g_context->tool == TOOL_TYPE_BRUSH || g_context->tool == TOOL_TYPE_ERASER || g_context->tool == TOOL_TYPE_CLONE || decal_mask ||
 		    g_context->tool == TOOL_TYPE_PARTICLE) {
-			ui_handle_t *h = ui_handle(__ID__);
-			if (h->init) {
-				h->f = g_context->brush_hardness;
-			}
+			ui_handle_t *h            = ui_handle(__ID__);
+			h->f                      = g_context->brush_hardness;
 			g_context->brush_hardness = ui_slider(h, tr("Hardness"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 		}
 
 		if (g_context->tool != TOOL_TYPE_ERASER) {
-			ui_handle_t *brush_blending_handle = ui_handle(__ID__);
-			if (brush_blending_handle->init) {
-				brush_blending_handle->f = g_context->brush_blending;
-			}
+			ui_handle_t *brush_blending_handle   = ui_handle(__ID__);
+			brush_blending_handle->i             = g_context->brush_blending;
 			string_array_t *brush_blending_combo = any_array_create_from_raw(
 			    (void *[]){
 			        tr("Mix"),
@@ -474,8 +461,10 @@ void ui_header_draw_tool_properties() {
 			        tr("Smudge"),
 			    },
 			    2);
-			g_context->blur_type = ui_combo(g_context->blur_type_handle, blur_type_combo, tr("Blur Type"), false, UI_ALIGN_LEFT, true);
-			if (g_context->blur_type_handle->changed) {
+			ui_handle_t *blur_type_handle = ui_handle(__ID__);
+			blur_type_handle->i           = g_context->blur_type;
+			g_context->blur_type          = ui_combo(blur_type_handle, blur_type_combo, tr("Blur Type"), false, UI_ALIGN_LEFT, true);
+			if (blur_type_handle->changed) {
 				make_material_parse_paint_material(true);
 			}
 		}
@@ -489,15 +478,17 @@ void ui_header_draw_tool_properties() {
 			        tr("UV Island"),
 			    },
 			    4);
-			ui_combo(g_context->fill_type_handle, fill_mode_combo, tr("Fill Mode"), false, UI_ALIGN_LEFT, true);
-			if (g_context->fill_type_handle->changed) {
-				if (g_context->fill_type_handle->i == FILL_TYPE_FACE) {
+			ui_handle_t *fill_type_handle = ui_handle(__ID__);
+			fill_type_handle->i           = g_context->fill_type;
+			g_context->fill_type          = ui_combo(fill_type_handle, fill_mode_combo, tr("Fill Mode"), false, UI_ALIGN_LEFT, true);
+			if (fill_type_handle->changed) {
+				if (g_context->fill_type == FILL_TYPE_FACE) {
 					gpu_texture_t *current = _draw_current;
 					draw_end();
 					// cache_uv_map();
 					util_uv_cache_triangle_map();
 					draw_begin(current, false, 0);
-					// wireframe_handle.b = draw_wireframe = true;
+					// draw_wireframe = true;
 				}
 				make_material_parse_paint_material(true);
 				make_material_parse_mesh_material();
@@ -513,28 +504,15 @@ void ui_header_draw_tool_properties() {
 			ui->_w = math_floor((touch_header ? 54 : 60) * sc);
 
 			ui_handle_t *xray_handle = ui_handle(__ID__);
-			if (xray_handle->init) {
-				xray_handle->b = g_context->xray;
-			}
-			g_context->xray = ui_check(xray_handle, tr("X-Ray"), "");
+			xray_handle->b           = g_context->xray;
+			g_context->xray          = ui_check(xray_handle, tr("X-Ray"), "");
 			if (xray_handle->changed) {
 				make_material_parse_paint_material(true);
 			}
 
 			ui_handle_t *sym_x_handle = ui_handle(__ID__);
-			if (sym_x_handle->init) {
-				sym_x_handle->b = false;
-			}
-
 			ui_handle_t *sym_y_handle = ui_handle(__ID__);
-			if (sym_y_handle->init) {
-				sym_y_handle->b = false;
-			}
-
 			ui_handle_t *sym_z_handle = ui_handle(__ID__);
-			if (sym_z_handle->init) {
-				sym_z_handle->b = false;
-			}
 
 			if (g_config->layout->buffer[LAYOUT_SIZE_HEADER] == 1) {
 				if (g_config->touch_ui) {

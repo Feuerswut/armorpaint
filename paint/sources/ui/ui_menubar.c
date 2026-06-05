@@ -441,34 +441,30 @@ void ui_menubar_draw_category_items() {
 		}
 
 		ui_handle_t *split_view_handle = ui_handle(__ID__);
-		if (split_view_handle->init) {
-			split_view_handle->b = g_context->split_view;
-		}
-		g_context->split_view = ui_check(split_view_handle, string(" %s", tr("Split View")), "");
+		split_view_handle->b           = g_context->split_view;
+		g_context->split_view          = ui_check(split_view_handle, string(" %s", tr("Split View")), "");
 		if (split_view_handle->changed) {
 			base_resize();
 		}
 
-		ui_handle_t *cull_handle = ui_handle(__ID__);
-		if (cull_handle->init) {
-			cull_handle->b = g_context->cull_backfaces;
-		}
+		ui_handle_t *cull_handle  = ui_handle(__ID__);
+		cull_handle->b            = g_context->cull_backfaces;
 		g_context->cull_backfaces = ui_check(cull_handle, string(" %s", tr("Cull Backfaces")), "");
 		if (cull_handle->changed) {
 			make_material_parse_mesh_material();
 		}
 
 		ui_handle_t *filter_handle = ui_handle(__ID__);
-		if (filter_handle->init) {
-			filter_handle->b = g_context->texture_filter;
-		}
-		g_context->texture_filter = ui_check(filter_handle, string(" %s", tr("Filter Textures")), "");
+		filter_handle->b           = g_context->texture_filter;
+		g_context->texture_filter  = ui_check(filter_handle, string(" %s", tr("Filter Textures")), "");
 		if (filter_handle->changed) {
 			gpu_use_linear_sampling(g_context->texture_filter);
 		}
 
-		g_context->draw_wireframe = ui_check(g_context->wireframe_handle, string(" %s", tr("Wireframe")), "");
-		if (g_context->wireframe_handle->changed) {
+		ui_handle_t *wireframe_handle = ui_handle(__ID__);
+		wireframe_handle->b           = g_context->draw_wireframe;
+		g_context->draw_wireframe     = ui_check(wireframe_handle, string(" %s", tr("Wireframe")), "");
+		if (wireframe_handle->changed) {
 			gpu_texture_t *current = _draw_current;
 			draw_end();
 			util_uv_cache_uv_map();
@@ -476,37 +472,40 @@ void ui_menubar_draw_category_items() {
 			make_material_parse_mesh_material();
 		}
 
-		g_context->draw_texels = ui_check(g_context->texels_handle, string(" %s", tr("Texels")), "");
-		if (g_context->texels_handle->changed) {
+		ui_handle_t *texels_handle = ui_handle(__ID__);
+		texels_handle->b           = g_context->draw_texels;
+		g_context->draw_texels     = ui_check(texels_handle, string(" %s", tr("Texels")), "");
+		if (texels_handle->changed) {
 			make_material_parse_mesh_material();
 		}
 
 		ui_handle_t *compass_handle = ui_handle(__ID__);
-		if (compass_handle->init) {
-			compass_handle->b = g_context->show_compass;
-		}
-		g_context->show_compass = ui_check(compass_handle, string(" %s", tr("Compass")), "");
+		compass_handle->b           = g_context->show_compass;
+		g_context->show_compass     = ui_check(compass_handle, string(" %s", tr("Compass")), "");
 		if (compass_handle->changed) {
 			g_context->ddirty = 2;
 		}
 
-		g_context->show_envmap_handle->b = g_context->show_envmap;
-		g_context->show_envmap           = ui_check(g_context->show_envmap_handle, string(" %s", tr("Envmap")), "");
-		if (g_context->show_envmap_handle->changed) {
+		ui_handle_t *show_envmap_handle = ui_handle(__ID__);
+		show_envmap_handle->b           = g_context->show_envmap;
+		g_context->show_envmap          = ui_check(show_envmap_handle, string(" %s", tr("Envmap")), "");
+		if (show_envmap_handle->changed) {
 			context_load_envmap();
 			g_context->ddirty = 2;
 		}
 
-		g_context->show_envmap_blur_handle->b = g_context->show_envmap_blur;
-		g_context->show_envmap_blur           = ui_check(g_context->show_envmap_blur_handle, string(" %s", tr("Blur Envmap")), "");
-		if (g_context->show_envmap_blur_handle->changed) {
+		ui_handle_t *show_envmap_blur_handle = ui_handle(__ID__);
+		show_envmap_blur_handle->b           = g_context->show_envmap_blur;
+		g_context->show_envmap_blur          = ui_check(show_envmap_blur_handle, string(" %s", tr("Blur Envmap")), "");
+		if (show_envmap_blur_handle->changed) {
 			g_context->ddirty = 2;
 		}
 
 		if (g_config->experimental) {
-			g_context->show_envmap_spheres_handle->b = g_context->show_envmap_spheres;
-			g_context->show_envmap_spheres           = ui_check(g_context->show_envmap_spheres_handle, string(" %s", tr("Envmap Spheres")), "");
-			if (g_context->show_envmap_spheres_handle->changed) {
+			ui_handle_t *show_envmap_spheres_handle = ui_handle(__ID__);
+			show_envmap_spheres_handle->b           = g_context->show_envmap_spheres;
+			g_context->show_envmap_spheres          = ui_check(show_envmap_spheres_handle, string(" %s", tr("Envmap Spheres")), "");
+			if (show_envmap_spheres_handle->changed) {
 				g_context->ddirty = 2;
 			}
 		}
@@ -653,11 +652,11 @@ void ui_menubar_draw_category_items() {
 			viewport_zoom(-0.2);
 		}
 
-		camera_object_t *cam     = scene_camera;
-		g_context->fov_handle->f = math_floor(cam->data->fov * 100) / 100.0;
 		ui_menu_align();
-		cam->data->fov = ui_slider(g_context->fov_handle, tr("FoV"), 0.3, 1.4, true, 100.0, true, UI_ALIGN_RIGHT, true);
-		if (g_context->fov_handle->changed) {
+		ui_handle_t *fov_handle = ui_handle(__ID__);
+		fov_handle->f           = math_floor(scene_camera->data->fov * 100) / 100.0;
+		scene_camera->data->fov = ui_slider(fov_handle, tr("FoV"), 0.3, 1.4, true, 100.0, true, UI_ALIGN_RIGHT, true);
+		if (fov_handle->changed) {
 			viewport_update_camera_type(g_context->camera_type);
 		}
 
@@ -714,8 +713,10 @@ void ui_menubar_draw_category_items() {
 		        tr("Orthographic"),
 		    },
 		    2);
-		g_context->camera_type = ui_inline_radio(g_context->cam_handle, camera_type_items, UI_ALIGN_LEFT);
-		if (g_context->cam_handle->changed) {
+		ui_handle_t *cam_handle = ui_handle(__ID__);
+		cam_handle->i           = g_context->camera_type;
+		g_context->camera_type  = ui_inline_radio(cam_handle, camera_type_items, UI_ALIGN_LEFT);
+		if (cam_handle->changed) {
 			viewport_update_camera_type(g_context->camera_type);
 		}
 

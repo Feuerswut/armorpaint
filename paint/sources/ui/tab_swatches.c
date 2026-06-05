@@ -21,7 +21,7 @@ gpu_texture_t *tab_swatches_empty_get() {
 
 void tab_swatches_delete_swatch(swatch_color_t *swatch) {
 	i32 i = array_index_of(g_project->swatches, swatch);
-	context_set_swatch(g_project->swatches->buffer[i == g_project->swatches->length - 1 ? i - 1 : i + 1]);
+	g_context->swatch = g_project->swatches->buffer[i == g_project->swatches->length - 1 ? i - 1 : i + 1];
 	array_splice(g_project->swatches, i, 1);
 	ui_base_hwnds->buffer[TAB_AREA_STATUS]->redraws = 2;
 }
@@ -30,7 +30,7 @@ void tab_swatches_draw_menu() {
 	i32 i = _tab_swatches_draw_i;
 
 	if (ui_menu_button(tr("Duplicate"), "ctrl+d", ICON_DUPLICATE)) {
-		context_set_swatch(project_clone_swatch(g_context->swatch));
+		g_context->swatch = project_clone_swatch(g_context->swatch);
 		any_array_push(g_project->swatches, g_context->swatch);
 	}
 #if defined(IRON_WINDOWS) || defined(IRON_LINUX) || defined(IRON_MACOS)
@@ -96,7 +96,7 @@ void tab_swatches_draw_edit_menu() {
 		ui_menu_keep_open = true;
 	}
 	if (ui->input_released) {
-		context_set_swatch(g_context->swatch); // Trigger material preview update
+		g_context->swatch = g_context->swatch; // Trigger material preview update
 		g_context->picked_color   = util_clone_swatch_color(g_context->swatch);
 		ui_header_handle->redraws = 2;
 	}
@@ -105,7 +105,7 @@ void tab_swatches_draw_edit_menu() {
 void tab_swatches_draw_import() {
 	if (ui_menu_button(tr("Replace Existing"), "", ICON_NONE)) {
 		project_import_swatches(true);
-		context_set_swatch(g_project->swatches->buffer[0]);
+		g_context->swatch = g_project->swatches->buffer[0];
 	}
 	if (ui_menu_button(tr("Append"), "", ICON_NONE)) {
 		project_import_swatches(false);
@@ -128,7 +128,7 @@ void tab_swatches_draw(ui_handle_t *htab) {
 		ui_row(row);
 
 		if (ui_icon_button(tr("New"), ICON_PLUS, UI_ALIGN_CENTER)) {
-			context_set_swatch(project_make_swatch(0xffffffff));
+			g_context->swatch = project_make_swatch(0xffffffff);
 			any_array_push(g_project->swatches, g_context->swatch);
 		}
 		if (ui->is_hovered) {
@@ -150,7 +150,7 @@ void tab_swatches_draw(ui_handle_t *htab) {
 		}
 
 		if (ui_icon_button(tr("Clear"), ICON_ERASE, UI_ALIGN_CENTER)) {
-			context_set_swatch(project_make_swatch(0xffffffff));
+			g_context->swatch = project_make_swatch(0xffffffff);
 			g_project->swatches = any_array_create_from_raw(
 			    (void *[]){
 			        g_context->swatch,
@@ -160,7 +160,7 @@ void tab_swatches_draw(ui_handle_t *htab) {
 
 		if (ui_icon_button(tr("Restore"), ICON_REPLAY, UI_ALIGN_CENTER)) {
 			project_set_default_swatches();
-			context_set_swatch(g_project->swatches->buffer[0]);
+			g_context->swatch = g_project->swatches->buffer[0];
 		}
 		if (ui->is_hovered) {
 			ui_tooltip(tr("Restore default swatches"));
@@ -213,7 +213,7 @@ void tab_swatches_draw(ui_handle_t *htab) {
 				ui_state_t state = ui_image(tab_swatches_empty_get(), g_project->swatches->buffer[i]->base, slotw);
 
 				if (state == UI_STATE_STARTED) {
-					context_set_swatch(g_project->swatches->buffer[i]);
+					g_context->swatch = g_project->swatches->buffer[i];
 					base_drag_off_x = -(mouse_x - uix - ui->_window_x);
 					base_drag_off_y = -(mouse_y - uiy - ui->_window_y + 1);
 					gc_unroot(base_drag_swatch);
@@ -237,7 +237,7 @@ void tab_swatches_draw(ui_handle_t *htab) {
 					g_context->select_time = sys_time();
 				}
 				if (ui->is_hovered && ui->input_released_r) {
-					context_set_swatch(g_project->swatches->buffer[i]);
+					g_context->swatch = g_project->swatches->buffer[i];
 
 					_tab_swatches_draw_i = i;
 
@@ -271,19 +271,19 @@ void tab_swatches_draw(ui_handle_t *htab) {
 			tab_swatches_delete_swatch(g_context->swatch);
 		}
 		if (in_focus && ui->is_ctrl_down && ui->is_key_pressed && ui->key_code == KEY_CODE_D) {
-			context_set_swatch(project_clone_swatch(g_context->swatch));
+			g_context->swatch = project_clone_swatch(g_context->swatch);
 			any_array_push(g_project->swatches, g_context->swatch);
 		}
 		if (in_focus) {
 			i32 i = array_index_of(g_project->swatches, g_context->swatch);
 			if (ui->is_key_pressed && ui->key_code == KEY_CODE_UP) {
 				if (i > 0) {
-					context_set_swatch(g_project->swatches->buffer[i - 1]);
+					g_context->swatch = g_project->swatches->buffer[i - 1];
 				}
 			}
 			if (ui->is_key_pressed && ui->key_code == KEY_CODE_DOWN) {
 				if (i < g_project->swatches->length - 1) {
-					context_set_swatch(g_project->swatches->buffer[i + 1]);
+					g_context->swatch = g_project->swatches->buffer[i + 1];
 				}
 			}
 		}

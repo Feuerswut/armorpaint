@@ -110,7 +110,7 @@ static void export_player_run_on_download(char *url, buffer_t *ab) {}
 
 void export_player_run(char *path) {
 	#ifndef NDEBUG
-	console_error(tr("Not available in debug build"));
+	console_error(tr("Not available in debug build")); // Requires --embed
 	return;
 	#endif
 

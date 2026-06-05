@@ -1,6 +1,11 @@
 
 #include "../global.h"
 
+typedef struct integer_node {
+	struct logic_node *base;
+	i32                value;
+} integer_node_t;
+
 logic_node_value_t *integer_node_get(integer_node_t *self, i32 from) {
 	if (self->base->inputs->length > 0) {
 		return logic_node_input_get(self->base->inputs->buffer[0]);
@@ -20,7 +25,7 @@ void integer_node_set(integer_node_t *self, f32_array_t *value) {
 	}
 }
 
-integer_node_t *integer_node_create(ui_node_t *raw, f32_array_t *args) {
+void *integer_node_create(ui_node_t *raw, f32_array_t *args) {
 	float_node_t *n = GC_ALLOC_INIT(float_node_t, {0});
 	n->base         = logic_node_create(n);
 	n->base->get    = integer_node_get;

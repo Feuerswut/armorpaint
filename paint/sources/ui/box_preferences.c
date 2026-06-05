@@ -1114,9 +1114,6 @@ void box_preferences_plugins_tab() {
 		g_config->plugins = any_array_create_from_raw((void *[]){}, 0);
 	}
 	ui_handle_t *h = ui_handle(__ID__);
-	if (h->init) {
-		h->b = false;
-	}
 	for (i32 i = 0; i < box_preferences_files_plugin->length; ++i) {
 		char *f    = box_preferences_files_plugin->buffer[i];
 		bool  is_c = ends_with(f, ".c");

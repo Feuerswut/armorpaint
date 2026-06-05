@@ -110,50 +110,24 @@ void tab_materials_draw_slots_menu() {
 		context_select_material(i);
 	}
 
-	ui_handle_t *base_handle = ui_nest(ui_handle(__ID__), m->id);
-	if (base_handle->init) {
-		base_handle->b = m->paint_base;
-	}
-
-	ui_handle_t *opac_handle = ui_nest(ui_handle(__ID__), m->id);
-	if (opac_handle->init) {
-		opac_handle->b = m->paint_opac;
-	}
-
-	ui_handle_t *nor_handle = ui_nest(ui_handle(__ID__), m->id);
-	if (nor_handle->init) {
-		nor_handle->b = m->paint_nor;
-	}
-
-	ui_handle_t *occ_handle = ui_nest(ui_handle(__ID__), m->id);
-	if (occ_handle->init) {
-		occ_handle->b = m->paint_occ;
-	}
-
-	ui_handle_t *rough_handle = ui_nest(ui_handle(__ID__), m->id);
-	if (rough_handle->init) {
-		rough_handle->b = m->paint_rough;
-	}
-
-	ui_handle_t *met_handle = ui_nest(ui_handle(__ID__), m->id);
-	if (met_handle->init) {
-		met_handle->b = m->paint_met;
-	}
-
+	ui_handle_t *base_handle   = ui_nest(ui_handle(__ID__), m->id);
+	ui_handle_t *opac_handle   = ui_nest(ui_handle(__ID__), m->id);
+	ui_handle_t *nor_handle    = ui_nest(ui_handle(__ID__), m->id);
+	ui_handle_t *occ_handle    = ui_nest(ui_handle(__ID__), m->id);
+	ui_handle_t *rough_handle  = ui_nest(ui_handle(__ID__), m->id);
+	ui_handle_t *met_handle    = ui_nest(ui_handle(__ID__), m->id);
 	ui_handle_t *height_handle = ui_nest(ui_handle(__ID__), m->id);
-	if (height_handle->init) {
-		height_handle->b = m->paint_height;
-	}
-
-	ui_handle_t *emis_handle = ui_nest(ui_handle(__ID__), m->id);
-	if (emis_handle->init) {
-		emis_handle->b = m->paint_emis;
-	}
-
-	ui_handle_t *subs_handle = ui_nest(ui_handle(__ID__), m->id);
-	if (subs_handle->init) {
-		subs_handle->b = m->paint_subs;
-	}
+	ui_handle_t *emis_handle   = ui_nest(ui_handle(__ID__), m->id);
+	ui_handle_t *subs_handle   = ui_nest(ui_handle(__ID__), m->id);
+	base_handle->b             = m->paint_base;
+	opac_handle->b             = m->paint_opac;
+	nor_handle->b              = m->paint_nor;
+	occ_handle->b              = m->paint_occ;
+	rough_handle->b            = m->paint_rough;
+	met_handle->b              = m->paint_met;
+	height_handle->b           = m->paint_height;
+	emis_handle->b             = m->paint_emis;
+	subs_handle->b             = m->paint_subs;
 
 	ui_menu_separator();
 	ui_menu_align();

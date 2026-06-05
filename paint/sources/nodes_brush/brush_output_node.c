@@ -1,6 +1,11 @@
 
 #include "../global.h"
 
+typedef struct brush_output_node {
+	struct logic_node *base;
+	struct ui_node    *raw;
+} brush_output_node_t;
+
 static brush_output_node_t *brush_output_node_inst;
 
 void brush_output_node_parse_inputs() {
@@ -185,7 +190,7 @@ void brush_output_node_run() {
 	}
 }
 
-brush_output_node_t *brush_output_node_create(ui_node_t *raw, f32_array_t *args) {
+void *brush_output_node_create(ui_node_t *raw, f32_array_t *args) {
 	brush_output_node_t *n = GC_ALLOC_INIT(brush_output_node_t, {0});
 	n->base                = logic_node_create(n);
 	n->raw                 = raw;

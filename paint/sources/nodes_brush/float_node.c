@@ -36,7 +36,7 @@ void float_node_set(float_node_t *self, f32_array_t *value) {
 	}
 }
 
-float_node_t *float_node_create(ui_node_t *raw, f32_array_t *args) {
+void *float_node_create(ui_node_t *raw, f32_array_t *args) {
 	float_node_t *n       = GC_ALLOC_INIT(float_node_t, {0});
 	n->base               = logic_node_create(n);
 	n->base->get          = float_node_get;

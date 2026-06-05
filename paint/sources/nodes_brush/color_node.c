@@ -1,6 +1,12 @@
 
 #include "../global.h"
 
+typedef struct color_node {
+	struct logic_node  *base;
+	vec4_t              value;
+	struct gpu_texture *image;
+} color_node_t;
+
 logic_node_value_t *color_node_get(color_node_t *self, i32 from) {
 	if (self->base->inputs->length > 0) {
 		return logic_node_input_get(self->base->inputs->buffer[0]);
@@ -39,7 +45,7 @@ void color_node_set(color_node_t *self, f32_array_t *value) {
 	}
 }
 
-color_node_t *color_node_create(ui_node_t *raw, f32_array_t *args) {
+void *color_node_create(ui_node_t *raw, f32_array_t *args) {
 	f32           r       = args == NULL ? 0.8 : args->buffer[0];
 	f32           g       = args == NULL ? 0.8 : args->buffer[1];
 	f32           b       = args == NULL ? 0.8 : args->buffer[2];

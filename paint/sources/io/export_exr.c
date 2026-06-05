@@ -5,19 +5,19 @@
 // https://github.com/aras-p/miniexr
 // https://www.openexr.com/documentation/openexrfilelayout.pdf
 
-i32         _export_exr_width;
-i32         _export_exr_stride;
-u8_array_t *_export_exr_out;
-buffer_t   *_export_exr_src_view;
-void (*_export_exr_write_line)(i32);
+static i32         _export_exr_width;
+static i32         _export_exr_stride;
+static u8_array_t *_export_exr_out;
+static buffer_t   *_export_exr_src_view;
+static void (*_export_exr_write_line)(i32);
 
-void export_exr_write_string(u8_array_t *out, char *str) {
+static void export_exr_write_string(u8_array_t *out, char *str) {
 	for (i32 i = 0; i < string_length(str); ++i) {
 		u8_array_push(out, char_code_at(str, i));
 	}
 }
 
-void export_exr_write_line16(i32 byte_pos) {
+static void export_exr_write_line16(i32 byte_pos) {
 	for (i32 x = 0; x < _export_exr_width; ++x) {
 		u8_array_push(_export_exr_out, buffer_get_u8(_export_exr_src_view, byte_pos));
 		u8_array_push(_export_exr_out, buffer_get_u8(_export_exr_src_view, byte_pos + 1));
@@ -25,7 +25,7 @@ void export_exr_write_line16(i32 byte_pos) {
 	}
 }
 
-void export_exr_write_line32(i32 byte_pos) {
+static void export_exr_write_line32(i32 byte_pos) {
 	for (i32 x = 0; x < _export_exr_width; ++x) {
 		u8_array_push(_export_exr_out, buffer_get_u8(_export_exr_src_view, byte_pos));
 		u8_array_push(_export_exr_out, buffer_get_u8(_export_exr_src_view, byte_pos + 1));
@@ -35,13 +35,13 @@ void export_exr_write_line32(i32 byte_pos) {
 	}
 }
 
-void export_exr_write_bgr(i32 off, i32 pos, i32 byte_size) {
+static void export_exr_write_bgr(i32 off, i32 pos, i32 byte_size) {
 	_export_exr_write_line(pos + byte_size * 2);
 	_export_exr_write_line(pos + byte_size);
 	_export_exr_write_line(pos);
 }
 
-void export_exr_write_single(i32 off, i32 pos, i32 byte_size) {
+static void export_exr_write_single(i32 off, i32 pos, i32 byte_size) {
 	_export_exr_write_line(pos + off * byte_size);
 	_export_exr_write_line(pos + off * byte_size);
 	_export_exr_write_line(pos + off * byte_size);

@@ -14,7 +14,7 @@ void save_image_node_run(ui_node_t *node, gpu_texture_t *result) {
 	} while (iron_file_exists(file));
 
 #ifdef IRON_BGRA
-	buffer_t *buf = export_arm_bgra_swap(gpu_get_texture_pixels(result));
+	buffer_t *buf = buffer_bgra_swap(gpu_get_texture_pixels(result));
 #else
 	buffer_t *buf = gpu_get_texture_pixels(result);
 #endif

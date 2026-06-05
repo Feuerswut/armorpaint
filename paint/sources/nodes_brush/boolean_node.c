@@ -1,6 +1,11 @@
 
 #include "../global.h"
 
+typedef struct boolean_node {
+	struct logic_node *base;
+	bool               value;
+} boolean_node_t;
+
 logic_node_value_t *boolean_node_get(boolean_node_t *self, i32 from) {
 	if (self->base->inputs->length > 0) {
 		return logic_node_input_get(self->base->inputs->buffer[0]);
@@ -20,7 +25,7 @@ void boolean_node_set(boolean_node_t *self, f32_array_t *value) {
 	}
 }
 
-boolean_node_t *boolean_node_create(ui_node_t *raw, f32_array_t *args) {
+void *boolean_node_create(ui_node_t *raw, f32_array_t *args) {
 	boolean_node_t *n = GC_ALLOC_INIT(boolean_node_t, {0});
 	n->base           = logic_node_create(n);
 	n->base->get      = boolean_node_get;

@@ -14,7 +14,6 @@ static i32        texture_mesh_node_model   = 0;
 
 static void texture_mesh_node_run_sd(ui_node_t *node);
 static void texture_mesh_node_project(ui_node_t *node);
-buffer_t   *export_arm_rgba64_to_rgba32(buffer_t *buffer);
 
 static void texture_mesh_node_set_view(i32 view) {
 	f32 h = math_pi() / 2.0;
@@ -50,7 +49,7 @@ static void texture_mesh_node_grab_view(i32 view_idx) {
 	render_target_t *rt  = any_map_get(render_path_render_targets, "last");
 	gpu_texture_t   *tex = rt->_image;
 
-	iron_write_png(string("%s%sinput_%d.png", dir, PATH_SEP, view_idx), export_arm_rgba64_to_rgba32(gpu_get_texture_pixels(tex)), tex->width, tex->height, 0);
+	iron_write_png(string("%s%sinput_%d.png", dir, PATH_SEP, view_idx), buffer_half_to_u8(gpu_get_texture_pixels(tex)), tex->width, tex->height, 0);
 }
 
 static void texture_mesh_node_capture(void *_) {

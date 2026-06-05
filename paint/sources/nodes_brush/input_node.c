@@ -1,6 +1,10 @@
 
 #include "../global.h"
 
+typedef struct input_node {
+	struct logic_node *base;
+} input_node_t;
+
 f32 input_node_start_x = 0.0;
 f32 input_node_start_y = 0.0;
 // Brush ruler
@@ -187,7 +191,7 @@ logic_node_value_t *input_node_get(input_node_t *self, i32 from) {
 	return v;
 }
 
-input_node_t *input_node_create(ui_node_t *raw, f32_array_t *args) {
+void *input_node_create(ui_node_t *raw, f32_array_t *args) {
 	float_node_t *n = GC_ALLOC_INIT(float_node_t, {0});
 	n->base         = logic_node_create(n);
 	n->base->get    = input_node_get;

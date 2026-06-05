@@ -108,10 +108,8 @@ void project_new_box_draw() {
 	project_fetch_default_meshes();
 
 	ui_handle_t *h_project_type = ui_handle(__ID__);
-	if (h_project_type->init) {
-		h_project_type->i = g_context->project_type;
-	}
-	g_context->project_type = ui_combo(h_project_type, project_mesh_list, tr("Template"), true, UI_ALIGN_LEFT, true);
+	h_project_type->i           = g_context->project_type;
+	g_context->project_type     = ui_combo(h_project_type, project_mesh_list, tr("Template"), true, UI_ALIGN_LEFT, true);
 	ui_end_element();
 	ui_row2();
 	if (ui_icon_button(tr("Cancel"), ICON_CLOSE, UI_ALIGN_CENTER)) {
@@ -248,9 +246,9 @@ void project_new(bool reset_layers) {
 	}
 	any_array_push(project_materials, slot_material_create(m, NULL));
 
-	g_context->picker_mask_handle->i = PICKER_MASK_NONE;
-	g_context->material              = project_materials->buffer[0];
-	ui_nodes_hwnd->redraws           = 2;
+	g_context->picker_mask = PICKER_MASK_NONE;
+	g_context->material    = project_materials->buffer[0];
+	ui_nodes_hwnd->redraws = 2;
 	gc_unroot(ui_nodes_group_stack);
 	ui_nodes_group_stack = any_array_create_from_raw((void *[]){}, 0);
 	gc_root(ui_nodes_group_stack);
@@ -332,14 +330,14 @@ void project_set_default_envmap() {
 	g_context->envmap_loaded         = false;
 	scene_world->_->envmap           = g_context->empty_envmap;
 	scene_world->envmap              = "World_radiance.k";
-	g_context->show_envmap_handle->b = g_context->show_envmap = false;
-	scene_world->_->radiance                                  = g_context->default_radiance;
-	scene_world->_->radiance_mipmaps                          = g_context->default_radiance_mipmaps;
-	scene_world->_->irradiance                                = g_context->default_irradiance;
-	scene_world->strength                                     = 2.0;
-	g_context->envmap_angle                                   = 0.0;
-	g_context->show_envmap_blur                               = false;
-	g_project->envmap                                         = NULL;
+	g_context->show_envmap           = false;
+	scene_world->_->radiance         = g_context->default_radiance;
+	scene_world->_->radiance_mipmaps = g_context->default_radiance_mipmaps;
+	scene_world->_->irradiance       = g_context->default_irradiance;
+	scene_world->strength            = 2.0;
+	g_context->envmap_angle          = 0.0;
+	g_context->show_envmap_blur      = false;
+	g_project->envmap                = NULL;
 }
 
 void project_import_material_on_file_picked(char *path) {

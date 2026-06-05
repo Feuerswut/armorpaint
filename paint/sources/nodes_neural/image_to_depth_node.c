@@ -19,7 +19,7 @@ void image_to_depth_node_button(i32 node_id) {
 			char *dir = neural_node_dir();
 
 #ifdef IRON_BGRA
-			buffer_t *input_buf = export_arm_bgra_swap(gpu_get_texture_pixels(input)); // Vulkan non-rt textures need a flip
+			buffer_t *input_buf = buffer_bgra_swap(gpu_get_texture_pixels(input)); // Vulkan non-rt textures need a flip
 #else
 			buffer_t *input_buf = gpu_get_texture_pixels(input);
 #endif

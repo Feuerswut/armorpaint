@@ -39,7 +39,7 @@ void sim_update() {
 			render_target_t *rt     = any_map_get(render_path_render_targets, "last");
 			buffer_t        *pixels = gpu_get_texture_pixels(rt->_image);
 #ifdef IRON_BGRA
-			export_arm_bgra_swap(pixels);
+			buffer_bgra_swap(pixels);
 #endif
 			// iron_mp4_encode(pixels);
 		}

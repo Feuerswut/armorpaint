@@ -1,6 +1,10 @@
 
 #include "../global.h"
 
+typedef struct random_node {
+	struct logic_node *base;
+} random_node_t;
+
 i32 random_node_a;
 i32 random_node_b;
 i32 random_node_c;
@@ -51,7 +55,7 @@ logic_node_value_t *random_node_get(random_node_t *self, i32 from) {
 	return v;
 }
 
-random_node_t *random_node_create(ui_node_t *raw, f32_array_t *args) {
+void *random_node_create(ui_node_t *raw, f32_array_t *args) {
 	random_node_t *n = GC_ALLOC_INIT(random_node_t, {0});
 	n->base          = logic_node_create(n);
 	n->base->get     = random_node_get;

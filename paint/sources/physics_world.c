@@ -1,5 +1,5 @@
 
-#ifdef arm_physics
+#ifdef WITH_PHYSICS
 
 #include "../libs/asim.h"
 #include "global.h"

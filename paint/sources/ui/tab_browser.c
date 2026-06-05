@@ -35,9 +35,9 @@ void tab_browser_draw_set_as_color_id_map_on_next_frame(void *_) {
 	}
 
 	if (asset_index != -1) {
-		g_context->colorid_handle->i = asset_index;
-		g_context->colorid_picked    = false;
-		ui_toolbar_handle->redraws   = 1;
+		g_context->colorid         = asset_index;
+		g_context->colorid_picked  = false;
+		ui_toolbar_handle->redraws = 1;
 		if (g_context->tool == TOOL_TYPE_COLORID) {
 			ui_header_handle->redraws = 2;
 			g_context->ddirty         = 2;

@@ -80,10 +80,8 @@ void box_export_tab_export_textures(char *title, bool bake_material) {
 
 		ui_row2();
 		if (base_bits_handle->i == TEXTURE_BITS_BITS8) {
-			ui_handle_t *h = ui_handle(__ID__);
-			if (h->init) {
-				h->i = g_context->format_type;
-			}
+			ui_handle_t *h               = ui_handle(__ID__);
+			h->i                         = g_context->format_type;
 			string_array_t *format_combo = any_array_create_from_raw(
 			    (void *[]){
 			        "png",
@@ -93,10 +91,8 @@ void box_export_tab_export_textures(char *title, bool bake_material) {
 			g_context->format_type = ui_combo(h, format_combo, tr("Format"), true, UI_ALIGN_LEFT, true);
 		}
 		else {
-			ui_handle_t *h = ui_handle(__ID__);
-			if (h->init) {
-				h->i = g_context->format_type;
-			}
+			ui_handle_t *h               = ui_handle(__ID__);
+			h->i                         = g_context->format_type;
 			string_array_t *format_combo = any_array_create_from_raw(
 			    (void *[]){
 			        "exr",
@@ -107,10 +103,8 @@ void box_export_tab_export_textures(char *title, bool bake_material) {
 
 		ui->enabled = g_context->format_type == TEXTURE_LDR_FORMAT_JPG && base_bits_handle->i == TEXTURE_BITS_BITS8;
 
-		ui_handle_t *h_quality = ui_handle(__ID__);
-		if (h_quality->init) {
-			h_quality->f = g_context->format_quality;
-		}
+		ui_handle_t *h_quality    = ui_handle(__ID__);
+		h_quality->f              = g_context->format_quality;
 		g_context->format_quality = ui_slider(h_quality, tr("Quality"), 0.0, 100.0, true, 1, true, UI_ALIGN_RIGHT, true);
 
 		ui->enabled = true;
@@ -458,10 +452,8 @@ void box_export_tab_export_mesh(ui_handle_t *htab) {
 
 		ui_row2();
 
-		ui_handle_t *h_export_mesh_format = ui_handle(__ID__);
-		if (h_export_mesh_format->init) {
-			h_export_mesh_format->i = g_context->export_mesh_format;
-		}
+		ui_handle_t *h_export_mesh_format        = ui_handle(__ID__);
+		h_export_mesh_format->i                  = g_context->export_mesh_format;
 		string_array_t *export_mesh_format_combo = any_array_create_from_raw(
 		    (void *[]){
 		        "obj",

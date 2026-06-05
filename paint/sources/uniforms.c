@@ -337,7 +337,7 @@ gpu_texture_t *uniforms_ext_tex_link(object_t *object, material_data_t *mat, cha
 			return rt->_image;
 		}
 		else {
-			return project_get_image(project_assets->buffer[g_context->colorid_handle->i]);
+			return project_get_image(project_assets->buffer[g_context->colorid]);
 		}
 	}
 	else if (string_equals(link, "_textexttool")) { // Opacity map for text
