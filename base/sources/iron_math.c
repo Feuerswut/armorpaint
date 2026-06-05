@@ -135,6 +135,14 @@ bool vec2_isnan(vec2_t v) {
 //  ╚████╔╝ ███████╗╚██████╗     ██║
 //   ╚═══╝  ╚══════╝ ╚═════╝     ╚═╝
 
+f32_array_t *vec3_to_f32_array(vec4_t v) {
+	f32_array_t *res = f32_array_create(3);
+	res->buffer[0]   = v.x;
+	res->buffer[1]   = v.y;
+	res->buffer[2]   = v.z;
+	return res;
+}
+
 vec4_t vec4_cross(vec4_t a, vec4_t b) {
 	vec4_t v;
 	v.x = a.y * b.z - a.z * b.y;

@@ -86,6 +86,8 @@ float  vec2_dot(vec2_t a, vec2_t b);
 vec2_t vec2_nan();
 bool   vec2_isnan(vec2_t v);
 
+f32_array_t *vec3_to_f32_array(vec4_t v);
+
 vec4_t vec4_cross(vec4_t a, vec4_t b);
 vec4_t vec4_add(vec4_t a, vec4_t b);
 vec4_t vec4_fadd(vec4_t a, float x, float y, float z, float w);

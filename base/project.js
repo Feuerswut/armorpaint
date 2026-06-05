@@ -161,7 +161,7 @@ else {
 }
 
 if (flags.with_physics) {
-	project.add_define("arm_physics");
+	project.add_define("WITH_PHYSICS");
 	project.add_cfiles("sources/libs/asim.c");
 }
 

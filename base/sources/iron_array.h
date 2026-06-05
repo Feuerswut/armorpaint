@@ -151,3 +151,6 @@ any_array_t    *any_array_create_from_raw(void **raw, uint32_t length);
 string_array_t *string_array_create(uint32_t length);
 uint16_t        float_to_half_fast(float value);
 uint8_t         half_to_u8_fast(uint16_t h);
+buffer_t       *buffer_half_to_u8(buffer_t *buffer);
+buffer_t       *buffer_bgra_swap(buffer_t *buffer);
+buffer_t       *buffer_bgra64_swap(buffer_t *buffer);
