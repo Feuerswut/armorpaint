@@ -13,6 +13,11 @@ char *manifest_url             = "https://armorpaint.org";
 char *manifest_url_android     = "https://play.google.com/store/apps/details?id=org.armorpaint";
 char *manifest_url_ios         = "https://apps.apple.com/app/armorpaint/id1533967534";
 
+context_t *g_context;
+project_t *g_project;
+config_t  *g_config;
+ui_t      *ui;
+
 any_map_t       *ui_children;
 any_map_t       *ui_nodes_custom_buttons;
 gpu_texture_t   *lut_image            = NULL;
@@ -24,7 +29,6 @@ gpu_texture_t   *layers_expc          = NULL;
 f32              layers_default_base  = 0.5;
 f32              layers_default_rough = 0.4;
 any_map_t       *operator_ops;
-config_t        *g_config = NULL;
 any_map_t       *config_keymap;
 ui_align_t       config_button_align   = UI_ALIGN_LEFT;
 char            *config_button_spacing = "       ";
@@ -103,41 +107,40 @@ char *ui_files_default_path = "/Users";
 char *ui_files_default_path = "/";
 #endif
 
-char                     *ui_files_filename;
-char                     *ui_files_path;
-char                     *ui_files_last_path  = "";
-bool                      base_ui_enabled     = true;
-bool                      base_view3d_show    = true;
-bool                      base_is_dragging    = false;
-bool                      base_is_resizing    = false;
-asset_t                  *base_drag_asset     = NULL;
-swatch_color_t           *base_drag_swatch    = NULL;
-char                     *base_drag_file      = NULL;
-gpu_texture_t            *base_drag_file_icon = NULL;
-f32                       base_drag_off_x     = 0.0;
-f32                       base_drag_off_y     = 0.0;
-draw_font_t              *base_font           = NULL;
-ui_theme_t               *base_theme;
-i32                       base_default_element_w = 100;
-i32                       base_default_element_h = 28;
-i32                       base_default_font_size = 13;
-ui_handle_t              *base_res_handle;
-ui_handle_t              *base_res_x_handle;
-ui_handle_t              *base_res_y_handle;
-ui_handle_t              *base_bits_handle;
-string_array_t           *base_drop_paths;
-slot_material_t          *base_drag_material = NULL;
-slot_layer_t             *base_drag_layer    = NULL;
-slot_brush_t             *base_drag_brush    = NULL;
-slot_font_t              *base_drag_font     = NULL;
-bool                      base_player_lock   = false;
-ui_t                     *ui;
+char            *ui_files_filename;
+char            *ui_files_path;
+char            *ui_files_last_path  = "";
+bool             base_ui_enabled     = true;
+bool             base_view3d_show    = true;
+bool             base_is_dragging    = false;
+bool             base_is_resizing    = false;
+asset_t         *base_drag_asset     = NULL;
+swatch_color_t  *base_drag_swatch    = NULL;
+char            *base_drag_file      = NULL;
+gpu_texture_t   *base_drag_file_icon = NULL;
+f32              base_drag_off_x     = 0.0;
+f32              base_drag_off_y     = 0.0;
+draw_font_t     *base_font           = NULL;
+ui_theme_t      *base_theme;
+i32              base_default_element_w = 100;
+i32              base_default_element_h = 28;
+i32              base_default_font_size = 13;
+ui_handle_t     *base_res_handle;
+ui_handle_t     *base_res_x_handle;
+ui_handle_t     *base_res_y_handle;
+ui_handle_t     *base_bits_handle;
+string_array_t  *base_drop_paths;
+slot_material_t *base_drag_material = NULL;
+slot_layer_t    *base_drag_layer    = NULL;
+slot_brush_t    *base_drag_brush    = NULL;
+slot_font_t     *base_drag_font     = NULL;
+bool             base_player_lock   = false;
+
 bool                      ui_base_show = true;
 i32                       ui_base_viewport_col;
 ui_handle_t_array_t      *ui_base_hwnds;
 ui_handle_t_array_t      *ui_base_htabs;
 tab_draw_array_t_array_t *ui_base_hwnd_tabs;
-context_t                *g_context;
 i32                       ui_toolbar_default_w = 36;
 ui_handle_t              *ui_toolbar_handle;
 string_array_t           *ui_toolbar_tool_names;
@@ -171,22 +174,16 @@ bool                      ui_menu_show_first                 = true;
 i32                       render_path_base_bloom_current_mip = 0;
 f32                       render_path_base_bloom_sample_scale;
 bool                      render_path_base_buf_swapped = false;
-project_t                *g_project;
-char                     *project_filepath = "";
+char                     *project_filepath             = "";
 asset_t_array_t          *project_assets;
-string_array_t           *project_asset_names;
 i32                       project_asset_id = 0;
-string_array_t           *project_mesh_assets;
 node_group_t_array_t     *project_material_groups;
 mesh_object_t_array_t    *project_paint_objects = NULL;
-any_imap_t               *project_asset_map; // gpu_texture_t | font_t
 string_array_t           *project_mesh_list = NULL;
 slot_material_t_array_t  *project_materials;
 slot_brush_t_array_t     *project_brushes;
 slot_layer_t_array_t     *project_layers;
 slot_font_t_array_t      *project_fonts;
-i32_array_t              *project_atlas_objects = NULL;
-string_array_t           *project_atlas_names   = NULL;
 gpu_pipeline_t           *ui_view2d_pipe;
 i32                       ui_view2d_channel_loc;
 view_2d_type_t            ui_view2d_type = VIEW_2D_TYPE_LAYER;
@@ -300,6 +297,98 @@ ui_node_t_array_t        *nodes_material_neural;
 ui_node_t_array_t        *nodes_material_group;
 node_list_t_array_t      *nodes_material_list        = NULL;
 i32                       make_mesh_layer_pass_count = 1;
+
+i32             ui_sidebar_default_w_mini = 56;
+i32             ui_sidebar_default_w_full = 280;
+i32             ui_sidebar_default_w;
+ui_handle_t    *ui_sidebar_hminimized;
+i32             ui_sidebar_w_mini;
+char           *console_message       = "";
+f32             console_message_timer = 0.0;
+i32             console_message_color = 0x00000000;
+string_array_t *console_last_traces;
+vec4_t          camera_origins[2];
+mat4_t          camera_views[2];
+ui_handle_t    *box_preferences_htab;
+string_array_t *box_preferences_files_plugin = NULL;
+ui_handle_t    *box_preferences_h_theme;
+ui_handle_t    *box_preferences_h_preset;
+slot_layer_t   *render_path_paint_live_layer        = NULL;
+i32             render_path_paint_live_layer_drawn  = 0;
+bool            render_path_paint_live_layer_locked = false;
+bool            render_path_paint_push_undo_last;
+bool            ui_box_show = false;
+ui_handle_t    *ui_box_hwnd;
+bool            ui_box_click_to_hide = true;
+i32             ui_box_modalw        = 400;
+i32             ui_box_modalh        = 170;
+ui_handle_t    *tab_layers_layer_name_handle;
+gpu_texture_t  *util_uv_uvmap                    = NULL;
+bool            util_uv_uvmap_cached             = false;
+gpu_texture_t  *util_uv_trianglemap              = NULL;
+bool            util_uv_trianglemap_cached       = false;
+gpu_texture_t  *util_uv_dilatemap                = NULL;
+bool            util_uv_dilatemap_cached         = false;
+gpu_texture_t  *util_uv_uvislandmap              = NULL;
+bool            util_uv_uvislandmap_cached       = false;
+i32             render_path_raytrace_frame       = 0;
+bool            render_path_raytrace_ready       = false;
+bool            render_path_raytrace_init_shader = true;
+f32_array_t    *render_path_raytrace_f32a;
+mat4_t          render_path_raytrace_help_mat;
+gpu_texture_t  *render_path_raytrace_last_envmap = NULL;
+bool            render_path_raytrace_is_bake     = false;
+
+#ifdef IRON_DIRECT3D12
+char *render_path_raytrace_ext = ".cso";
+#elif defined(IRON_METAL)
+char *render_path_raytrace_ext = ".metal";
+#else
+char *render_path_raytrace_ext = ".spirv";
+#endif
+
+bool  sculpt_push_undo                          = false;
+i32   ui_statusbar_default_h                    = 33;
+char *parser_material_bake_passthrough_strength = "0.0";
+char *parser_material_bake_passthrough_radius   = "0.0";
+char *parser_material_bake_passthrough_offset   = "0.0";
+
+any_imap_t                  *neural_node_results;
+ui_node_t                   *neural_node_current;
+i32                          neural_node_downloading = 0;
+neural_node_model_t_array_t *neural_node_models      = NULL;
+
+char *str_hue_sat = "\
+fun hsv_to_rgb(c: float3): float3 { \
+	var K: float4 = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0); \
+	var p: float3 = abs3(frac3(c.xxx + K.xyz) * 6.0 - K.www); \
+	return lerp3(K.xxx, clamp3(p - K.xxx, float3(0.0, 0.0, 0.0), float3(1.0, 1.0, 1.0)), c.y) * c.z; \
+} \
+fun rgb_to_hsv(c: float3): float3 { \
+	var K: float4 = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0); \
+	var p: float4 = lerp4(float4(c.bg, K.wz), float4(c.gb, K.xy), step(c.b, c.g)); \
+	var q: float4 = lerp4(float4(p.xyw, c.r), float4(c.r, p.yzx), step(p.x, c.r)); \
+	var d: float = q.x - min(q.w, q.y); \
+	var e: float = 0.0000000001; \
+	return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x); \
+} \
+fun hue_sat(col: float3, shift: float4): float3 { \
+	var hsv: float3 = rgb_to_hsv(col); \
+	hsv.x += shift.x; \
+	hsv.y *= shift.y; \
+	hsv.z *= shift.z; \
+	return lerp3(hsv_to_rgb(hsv), col, shift.w); \
+} \
+";
+
+char *str_brightcontrast = "\
+fun brightcontrast(col: float3, bright: float, contr: float): float3 { \
+	var a: float = 1.0 + contr; \
+	var b: float = bright - contr * 0.5; \
+	return max3(a * col + b, float3(0.0, 0.0, 0.0)); \
+} \
+";
+
 char                     *str_cotangent_frame        = "\
 fun cotangent_frame(n: float3, p: float3, tex_coord: float2): float3x3 { \
 	var duv1: float2 = ddx2(tex_coord); \
@@ -404,93 +493,3 @@ fun dither_bayer(uv: float2): float { \
 	return 5.0 / 16.0; \
 } \
 ";
-i32             ui_sidebar_default_w_mini = 56;
-i32             ui_sidebar_default_w_full = 280;
-i32             ui_sidebar_default_w;
-ui_handle_t    *ui_sidebar_hminimized;
-i32             ui_sidebar_w_mini;
-char           *console_message       = "";
-f32             console_message_timer = 0.0;
-i32             console_message_color = 0x00000000;
-string_array_t *console_last_traces;
-vec4_t          camera_origins[2];
-mat4_t          camera_views[2];
-ui_handle_t    *box_preferences_htab;
-string_array_t *box_preferences_files_plugin = NULL;
-ui_handle_t    *box_preferences_h_theme;
-ui_handle_t    *box_preferences_h_preset;
-slot_layer_t   *render_path_paint_live_layer        = NULL;
-i32             render_path_paint_live_layer_drawn  = 0;
-bool            render_path_paint_live_layer_locked = false;
-bool            render_path_paint_push_undo_last;
-bool            ui_box_show = false;
-ui_handle_t    *ui_box_hwnd;
-bool            ui_box_click_to_hide = true;
-i32             ui_box_modalw        = 400;
-i32             ui_box_modalh        = 170;
-ui_handle_t    *tab_layers_layer_name_handle;
-gpu_texture_t  *util_uv_uvmap                    = NULL;
-bool            util_uv_uvmap_cached             = false;
-gpu_texture_t  *util_uv_trianglemap              = NULL;
-bool            util_uv_trianglemap_cached       = false;
-gpu_texture_t  *util_uv_dilatemap                = NULL;
-bool            util_uv_dilatemap_cached         = false;
-gpu_texture_t  *util_uv_uvislandmap              = NULL;
-bool            util_uv_uvislandmap_cached       = false;
-i32             render_path_raytrace_frame       = 0;
-bool            render_path_raytrace_ready       = false;
-bool            render_path_raytrace_init_shader = true;
-f32_array_t    *render_path_raytrace_f32a;
-mat4_t          render_path_raytrace_help_mat;
-gpu_texture_t  *render_path_raytrace_last_envmap = NULL;
-bool            render_path_raytrace_is_bake     = false;
-
-#ifdef IRON_DIRECT3D12
-char *render_path_raytrace_ext = ".cso";
-#elif defined(IRON_METAL)
-char *render_path_raytrace_ext = ".metal";
-#else
-char *render_path_raytrace_ext = ".spirv";
-#endif
-
-bool  sculpt_push_undo                          = false;
-i32   ui_statusbar_default_h                    = 33;
-char *parser_material_bake_passthrough_strength = "0.0";
-char *parser_material_bake_passthrough_radius   = "0.0";
-char *parser_material_bake_passthrough_offset   = "0.0";
-
-char *str_hue_sat = "\
-fun hsv_to_rgb(c: float3): float3 { \
-	var K: float4 = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0); \
-	var p: float3 = abs3(frac3(c.xxx + K.xyz) * 6.0 - K.www); \
-	return lerp3(K.xxx, clamp3(p - K.xxx, float3(0.0, 0.0, 0.0), float3(1.0, 1.0, 1.0)), c.y) * c.z; \
-} \
-fun rgb_to_hsv(c: float3): float3 { \
-	var K: float4 = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0); \
-	var p: float4 = lerp4(float4(c.bg, K.wz), float4(c.gb, K.xy), step(c.b, c.g)); \
-	var q: float4 = lerp4(float4(p.xyw, c.r), float4(c.r, p.yzx), step(p.x, c.r)); \
-	var d: float = q.x - min(q.w, q.y); \
-	var e: float = 0.0000000001; \
-	return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x); \
-} \
-fun hue_sat(col: float3, shift: float4): float3 { \
-	var hsv: float3 = rgb_to_hsv(col); \
-	hsv.x += shift.x; \
-	hsv.y *= shift.y; \
-	hsv.z *= shift.z; \
-	return lerp3(hsv_to_rgb(hsv), col, shift.w); \
-} \
-";
-
-char *str_brightcontrast = "\
-fun brightcontrast(col: float3, bright: float, contr: float): float3 { \
-	var a: float = 1.0 + contr; \
-	var b: float = bright - contr * 0.5; \
-	return max3(a * col + b, float3(0.0, 0.0, 0.0)); \
-} \
-";
-
-any_imap_t                  *neural_node_results;
-ui_node_t                   *neural_node_current;
-i32                          neural_node_downloading = 0;
-neural_node_model_t_array_t *neural_node_models      = NULL;

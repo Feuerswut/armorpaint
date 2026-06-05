@@ -101,9 +101,7 @@ void tab_textures_delete_texture(asset_t *asset) {
 	}
 
 	data_delete_image(asset->file);
-	imap_delete(project_asset_map, asset->id);
 	array_splice(project_assets, index, 1);
-	array_splice(project_asset_names, index, 1);
 	sys_notify_on_next_frame(&tab_textures_delete_texture_on_next_frame, NULL);
 
 	for (i32 i = 0; i < project_materials->length; ++i) {
@@ -384,11 +382,8 @@ void tab_textures_accept_asset_drop(asset_t *asset) {
 	i32 asset_pos = array_index_of(project_assets, asset);
 	if (asset_pos != -1 && math_abs(asset_pos - tab_textures_drag_pos) > 0) {
 		array_remove(project_assets, asset);
-		char *asset_name = project_asset_names->buffer[asset_pos];
-		array_splice(project_asset_names, asset_pos, 1);
 		i32 new_pos = tab_textures_drag_pos - asset_pos > 0 ? tab_textures_drag_pos - 1 : tab_textures_drag_pos;
 		array_insert(project_assets, new_pos, asset);
-		array_insert(project_asset_names, new_pos, asset_name);
 
 		for (i32 i = 0; i < project_materials->length; ++i) {
 			tab_textures_remap_node_indices(project_materials->buffer[i]->canvas->nodes, asset_pos, new_pos);

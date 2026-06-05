@@ -394,25 +394,11 @@ void import_arm_run_project(char *path) {
 	if (project->mesh_assets != NULL && project->mesh_assets->length > 0) {
 		char *file = project->mesh_assets->buffer[0];
 		char *abs  = data_is_abs(file) ? file : string("%s%s", base, file);
-		gc_unroot(project_mesh_assets);
-		project_mesh_assets = any_array_create_from_raw(
+		g_project->mesh_assets = any_array_create_from_raw(
 		    (void *[]){
 		        abs,
 		    },
 		    1);
-		gc_root(project_mesh_assets);
-	}
-
-	if (project->atlas_objects != NULL) {
-		gc_unroot(project_atlas_objects);
-		project_atlas_objects = project->atlas_objects;
-		gc_root(project_atlas_objects);
-	}
-
-	if (project->atlas_names != NULL) {
-		gc_unroot(project_atlas_names);
-		project_atlas_names = project->atlas_names;
-		gc_root(project_atlas_names);
 	}
 
 	// No mask by default

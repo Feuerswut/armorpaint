@@ -369,17 +369,10 @@ void _kickstart() {
 	project_assets = any_array_create_from_raw((void *[]){}, 0);
 	gc_root(project_assets);
 
-	project_asset_names = any_array_create_from_raw((void *[]){}, 0);
-	gc_root(project_asset_names);
-
-	project_mesh_assets = any_array_create_from_raw((void *[]){}, 0);
-	gc_root(project_mesh_assets);
+	g_project->mesh_assets = any_array_create_from_raw((void *[]){}, 0);
 
 	project_material_groups = any_array_create_from_raw((void *[]){}, 0);
 	gc_root(project_material_groups);
-
-	project_asset_map = any_imap_create();
-	gc_root(project_asset_map);
 
 	project_materials = any_array_create_from_raw((void *[]){}, 0);
 	gc_root(project_materials);

@@ -139,7 +139,7 @@ void ui_header_draw_tool_properties_to_mask(slot_layer_t *m) {
 
 void ui_header_draw_tool_properties_import(char *path) {
 	import_asset_run(path, -1.0, -1.0, true, false, NULL);
-	g_context->colorid = project_asset_names->length - 1;
+	g_context->colorid = project_assets->length - 1;
 	for (i32 i = 0; i < project_assets->length; ++i) {
 		asset_t *a = project_assets->buffer[i];
 		// Already imported
@@ -167,7 +167,7 @@ void ui_header_draw_tool_properties() {
 		}
 		ui->enabled = true;
 		ui_text(tr("Color ID Map"), UI_ALIGN_LEFT, 0x00000000);
-		if (project_asset_names->length > 0) {
+		if (project_assets->length > 0) {
 			ui_handle_t *colorid_handle = ui_handle(__ID__);
 			colorid_handle->i           = g_context->colorid;
 			g_context->colorid          = ui_combo(colorid_handle, base_combo_enum_texts("TEX_IMAGE"), tr("Color ID"), false, UI_ALIGN_LEFT, true);

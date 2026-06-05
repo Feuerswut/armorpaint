@@ -57,8 +57,8 @@ string_array_t *export_arm_assets_to_files(char *project_path, asset_t_array_t *
 
 string_array_t *export_arm_meshes_to_files(char *project_path) {
 	string_array_t *mesh_files = any_array_create_from_raw((void *[]){}, 0);
-	for (i32 i = 0; i < project_mesh_assets->length; ++i) {
-		char *file = project_mesh_assets->buffer[i];
+	for (i32 i = 0; i < g_project->mesh_assets->length; ++i) {
+		char *file = g_project->mesh_assets->buffer[i];
 #ifdef IRON_IOS
 		bool same_drive = false;
 #else
@@ -263,8 +263,6 @@ void export_arm_run_project() {
 	g_project->layer_datas    = ld;
 	g_project->font_assets    = font_files;
 	g_project->mesh_assets    = mesh_files;
-	g_project->atlas_objects  = project_atlas_objects;
-	g_project->atlas_names    = project_atlas_names;
 
 	tab_timeline_export(g_project);
 

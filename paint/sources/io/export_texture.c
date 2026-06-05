@@ -41,8 +41,7 @@ static void export_texture_write_texture(char *file, buffer_t *pixels, i32 type,
 			g_project->assets = any_array_create_from_raw((void *[]){}, 0);
 		}
 		any_array_push(g_project->assets, asset->file);
-		any_array_push(project_asset_names, asset->name);
-		any_imap_set(project_asset_map, asset->id, image);
+		asset->image = image;
 		asset_t_array_t *assets = any_array_create_from_raw(
 		    (void *[]){
 		        asset,
@@ -546,9 +545,9 @@ void export_texture_run(char *path, bool bake_material) {
 	}
 	else { // Visible or selected
 		bool atlas_export = false;
-		if (project_atlas_objects != NULL) {
-			for (i32 i = 1; i < project_atlas_objects->length; ++i) {
-				if (project_atlas_objects->buffer[i - 1] != project_atlas_objects->buffer[i]) {
+		if (g_project->atlas_objects != NULL) {
+			for (i32 i = 1; i < g_project->atlas_objects->length; ++i) {
+				if (g_project->atlas_objects->buffer[i - 1] != g_project->atlas_objects->buffer[i]) {
 					atlas_export = true;
 					break;
 				}
@@ -556,11 +555,11 @@ void export_texture_run(char *path, bool bake_material) {
 		}
 		if (atlas_export) {
 			string_array_t *used_atlases = project_get_used_atlases();
-			for (i32 atlas_index = 0; atlas_index < project_atlas_objects->length; ++atlas_index) {
+			for (i32 atlas_index = 0; atlas_index < g_project->atlas_objects->length; ++atlas_index) {
 				// Skip atlases that no object is assigned to
 				bool atlas_used = false;
-				for (i32 object_index = 0; object_index < project_atlas_objects->length; ++object_index) {
-					if (project_atlas_objects->buffer[object_index] == atlas_index) {
+				for (i32 object_index = 0; object_index < g_project->atlas_objects->length; ++object_index) {
+					if (g_project->atlas_objects->buffer[object_index] == atlas_index) {
 						atlas_used = true;
 						break;
 					}
@@ -577,12 +576,12 @@ void export_texture_run(char *path, bool bake_material) {
 						add = true;
 					}
 					else if (mask <= project_paint_objects->length) { // Specific object
-						add = project_atlas_objects->buffer[mask - 1] == atlas_index;
+						add = g_project->atlas_objects->buffer[mask - 1] == atlas_index;
 					}
 					else if (used_atlases != NULL) { // Atlas
 						i32 used_index = mask - project_paint_objects->length - 1;
 						if (used_index < used_atlases->length) {
-							add = string_array_index_of(project_atlas_names, used_atlases->buffer[used_index]) == atlas_index;
+							add = string_array_index_of(g_project->atlas_names, used_atlases->buffer[used_index]) == atlas_index;
 						}
 					}
 					if (add) {
@@ -590,7 +589,7 @@ void export_texture_run(char *path, bool bake_material) {
 					}
 				}
 				if (layers->length > 0) {
-					export_texture_run_layers(path, layers, project_atlas_names->buffer[atlas_index], false);
+					export_texture_run_layers(path, layers, g_project->atlas_names->buffer[atlas_index], false);
 				}
 			}
 		}

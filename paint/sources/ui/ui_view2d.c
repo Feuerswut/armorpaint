@@ -377,11 +377,8 @@ void ui_view2d_render(void *_) {
 		if (ui_view2d_type == VIEW_2D_TYPE_ASSET) {
 			asset_t *asset = g_context->texture;
 			if (asset != NULL) {
-				string_array_t *asset_names = project_asset_names;
-				i32             i           = string_array_index_of(asset_names, asset->name);
-				h->text                     = string_copy(asset->name);
-				asset->name                 = string_copy(ui_text_input(h, "", UI_ALIGN_LEFT, true, false));
-				asset_names->buffer[i]      = asset->name;
+				h->text     = string_copy(asset->name);
+				asset->name = string_copy(ui_text_input(h, "", UI_ALIGN_LEFT, true, false));
 			}
 		}
 		else if (ui_view2d_type == VIEW_2D_TYPE_NODE) {

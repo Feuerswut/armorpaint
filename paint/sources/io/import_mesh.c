@@ -47,13 +47,11 @@ void import_mesh_run(char *path, bool _clear_layers, bool replace_existing, bool
 		}
 	}
 
-	gc_unroot(project_mesh_assets);
-	project_mesh_assets = any_array_create_from_raw(
+	g_project->mesh_assets = any_array_create_from_raw(
 	    (void *[]){
 	        path,
 	    },
 	    1);
-	gc_root(project_mesh_assets);
 
 #if defined(IRON_ANDROID) || defined(IRON_IOS)
 	sys_title_set(substring(path, string_last_index_of(path, PATH_SEP) + 1, string_last_index_of(path, ".")));

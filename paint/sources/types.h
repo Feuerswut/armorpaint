@@ -556,9 +556,10 @@ typedef struct project {
 } project_t;
 
 typedef struct asset {
-	i32   id;
-	char *name;
-	char *file;
+	i32            id;
+	char          *name;
+	char          *file;
+	gpu_texture_t *image;
 } asset_t;
 
 typedef struct packed_asset {

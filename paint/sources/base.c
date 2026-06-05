@@ -2009,8 +2009,12 @@ void base_resize() {
 
 string_array_t *base_combo_enum_texts(char *node_type) {
 	if (string_equals(node_type, "TEX_IMAGE")) {
-		if (project_asset_names->length > 0) {
-			return project_asset_names;
+		if (project_assets->length > 0) {
+			string_array_t *asset_names = any_array_create_from_raw((void *[]){}, 0);
+			for (i32 i = 0; i < project_assets->length; ++i) {
+				any_array_push(asset_names, project_assets->buffer[i]->name);
+			}
+			return asset_names;
 		}
 		else {
 			string_array_t *empty = any_array_create_from_raw(
@@ -2041,8 +2045,12 @@ string_array_t *base_combo_enum_texts(char *node_type) {
 	}
 
 	if (string_equals(node_type, "image_texture_node")) {
-		if (project_asset_names->length > 0) {
-			return project_asset_names;
+		if (project_assets->length > 0) {
+			string_array_t *asset_names = any_array_create_from_raw((void *[]){}, 0);
+			for (i32 i = 0; i < project_assets->length; ++i) {
+				any_array_push(asset_names, project_assets->buffer[i]->name);
+			}
+			return asset_names;
 		}
 		else {
 			string_array_t *empty = any_array_create_from_raw(
@@ -2100,8 +2108,12 @@ any_array_t *base_combo_enum_images(char *node_type) {
 }
 
 i32 base_get_asset_index(char *file_name) {
-	i32 i = string_array_index_of(project_asset_names, file_name);
-	return i >= 0 ? i : 0;
+	for (i32 i = 0; i < project_assets->length; ++i) {
+		if (string_equals(project_assets->buffer[i]->name, file_name)) {
+			return i;
+		}
+	}
+	return 0;
 }
 
 void base_toggle_fullscreen() {

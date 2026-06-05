@@ -184,9 +184,7 @@ void project_new(bool reset_layers) {
 	g_context->layer_preview_dirty = true;
 	g_context->layer_filter        = 0;
 	g_context->texture             = NULL;
-	gc_unroot(project_mesh_assets);
-	project_mesh_assets = any_array_create_from_raw((void *[]){}, 0);
-	gc_root(project_mesh_assets);
+	g_project->mesh_assets = any_array_create_from_raw((void *[]){}, 0);
 
 	mesh_data_t *raw       = NULL;
 	char        *mesh_name = project_mesh_list == NULL ? "box_bevel" : project_mesh_list->buffer[g_context->project_type];
@@ -284,12 +282,6 @@ void project_new(bool reset_layers) {
 	gc_unroot(project_assets);
 	project_assets = any_array_create_from_raw((void *[]){}, 0);
 	gc_root(project_assets);
-	gc_unroot(project_asset_names);
-	project_asset_names = any_array_create_from_raw((void *[]){}, 0);
-	gc_root(project_asset_names);
-	gc_unroot(project_asset_map);
-	project_asset_map = any_imap_create();
-	gc_root(project_asset_map);
 	project_asset_id                                  = 0;
 	g_project->packed_assets                          = any_array_create_from_raw((void *[]){}, 0);
 	g_context->ddirty                                 = 4;
@@ -502,8 +494,8 @@ void project_import_mesh_box(char *path, bool replace_existing, bool clear_layer
 }
 
 void project_reimport_mesh() {
-	if (project_mesh_assets != NULL && project_mesh_assets->length > 0 && iron_file_exists(project_mesh_assets->buffer[0])) {
-		project_import_mesh_box(project_mesh_assets->buffer[0], true, false, true, NULL);
+	if (g_project->mesh_assets != NULL && g_project->mesh_assets->length > 0 && iron_file_exists(g_project->mesh_assets->buffer[0])) {
+		project_import_mesh_box(g_project->mesh_assets->buffer[0], true, false, true, NULL);
 	}
 	else {
 		project_import_asset(NULL, true);
@@ -512,10 +504,10 @@ void project_reimport_mesh() {
 
 void project_reimport_mesh_skinned(int frame) {
 	extern bool import_mesh_no_scale;
-	if (project_mesh_assets != NULL && project_mesh_assets->length > 0 && iron_file_exists(project_mesh_assets->buffer[0])) {
+	if (g_project->mesh_assets != NULL && g_project->mesh_assets->length > 0 && iron_file_exists(g_project->mesh_assets->buffer[0])) {
 		plugins_skinning_frame = frame;
 		import_mesh_no_scale   = true;
-		import_mesh_run(project_mesh_assets->buffer[0], false, true, true);
+		import_mesh_run(g_project->mesh_assets->buffer[0], false, true, true);
 		plugins_skinning_frame = -1;
 	}
 }
@@ -590,13 +582,10 @@ void project_reimport_texture_load(char *path, asset_t *asset) {
 	asset->file = string_copy(path);
 	i32 i       = array_index_of(project_assets, asset);
 	data_delete_image(asset->file);
-	imap_delete(project_asset_map, asset->id);
 	asset_t *old_asset = project_assets->buffer[i];
 	array_splice(project_assets, i, 1);
-	array_splice(project_asset_names, i, 1);
 	import_texture_run(asset->file, true);
 	array_insert(project_assets, i, array_pop(project_assets));
-	array_insert(project_asset_names, i, array_pop(project_asset_names));
 
 	if (g_context->texture == old_asset) {
 		g_context->texture = project_assets->buffer[i];
@@ -623,16 +612,16 @@ void project_reimport_texture(asset_t *asset) {
 }
 
 gpu_texture_t *project_get_image(asset_t *asset) {
-	return asset != NULL ? any_imap_get(project_asset_map, asset->id) : NULL;
+	return asset != NULL ? asset->image : NULL;
 }
 
 string_array_t *project_get_used_atlases() {
-	if (project_atlas_objects == NULL) {
+	if (g_project->atlas_objects == NULL) {
 		return NULL;
 	}
 	i32_array_t *used = i32_array_create_from_raw((i32[]){}, 0);
-	for (i32 i = 0; i < project_atlas_objects->length; ++i) {
-		i32 ao = project_atlas_objects->buffer[i];
+	for (i32 i = 0; i < g_project->atlas_objects->length; ++i) {
+		i32 ao = g_project->atlas_objects->buffer[i];
 		if (i32_array_index_of(used, ao) == -1) {
 			i32_array_push(used, ao);
 		}
@@ -641,7 +630,7 @@ string_array_t *project_get_used_atlases() {
 		string_array_t *res = any_array_create_from_raw((void *[]){}, 0);
 		for (i32 i = 0; i < used->length; ++i) {
 			i32 u = used->buffer[i];
-			any_array_push(res, project_atlas_names->buffer[u]);
+			any_array_push(res, g_project->atlas_names->buffer[u]);
 		}
 		return res;
 	}
@@ -654,8 +643,8 @@ bool project_is_atlas_object(mesh_object_t *p) {
 		return false;
 	}
 	char *atlas_name = project_get_used_atlases()->buffer[g_context->layer_filter - project_paint_objects->length - 1];
-	i32   atlas_i    = string_array_index_of(project_atlas_names, atlas_name);
-	return atlas_i == project_atlas_objects->buffer[array_index_of(project_paint_objects, p)];
+	i32   atlas_i    = string_array_index_of(g_project->atlas_names, atlas_name);
+	return atlas_i == g_project->atlas_objects->buffer[array_index_of(project_paint_objects, p)];
 }
 
 mesh_object_t_array_t *project_get_atlas_objects(i32 object_mask) {
@@ -665,10 +654,10 @@ mesh_object_t_array_t *project_get_atlas_objects(i32 object_mask) {
 		return project_paint_objects;
 	}
 	char                  *atlas_name = atlases->buffer[i];
-	i32                    atlas_i    = string_array_index_of(project_atlas_names, atlas_name);
+	i32                    atlas_i    = string_array_index_of(g_project->atlas_names, atlas_name);
 	mesh_object_t_array_t *visibles   = any_array_create_from_raw((void *[]){}, 0);
 	for (i32 i = 0; i < project_paint_objects->length; ++i) {
-		if (project_atlas_objects->buffer[i] == atlas_i) {
+		if (g_project->atlas_objects->buffer[i] == atlas_i) {
 			any_array_push(visibles, project_paint_objects->buffer[i]);
 		}
 	}
