@@ -7,7 +7,6 @@ bool                     _box_export_apply_displacement;
 bool                     _box_export_merge_vertices;
 
 void box_export_tab_export_textures_run(void *_) {
-
 	if (g_context->export_padding) {
 		i32 _dilate_radius      = g_config->dilate_radius;
 		g_config->dilate_radius = 256;

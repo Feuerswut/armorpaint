@@ -428,17 +428,17 @@ typedef struct node_shader {
 	struct string_array        *textures;
 	struct any_map             *functions;
 
-	char *vert;
-	char *vert_end;
-	char *vert_normal;
-	char *vert_attribs;
-	i32   vert_write_normal;
+	buffer_t vert;
+	buffer_t vert_end;
+	buffer_t vert_normal;
+	buffer_t vert_attribs;
+	i32      vert_write_normal;
 
-	char *frag;
-	char *frag_end;
-	char *frag_normal;
-	char *frag_attribs;
-	i32   frag_write_normal;
+	buffer_t frag;
+	buffer_t frag_end;
+	buffer_t frag_normal;
+	buffer_t frag_attribs;
+	i32      frag_write_normal;
 
 	// References
 	bool vert_n;
