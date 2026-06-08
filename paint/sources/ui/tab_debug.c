@@ -12,7 +12,7 @@ void tab_debug_draw_list(ui_handle_t *list_handle, object_t *current_object) {
 
 	// Highlight every other line
 	if (tab_debug_line_counter % 2 == 0) {
-		draw_set_color(g_ui->ops->theme->SEPARATOR_COL);
+		draw_set_color(g_theme->SEPARATOR_COL);
 		draw_filled_rect(0, g_ui->_y, g_ui->_window_w, UI_ELEMENT_H());
 		draw_set_color(0xffffffff);
 	}
@@ -36,7 +36,7 @@ void tab_debug_draw_list(ui_handle_t *list_handle, object_t *current_object) {
 		g_ui->_x += 18; // Sign offset
 
 		// Draw line that shows parent relations
-		draw_set_color(g_ui->ops->theme->BUTTON_COL);
+		draw_set_color(g_theme->BUTTON_COL);
 		draw_line(g_ui->_x - 10, g_ui->_y + UI_ELEMENT_H() / 2.0, g_ui->_x, g_ui->_y + UI_ELEMENT_H() / 2.0, 1.0);
 		draw_set_color(0xffffffff);
 
@@ -59,7 +59,7 @@ void tab_debug_draw_list(ui_handle_t *list_handle, object_t *current_object) {
 		}
 
 		// Draw line that shows parent relations
-		draw_set_color(g_ui->ops->theme->BUTTON_COL);
+		draw_set_color(g_theme->BUTTON_COL);
 		draw_line(g_ui->_x + 14, current_y, g_ui->_x + 14, g_ui->_y - UI_ELEMENT_H() / 2.0, 1.0);
 		draw_set_color(0xffffffff);
 	}

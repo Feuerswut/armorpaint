@@ -1021,8 +1021,8 @@ void tab_timeline_draw(ui_handle_t *htab) {
 		f32 frame_w         = 16.0f * UI_SCALE();
 		f32 start_x         = g_ui->_x + layer_name_w;
 		f32 start_y         = g_ui->_y;
-		i32 font_h          = draw_font_height(g_ui->ops->font, g_ui->font_size);
-		i32 strip_h         = (i32)(g_ui->ops->theme->ELEMENT_H * UI_SCALE());
+		i32 font_h          = draw_font_height(g_font, g_ui->font_size);
+		i32 strip_h         = (i32)(g_theme->ELEMENT_H * UI_SCALE());
 		f32 track_w         = g_ui->_window_w - start_x;
 		i32 visible         = (i32)(track_w / frame_w);
 		i32 max_scroll      = math_max(tab_timeline_max_frames - visible, 0);
@@ -1044,7 +1044,7 @@ void tab_timeline_draw(ui_handle_t *htab) {
 		}
 
 		// Frame number labels every 5 frames
-		draw_set_color(g_ui->ops->theme->LABEL_COL);
+		draw_set_color(g_theme->LABEL_COL);
 		i32 label_start = (tab_timeline_scroll / 5) * 5;
 		for (i32 i = label_start; i < tab_timeline_scroll + visible + 1 && i < tab_timeline_max_frames; i += 5) {
 			f32 lx = start_x + (i - tab_timeline_scroll) * frame_w;
@@ -1052,13 +1052,13 @@ void tab_timeline_draw(ui_handle_t *htab) {
 				continue;
 			}
 			char *label   = i32_to_string(i);
-			f32   label_w = draw_string_width(g_ui->ops->font, g_ui->font_size, label);
+			f32   label_w = draw_string_width(g_font, g_ui->font_size, label);
 			draw_string(label, lx + (frame_w - label_w) / 2.0f, start_y);
 		}
 
-		u32 base_col   = g_ui->ops->theme->BUTTON_COL;
+		u32 base_col   = g_theme->BUTTON_COL;
 		u32 bright_col = base_col + 0x00101010;
-		u32 sel_col    = g_ui->ops->theme->HIGHLIGHT_COL;
+		u32 sel_col    = g_theme->HIGHLIGHT_COL;
 		i32 row_count  = g_project->_->layers->length;
 
 		gpu_texture_t *icons     = resource_get("icons.k");
@@ -1070,9 +1070,9 @@ void tab_timeline_draw(ui_handle_t *htab) {
 			f32           icon_y = row_y + (strip_h - icon_size) / 2.0f;
 
 			rect_t *rect = resource_tile50(icons, ICON_LAYERS);
-			draw_set_color(g_ui->ops->theme->LABEL_COL);
+			draw_set_color(g_theme->LABEL_COL);
 			draw_scaled_sub_image(icons, rect->x, rect->y, rect->w, rect->h, g_ui->_x, icon_y, icon_size, icon_size);
-			draw_set_color(g_ui->ops->theme->LABEL_COL);
+			draw_set_color(g_theme->LABEL_COL);
 			draw_string(layer->name, g_ui->_x + icon_size + 2, row_y + (strip_h - font_h) / 2.0f);
 
 			for (i32 i = tab_timeline_scroll; i < tab_timeline_scroll + visible + 1 && i < tab_timeline_max_frames; i++) {
@@ -1092,7 +1092,7 @@ void tab_timeline_draw(ui_handle_t *htab) {
 				}
 
 				if (i == 0 || (tab_timeline_keyframes != NULL && tab_timeline_find_keyframe(i, ri) >= 0)) {
-					draw_set_color(g_ui->ops->theme->LABEL_COL);
+					draw_set_color(g_theme->LABEL_COL);
 					draw_filled_circle(x + frame_w / 2.0f, row_y + strip_h / 2.0f, 3.0f * UI_SCALE(), 12);
 				}
 
@@ -1129,9 +1129,9 @@ void tab_timeline_draw(ui_handle_t *htab) {
 			f32            icon_y = row_y + (strip_h - icon_size) / 2.0f;
 
 			rect_t *rect = resource_tile50(icons, ICON_CUBE);
-			draw_set_color(g_ui->ops->theme->LABEL_COL);
+			draw_set_color(g_theme->LABEL_COL);
 			draw_scaled_sub_image(icons, rect->x, rect->y, rect->w, rect->h, g_ui->_x, icon_y, icon_size, icon_size);
-			draw_set_color(g_ui->ops->theme->LABEL_COL);
+			draw_set_color(g_theme->LABEL_COL);
 			draw_string(mesh->base->name, g_ui->_x + icon_size + 2, row_y + (strip_h - font_h) / 2.0f);
 
 			for (i32 i = tab_timeline_scroll; i < tab_timeline_scroll + visible + 1 && i < tab_timeline_max_frames; i++) {
@@ -1151,7 +1151,7 @@ void tab_timeline_draw(ui_handle_t *htab) {
 				}
 
 				if (i == 0 || (tab_timeline_mesh_keyframes != NULL && tab_timeline_find_mesh_keyframe(i, mi) >= 0)) {
-					draw_set_color(g_ui->ops->theme->LABEL_COL);
+					draw_set_color(g_theme->LABEL_COL);
 					draw_filled_circle(x + frame_w / 2.0f, row_y + strip_h / 2.0f, 3.0f * UI_SCALE(), 12);
 				}
 
@@ -1186,9 +1186,9 @@ void tab_timeline_draw(ui_handle_t *htab) {
 		f32 handle_w    = track_w * (f32)visible / tab_timeline_max_frames;
 		f32 handle_x    = start_x + (max_scroll > 0 ? tab_timeline_scroll * (track_w - handle_w) / max_scroll : 0);
 
-		draw_set_color(base_darker(g_ui->ops->theme->BUTTON_COL, 0x00101010));
+		draw_set_color(base_darker(g_theme->BUTTON_COL, 0x00101010));
 		draw_filled_rect(start_x, scrollbar_y, track_w, scrollbar_h);
-		draw_set_color(g_ui->ops->theme->BUTTON_COL + 0x00202020);
+		draw_set_color(g_theme->BUTTON_COL + 0x00202020);
 		draw_filled_rect(handle_x, scrollbar_y, handle_w, scrollbar_h);
 
 		if (g_ui->input_started && g_ui->input_x > g_ui->_window_x + start_x && g_ui->input_x < g_ui->_window_x + start_x + track_w &&

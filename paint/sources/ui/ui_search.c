@@ -29,13 +29,13 @@ void ui_base_operator_search_menu_draw() {
 	}
 	bool enter      = keyboard_down("enter");
 	i32  count      = 0;
-	i32  BUTTON_COL = g_ui->ops->theme->BUTTON_COL;
+	i32  BUTTON_COL = g_theme->BUTTON_COL;
 
 	string_array_t *keys = map_keys(g_keymap);
 	for (i32 i = 0; i < keys->length; ++i) {
 		char *n = keys->buffer[i];
 		if (string_index_of(n, search) >= 0) {
-			g_ui->ops->theme->BUTTON_COL = count == ui_base_operator_search_offset ? g_ui->ops->theme->HIGHLIGHT_COL : g_ui->ops->theme->SEPARATOR_COL;
+			g_theme->BUTTON_COL = count == ui_base_operator_search_offset ? g_theme->HIGHLIGHT_COL : g_theme->SEPARATOR_COL;
 			if (ui_button(n, UI_ALIGN_LEFT, any_map_get(g_keymap, n)) || (enter && count == ui_base_operator_search_offset)) {
 				if (enter) {
 					g_ui->changed = true;
@@ -53,7 +53,7 @@ void ui_base_operator_search_menu_draw() {
 		g_ui->changed       = true;
 		search_handle->text = "";
 	}
-	g_ui->ops->theme->BUTTON_COL = BUTTON_COL;
+	g_theme->BUTTON_COL = BUTTON_COL;
 }
 
 void ui_base_operator_search() {

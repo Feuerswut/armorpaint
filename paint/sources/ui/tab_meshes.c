@@ -211,7 +211,7 @@ void tab_meshes_draw_context_menu() {
 	// 	}
 	// }
 
-	// ui_text("Script", UI_ALIGN_LEFT, g_ui->ops->theme->SEPARATOR_COL);
+	// ui_text("Script", UI_ALIGN_LEFT, g_theme->SEPARATOR_COL);
 
 	// char *script = any_map_get(sim_object_script_map, g_context->selected_object);
 	// if (script == NULL) {
@@ -221,7 +221,7 @@ void tab_meshes_draw_context_menu() {
 	// ui_handle_t *hscript = ui_handle(__ID__);
 	// hscript->text        = string_copy(script);
 
-	// draw_font_t *_font      = g_ui->ops->font;
+	// draw_font_t *_font      = g_font;
 	// i32          _font_size = g_ui->font_size;
 	// draw_font_t *fmono      = data_get_font("font_mono.ttf");
 	// ui_set_font(g_ui, fmono);
@@ -598,7 +598,7 @@ void tab_meshes_draw(ui_handle_t *htab) {
 				else {
 					gpu_texture_t *icons = resource_get("icons.k");
 					rect_t        *rect  = resource_tile50(icons, ICON_CUBE);
-					state                = ui_sub_image(icons, g_ui->ops->theme->BUTTON_COL, slotw, rect->x, rect->y, rect->w, rect->h);
+					state                = ui_sub_image(icons, g_theme->BUTTON_COL, slotw, rect->x, rect->y, rect->w, rect->h);
 					sys_notify_on_next_frame(tab_meshes_make_preview, o);
 				}
 
@@ -610,10 +610,10 @@ void tab_meshes_draw(ui_handle_t *htab) {
 					g_ui->_y = uiy + 4;
 					i32 hoff = i % 2 == 1 ? 1 : 0;
 					i32 w    = 75;
-					ui_fill(0, 0, w + 3, 2, g_ui->ops->theme->HIGHLIGHT_COL);
-					ui_fill(0, w - hoff + 2, w + 3, 2 + hoff, g_ui->ops->theme->HIGHLIGHT_COL);
-					ui_fill(0, 0, 2, w + 3, g_ui->ops->theme->HIGHLIGHT_COL);
-					ui_fill(w + 2, 0, 2, w + 4, g_ui->ops->theme->HIGHLIGHT_COL);
+					ui_fill(0, 0, w + 3, 2, g_theme->HIGHLIGHT_COL);
+					ui_fill(0, w - hoff + 2, w + 3, 2 + hoff, g_theme->HIGHLIGHT_COL);
+					ui_fill(0, 0, 2, w + 3, g_theme->HIGHLIGHT_COL);
+					ui_fill(w + 2, 0, 2, w + 4, g_theme->HIGHLIGHT_COL);
 					g_ui->_x = _uix;
 					g_ui->_y = _uiy;
 				}
@@ -645,7 +645,7 @@ void tab_meshes_draw(ui_handle_t *htab) {
 
 				// Label
 				i32 check_w  = UI_ELEMENT_H();
-				i32 text_w   = draw_string_width(g_ui->ops->font, g_ui->font_size, o->base->name);
+				i32 text_w   = draw_string_width(g_font, g_ui->font_size, o->base->name);
 				i32 center_x = (slotw - check_w - text_w) / 2;
 				g_ui->_x     = uix + (center_x > 0 ? center_x : 0);
 				g_ui->_y += slotw * 0.9 + 8;

@@ -207,7 +207,7 @@ void project_new(bool reset_layers) {
 	g_context->brush    = g_project->_->brushes->buffer[0];
 	g_project->_->fonts = any_array_create_from_raw(
 	    (void *[]){
-	        slot_font_create("default.ttf", base_font, ""),
+	        slot_font_create("default.ttf", g_font, ""),
 	    },
 	    1);
 	g_context->font = g_project->_->fonts->buffer[0];

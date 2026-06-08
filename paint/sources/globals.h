@@ -13,23 +13,26 @@ char *manifest_url             = "https://armorpaint.org";
 char *manifest_url_android     = "https://play.google.com/store/apps/details?id=org.armorpaint";
 char *manifest_url_ios         = "https://apps.apple.com/app/armorpaint/id1533967534";
 
-context_t *g_context;
-project_t *g_project;
-config_t  *g_config;
-any_map_t *g_keymap;
-ui_t      *g_ui;
+context_t   *g_context;
+project_t   *g_project;
+config_t    *g_config;
+any_map_t   *g_keymap;
+ui_t        *g_ui;
+draw_font_t *g_font;
+ui_theme_t  *g_theme;
+any_map_t   *g_plugins;
+any_map_t   *g_operators;
 
 any_map_t       *ui_children;
 any_map_t       *ui_nodes_custom_buttons;
-gpu_texture_t   *lut_image            = NULL;
-i32              lut_size             = 0;
-gpu_texture_t   *layers_temp_image    = NULL;
-gpu_texture_t   *layers_expa          = NULL;
-gpu_texture_t   *layers_expb          = NULL;
-gpu_texture_t   *layers_expc          = NULL;
-f32              layers_default_base  = 0.5;
-f32              layers_default_rough = 0.4;
-any_map_t       *operator_ops;
+gpu_texture_t   *lut_image             = NULL;
+i32              lut_size              = 0;
+gpu_texture_t   *layers_temp_image     = NULL;
+gpu_texture_t   *layers_expa           = NULL;
+gpu_texture_t   *layers_expb           = NULL;
+gpu_texture_t   *layers_expc           = NULL;
+f32              layers_default_base   = 0.5;
+f32              layers_default_rough  = 0.4;
 ui_align_t       config_button_align   = UI_ALIGN_LEFT;
 char            *config_button_spacing = "       ";
 any_imap_t      *physics_body_object_map;
@@ -109,19 +112,17 @@ char *ui_files_default_path = "/";
 
 char            *ui_files_filename;
 char            *ui_files_path;
-char            *ui_files_last_path  = "";
-bool             base_ui_enabled     = true;
-bool             base_view3d_show    = true;
-bool             base_is_dragging    = false;
-bool             base_is_resizing    = false;
-asset_t         *base_drag_asset     = NULL;
-swatch_color_t  *base_drag_swatch    = NULL;
-char            *base_drag_file      = NULL;
-gpu_texture_t   *base_drag_file_icon = NULL;
-f32              base_drag_off_x     = 0.0;
-f32              base_drag_off_y     = 0.0;
-draw_font_t     *base_font           = NULL;
-ui_theme_t      *base_theme;
+char            *ui_files_last_path     = "";
+bool             base_ui_enabled        = true;
+bool             base_view3d_show       = true;
+bool             base_is_dragging       = false;
+bool             base_is_resizing       = false;
+asset_t         *base_drag_asset        = NULL;
+swatch_color_t  *base_drag_swatch       = NULL;
+char            *base_drag_file         = NULL;
+gpu_texture_t   *base_drag_file_icon    = NULL;
+f32              base_drag_off_x        = 0.0;
+f32              base_drag_off_y        = 0.0;
 i32              base_default_element_w = 100;
 i32              base_default_element_h = 28;
 i32              base_default_font_size = 13;
@@ -245,7 +246,6 @@ any_map_t                *util_mesh_unwrappers;
 i32                       ui_header_default_h = 30;
 i32                       ui_header_h;
 ui_handle_t              *ui_header_handle;
-any_map_t                *plugin_map;
 any_map_t                *parser_logic_custom_nodes;
 any_map_t                *resource_bundled;
 i32                       render_path_raytrace_bake_rays_pix       = 0;
@@ -333,14 +333,6 @@ mat4_t          render_path_raytrace_help_mat;
 gpu_texture_t  *render_path_raytrace_last_envmap = NULL;
 bool            render_path_raytrace_is_bake     = false;
 
-#ifdef IRON_DIRECT3D12
-char *render_path_raytrace_ext = ".cso";
-#elif defined(IRON_METAL)
-char *render_path_raytrace_ext = ".metal";
-#else
-char *render_path_raytrace_ext = ".spirv";
-#endif
-
 bool  sculpt_push_undo                          = false;
 i32   ui_statusbar_default_h                    = 33;
 char *parser_material_bake_passthrough_strength = "0.0";
@@ -351,6 +343,14 @@ any_imap_t                  *neural_node_results;
 ui_node_t                   *neural_node_current;
 i32                          neural_node_downloading = 0;
 neural_node_model_t_array_t *neural_node_models      = NULL;
+
+#ifdef IRON_DIRECT3D12
+char *render_path_raytrace_ext = ".cso";
+#elif defined(IRON_METAL)
+char *render_path_raytrace_ext = ".metal";
+#else
+char *render_path_raytrace_ext = ".spirv";
+#endif
 
 char *str_hue_sat = "\
 fun hsv_to_rgb(c: float3): float3 { \

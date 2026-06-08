@@ -140,7 +140,7 @@ gpu_texture_t *base_get_drag_image() {
 		gc_unroot(base_drag_rect);
 		base_drag_rect = string_index_of(base_drag_file, ".") > 0 ? resource_tile50(icons, ICON_FILE) : resource_tile50(icons, ICON_FOLDER_FULL);
 		gc_root(base_drag_rect);
-		base_drag_tint = g_ui->ops->theme->HIGHLIGHT_COL;
+		base_drag_tint = g_theme->HIGHLIGHT_COL;
 		return icons;
 	}
 
@@ -160,7 +160,7 @@ gpu_texture_t *base_get_drag_image() {
 		gc_unroot(base_drag_rect);
 		base_drag_rect = base_drag_layer->show_panel ? folder_open : folder_closed;
 		gc_root(base_drag_rect);
-		base_drag_tint = base_darker(g_ui->ops->theme->LABEL_COL, 0x00202020);
+		base_drag_tint = base_darker(g_theme->LABEL_COL, 0x00202020);
 		return icons;
 	}
 	if (base_drag_layer != NULL && slot_layer_is_mask(base_drag_layer) && base_drag_layer->fill_material == NULL) {
@@ -473,8 +473,8 @@ void base_init() {
 	sys_notify_on_app_state(&base_on_foreground, &base_on_background, &base_on_shutdown);
 	iron_set_save_and_quit_callback(base_save_and_quit_callback);
 
-	base_font = data_get_font("font.ttf");
-	gc_root(base_font);
+	g_font = data_get_font("font.ttf");
+	gc_root(g_font);
 
 	base_color_wheel = data_get_image("color_wheel.k");
 	gc_root(base_color_wheel);
@@ -482,9 +482,9 @@ void base_init() {
 	base_color_wheel_gradient = data_get_image("color_wheel_gradient.k");
 	gc_root(base_color_wheel_gradient);
 	config_load_theme(g_config->theme, false);
-	base_default_element_w = base_theme->ELEMENT_W;
-	base_default_element_h = base_theme->ELEMENT_H;
-	base_default_font_size = base_theme->FONT_SIZE;
+	base_default_element_w = g_theme->ELEMENT_W;
+	base_default_element_h = g_theme->ELEMENT_H;
+	base_default_font_size = g_theme->FONT_SIZE;
 	translator_load_translations(g_config->locale);
 
 	ui_files_filename = string_copy(tr("untitled"));
@@ -495,10 +495,10 @@ void base_init() {
 
 	// Baked font for fast startup
 	if (string_equals(g_config->locale, "en")) {
-		draw_font_13(base_font);
+		draw_font_13(g_font);
 	}
 	else {
-		draw_font_init(base_font);
+		draw_font_init(g_font);
 	}
 
 	ui_nodes_enum_texts  = base_combo_enum_texts;

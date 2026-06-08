@@ -62,13 +62,13 @@ void translator_init_font_on_next_frame(void *_) {
 		f->glyphs_version = 0;
 		draw_font_init(f);
 	}
-	gc_unroot(base_font);
-	base_font = f;
+	gc_unroot(g_font);
+	g_font = f;
+	gc_root(g_font);
 
 	// Scale up the font size and elements width a bit
-	gc_root(base_font);
-	base_theme->FONT_SIZE = math_floor(base_default_font_size * font_scale);
-	base_theme->ELEMENT_W = math_floor(base_default_element_w * (!string_equals(g_config->locale, "en") ? 1.4 : 1.0));
+	g_theme->FONT_SIZE = math_floor(base_default_font_size * font_scale);
+	g_theme->ELEMENT_W = math_floor(base_default_element_w * (!string_equals(g_config->locale, "en") ? 1.4 : 1.0));
 
 	ui_set_font(g_ui, f);
 	ui_set_scale(UI_SCALE());

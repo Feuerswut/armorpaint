@@ -231,7 +231,7 @@ void tab_textures_draw(ui_handle_t *htab) {
 					i32 sw = img->height < img->width ? img->height : 0;
 
 					if (base_drag_asset != NULL && tab_textures_drag_pos == i) {
-						ui_fill(-1, -2, 2, imgw_val + 4, g_ui->ops->theme->HIGHLIGHT_COL);
+						ui_fill(-1, -2, 2, imgw_val + 4, g_theme->HIGHLIGHT_COL);
 					}
 
 					ui_state_t _state = ui_sub_image(img, 0xffffffff, slotw, 0, 0, sw, sw);
@@ -262,10 +262,10 @@ void tab_textures_draw(ui_handle_t *htab) {
 						g_ui->_y = uiy;
 						i32 off  = i % 2 == 1 ? 1 : 0;
 						i32 w    = 50;
-						ui_fill(0, 0, w + 3, 2, g_ui->ops->theme->HIGHLIGHT_COL);
-						ui_fill(0, w - off + 2, w + 3, 2 + off, g_ui->ops->theme->HIGHLIGHT_COL);
-						ui_fill(0, 0, 2, w + 3, g_ui->ops->theme->HIGHLIGHT_COL);
-						ui_fill(w + 2, 0, 2, w + 4, g_ui->ops->theme->HIGHLIGHT_COL);
+						ui_fill(0, 0, w + 3, 2, g_theme->HIGHLIGHT_COL);
+						ui_fill(0, w - off + 2, w + 3, 2 + off, g_theme->HIGHLIGHT_COL);
+						ui_fill(0, 0, 2, w + 3, g_theme->HIGHLIGHT_COL);
+						ui_fill(w + 2, 0, 2, w + 4, g_theme->HIGHLIGHT_COL);
 						g_ui->_x = _uix;
 						g_ui->_y = _uiy;
 					}
@@ -318,7 +318,7 @@ void tab_textures_draw(ui_handle_t *htab) {
 			if (base_drag_asset != NULL && tab_textures_drag_pos == g_project->_->assets->length) {
 				g_ui->_x = uix;
 				g_ui->_y = uiy;
-				ui_fill(imgw_val + 1, -2, 2, imgw_val + 4, g_ui->ops->theme->HIGHLIGHT_COL);
+				ui_fill(imgw_val + 1, -2, 2, imgw_val + 4, g_theme->HIGHLIGHT_COL);
 			}
 
 			if (!drag_pos_set) {
@@ -328,7 +328,7 @@ void tab_textures_draw(ui_handle_t *htab) {
 		else {
 			gpu_texture_t *img = resource_get("icons.k");
 			rect_t        *r   = resource_tile50(img, ICON_DROP);
-			ui_sub_image(img, g_ui->ops->theme->BUTTON_COL, r->h, r->x, r->y, r->w, r->h);
+			ui_sub_image(img, g_theme->BUTTON_COL, r->h, r->x, r->y, r->w, r->h);
 			if (g_ui->is_hovered) {
 				ui_tooltip(tr("Drag and drop files here"));
 			}

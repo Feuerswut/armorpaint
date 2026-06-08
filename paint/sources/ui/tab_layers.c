@@ -129,11 +129,11 @@ ui_state_t tab_layers_draw_layer_icon(slot_layer_t *l, i32 i, f32 uix, f32 uiy, 
 		if (!is_typing) {
 			if (i < 9 && operator_shortcut(any_map_get(g_keymap, "select_layer"), SHORTCUT_TYPE_DOWN)) {
 				char *number = i32_to_string(i + 1);
-				i32   width  = draw_string_width(g_ui->ops->font, g_ui->font_size, number) + 10;
-				i32   height = draw_font_height(g_ui->ops->font, g_ui->font_size);
-				draw_set_color(g_ui->ops->theme->TEXT_COL);
+				i32   width  = draw_string_width(g_font, g_ui->font_size, number) + 10;
+				i32   height = draw_font_height(g_font, g_ui->font_size);
+				draw_set_color(g_theme->TEXT_COL);
 				draw_filled_rect(uix, uiy, width, height);
-				draw_set_color(g_ui->ops->theme->BUTTON_COL);
+				draw_set_color(g_theme->BUTTON_COL);
 				draw_string(number, uix + 5, uiy);
 			}
 		}
@@ -144,7 +144,7 @@ ui_state_t tab_layers_draw_layer_icon(slot_layer_t *l, i32 i, f32 uix, f32 uiy, 
 		rect_t *folder_closed = resource_tile50(icons, ICON_FOLDER_FULL);
 		rect_t *folder_open   = resource_tile50(icons, ICON_FOLDER_OPEN);
 		rect_t *folder        = l->show_panel ? folder_open : folder_closed;
-		return ui_sub_image(icons, base_darker(g_ui->ops->theme->LABEL_COL, 0x00202020), icon_h, folder->x, folder->y, folder->w, folder->h);
+		return ui_sub_image(icons, base_darker(g_theme->LABEL_COL, 0x00202020), icon_h, folder->x, folder->y, folder->w, folder->h);
 	}
 }
 
@@ -154,7 +154,7 @@ void tab_layers_draw_layer_slot_mini(slot_layer_t *l, i32 i) {
 	ui_state_t state = tab_layers_draw_layer_icon(l, i, uix, uiy, true);
 	tab_layers_handle_layer_icon_state(l, i, state, uix, uiy);
 	g_ui->_x = uix;
-	g_ui->_y = uiy + g_ui->ops->theme->ELEMENT_H * 2 * UI_SCALE();
+	g_ui->_y = uiy + g_theme->ELEMENT_H * 2 * UI_SCALE();
 }
 
 void tab_layers_delete_layer(slot_layer_t *l) {
@@ -348,7 +348,7 @@ bool tab_layers_has_children(slot_layer_t *l) {
 }
 
 void tab_layers_draw_layer_slot_full(slot_layer_t *l, i32 i) {
-	i32 step   = g_ui->ops->theme->ELEMENT_H;
+	i32 step   = g_theme->ELEMENT_H;
 	f32 center = (step / 2.0) * UI_SCALE();
 	f32 uiw    = g_ui->_w;
 	f32 uix    = g_ui->_x;
@@ -367,7 +367,7 @@ void tab_layers_draw_layer_slot_full(slot_layer_t *l, i32 i) {
 	rect_t        *r     = resource_tile18(icons, l->visible ? ICON18_EYE_ON : ICON18_EYE_OFF);
 	g_ui->_x             = uix + 4;
 	g_ui->_y             = uiy + 3 + center;
-	i32  col             = g_ui->ops->theme->HOVER_COL + 0x00282828;
+	i32  col             = g_theme->HOVER_COL + 0x00282828;
 	bool parent_hidden   = l->parent != NULL && (!l->parent->visible || (l->parent->parent != NULL && !l->parent->parent->visible));
 	if (parent_hidden) {
 		col -= 0x99000000;
@@ -478,18 +478,18 @@ void tab_layers_draw_layer_slot_full(slot_layer_t *l, i32 i) {
 }
 
 void tab_layers_draw_layer_highlight(slot_layer_t *l, bool mini) {
-	i32 step = g_ui->ops->theme->ELEMENT_H;
+	i32 step = g_theme->ELEMENT_H;
 
 	// Separator line
-	ui_fill(0, 0, (g_ui->_w / (float)UI_SCALE() - 2), 1 * UI_SCALE(), g_ui->ops->theme->SEPARATOR_COL);
+	ui_fill(0, 0, (g_ui->_w / (float)UI_SCALE() - 2), 1 * UI_SCALE(), g_theme->SEPARATOR_COL);
 
 	// Highlight selected
 	if (g_context->layer == l) {
 		if (mini) {
-			ui_rect(1, -step * 2, g_ui->_w / (float)UI_SCALE() - 1, step * 2 + (mini ? -1 : 1), g_ui->ops->theme->HIGHLIGHT_COL, 3);
+			ui_rect(1, -step * 2, g_ui->_w / (float)UI_SCALE() - 1, step * 2 + (mini ? -1 : 1), g_theme->HIGHLIGHT_COL, 3);
 		}
 		else {
-			ui_rect(1, -step * 2 - 1, g_ui->_w / (float)UI_SCALE() - 2, step * 2 + (mini ? -2 : 1), g_ui->ops->theme->HIGHLIGHT_COL, 2);
+			ui_rect(1, -step * 2 - 1, g_ui->_w / (float)UI_SCALE() - 2, step * 2 + (mini ? -2 : 1), g_theme->HIGHLIGHT_COL, 2);
 		}
 	}
 }
@@ -921,7 +921,7 @@ void tab_layers_draw_layer_slot(slot_layer_t *l, i32 i, bool mini) {
 		return;
 	}
 
-	i32 step   = g_ui->ops->theme->ELEMENT_H;
+	i32 step   = g_theme->ELEMENT_H;
 	f32 checkw = (g_ui->_window_w / 100.0 * 8) / (float)UI_SCALE();
 
 	// Highlight drag destination
@@ -937,14 +937,14 @@ void tab_layers_draw_layer_slot(slot_layer_t *l, i32 i, bool mini) {
 			bool                  nested_group = slot_layer_is_group(base_drag_layer) && to_group;
 			if (!nested_group) {
 				if (slot_layer_can_move(g_context->layer, g_context->drag_dest)) {
-					ui_fill(checkw, step * 2, (g_ui->_window_w / (float)UI_SCALE() - 2) - checkw, 2 * UI_SCALE(), g_ui->ops->theme->HIGHLIGHT_COL);
+					ui_fill(checkw, step * 2, (g_ui->_window_w / (float)UI_SCALE() - 2) - checkw, 2 * UI_SCALE(), g_theme->HIGHLIGHT_COL);
 				}
 			}
 		}
 		else if (i == g_project->_->layers->length - 1 && mouse_y < absy + step) {
 			g_context->drag_dest = g_project->_->layers->length - 1;
 			if (slot_layer_can_move(g_context->layer, g_context->drag_dest)) {
-				ui_fill(checkw, 0, (g_ui->_window_w / (float)UI_SCALE() - 2) - checkw, 2 * UI_SCALE(), g_ui->ops->theme->HIGHLIGHT_COL);
+				ui_fill(checkw, 0, (g_ui->_window_w / (float)UI_SCALE() - 2) - checkw, 2 * UI_SCALE(), g_theme->HIGHLIGHT_COL);
 			}
 		}
 	}
@@ -952,13 +952,13 @@ void tab_layers_draw_layer_slot(slot_layer_t *l, i32 i, bool mini) {
 		if (mouse_y > absy + step && mouse_y < absy + step * 3) {
 			g_context->drag_dest = i;
 			if (tab_layers_can_drop_new_layer(i)) {
-				ui_fill(checkw, 2 * step, (g_ui->_window_w / (float)UI_SCALE() - 2) - checkw, 2 * UI_SCALE(), g_ui->ops->theme->HIGHLIGHT_COL);
+				ui_fill(checkw, 2 * step, (g_ui->_window_w / (float)UI_SCALE() - 2) - checkw, 2 * UI_SCALE(), g_theme->HIGHLIGHT_COL);
 			}
 		}
 		else if (i == g_project->_->layers->length - 1 && mouse_y < absy + step) {
 			g_context->drag_dest = g_project->_->layers->length;
 			if (tab_layers_can_drop_new_layer(g_project->_->layers->length)) {
-				ui_fill(checkw, 0, (g_ui->_window_w / (float)UI_SCALE() - 2) - checkw, 2 * UI_SCALE(), g_ui->ops->theme->HIGHLIGHT_COL);
+				ui_fill(checkw, 0, (g_ui->_window_w / (float)UI_SCALE() - 2) - checkw, 2 * UI_SCALE(), g_theme->HIGHLIGHT_COL);
 			}
 		}
 	}
@@ -983,11 +983,11 @@ void tab_layers_draw_slots(bool mini) {
 }
 
 void tab_layers_highlight_odd_lines() {
-	i32 step   = g_ui->ops->theme->ELEMENT_H * 2;
+	i32 step   = g_theme->ELEMENT_H * 2;
 	i32 full_h = g_ui->_window_h - ui_base_hwnds->buffer[0]->scroll_offset;
 	for (i32 i = 0; i < math_floor(full_h / (float)step); ++i) {
 		if (i % 2 == 0) {
-			ui_fill(0, i * step, (g_ui->_w / (float)UI_SCALE() - 2), step, base_darker(g_ui->ops->theme->WINDOW_BG_COL, 0x00040404));
+			ui_fill(0, i * step, (g_ui->_w / (float)UI_SCALE() - 2), step, base_darker(g_theme->WINDOW_BG_COL, 0x00040404));
 		}
 	}
 }
@@ -1156,8 +1156,8 @@ void tab_layers_combo_filter() {
 void tab_layers_draw_mini(ui_handle_t *htab) {
 	ui_set_hovered_tab_name(tr("Layers"));
 
-	i32 _ELEMENT_H              = g_ui->ops->theme->ELEMENT_H;
-	g_ui->ops->theme->ELEMENT_H = math_floor(ui_sidebar_w_mini / 2.0 / (float)UI_SCALE());
+	i32 _ELEMENT_H     = g_theme->ELEMENT_H;
+	g_theme->ELEMENT_H = math_floor(ui_sidebar_w_mini / 2.0 / (float)UI_SCALE());
 
 	ui_begin_sticky();
 	ui_separator(5, true);
@@ -1172,7 +1172,7 @@ void tab_layers_draw_mini(ui_handle_t *htab) {
 	tab_layers_highlight_odd_lines();
 	tab_layers_draw_slots(true);
 
-	g_ui->ops->theme->ELEMENT_H = _ELEMENT_H;
+	g_theme->ELEMENT_H = _ELEMENT_H;
 }
 
 void tab_layers_draw_full(ui_handle_t *htab) {

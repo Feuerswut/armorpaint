@@ -99,9 +99,9 @@ void ui_header_draw_tool_properties_layer_preview_dirty(void *_) {
 }
 
 void ui_header_draw_tool_properties_color_picker_normal() {
-	ui_fill(0, 0, g_ui->_w / (float)UI_SCALE(), g_ui->ops->theme->ELEMENT_H * 9, g_ui->ops->theme->SEPARATOR_COL);
+	ui_fill(0, 0, g_ui->_w / (float)UI_SCALE(), g_theme->ELEMENT_H * 9, g_theme->SEPARATOR_COL);
 	g_ui->changed = false;
-	ui_color_wheel(_ui_header_draw_tool_properties_h, false, -1, 10 * g_ui->ops->theme->ELEMENT_H * UI_SCALE(), false, NULL, NULL);
+	ui_color_wheel(_ui_header_draw_tool_properties_h, false, -1, 10 * g_theme->ELEMENT_H * UI_SCALE(), false, NULL, NULL);
 	if (g_ui->changed) {
 		g_context->picked_color->normal = _ui_header_draw_tool_properties_h->color;
 		ui_header_handle->redraws       = 2;
@@ -110,9 +110,9 @@ void ui_header_draw_tool_properties_color_picker_normal() {
 }
 
 void ui_header_draw_tool_properties_color_picker_base() {
-	ui_fill(0, 0, g_ui->_w / (float)UI_SCALE(), g_ui->ops->theme->ELEMENT_H * 9, g_ui->ops->theme->SEPARATOR_COL);
+	ui_fill(0, 0, g_ui->_w / (float)UI_SCALE(), g_theme->ELEMENT_H * 9, g_theme->SEPARATOR_COL);
 	g_ui->changed = false;
-	ui_color_wheel(_ui_header_draw_tool_properties_h, false, -1, 10 * g_ui->ops->theme->ELEMENT_H * UI_SCALE(), false, NULL, NULL);
+	ui_color_wheel(_ui_header_draw_tool_properties_h, false, -1, 10 * g_theme->ELEMENT_H * UI_SCALE(), false, NULL, NULL);
 	if (g_ui->changed) {
 		g_context->picked_color->base = _ui_header_draw_tool_properties_h->color;
 		ui_header_handle->redraws     = 2;

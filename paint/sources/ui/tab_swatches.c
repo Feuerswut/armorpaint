@@ -71,7 +71,7 @@ void tab_swatches_draw_edit_menu() {
 	ui_handle_t *h = ui_handle(__ID__);
 	h->color       = g_context->swatch->base;
 
-	g_context->swatch->base = ui_color_wheel(h, false, -1, 11 * g_ui->ops->theme->ELEMENT_H * UI_SCALE(), true, &tab_swatches_draw_color_picker, NULL);
+	g_context->swatch->base = ui_color_wheel(h, false, -1, 11 * g_theme->ELEMENT_H * UI_SCALE(), true, &tab_swatches_draw_color_picker, NULL);
 
 	ui_handle_t *hopacity      = ui_handle(__ID__);
 	hopacity->f                = g_context->swatch->opacity;
@@ -199,7 +199,7 @@ void tab_swatches_draw(ui_handle_t *htab) {
 
 				if (g_context->swatch == g_project->swatches->buffer[i]) {
 					i32 w = 32;
-					ui_fill(-2, -2, w, w, g_ui->ops->theme->HIGHLIGHT_COL);
+					ui_fill(-2, -2, w, w, g_theme->HIGHLIGHT_COL);
 				}
 
 				uix = g_ui->_x;
@@ -207,7 +207,7 @@ void tab_swatches_draw(ui_handle_t *htab) {
 
 				// Draw the drag position indicator
 				if (base_drag_swatch != NULL && tab_swatches_drag_pos == i) {
-					ui_fill(-1, -2, 2, 32, g_ui->ops->theme->HIGHLIGHT_COL);
+					ui_fill(-1, -2, 2, 32, g_theme->HIGHLIGHT_COL);
 				}
 
 				ui_state_t state = ui_image(tab_swatches_empty_get(), g_project->swatches->buffer[i]->base, slotw);
@@ -256,7 +256,7 @@ void tab_swatches_draw(ui_handle_t *htab) {
 		if (base_drag_swatch != NULL && tab_swatches_drag_pos == g_project->swatches->length) {
 			g_ui->_x = uix; // Reset the position because otherwise it would start in the row below
 			g_ui->_y = uiy;
-			ui_fill(28, -2, 2, 32, g_ui->ops->theme->HIGHLIGHT_COL);
+			ui_fill(28, -2, 2, 32, g_theme->HIGHLIGHT_COL);
 		}
 
 		// Currently there is no valid drag_position so reset it

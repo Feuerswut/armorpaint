@@ -2,12 +2,12 @@
 #include "global.h"
 
 void operator_register(char *name, void (*call)(void)) {
-	any_map_set(operator_ops, name, call);
+	any_map_set(g_operators, name, call);
 }
 
 void operator_run(char *name) {
-	if (any_map_get(operator_ops, name) != NULL) {
-		void (*cb)(void) = any_map_get(operator_ops, name);
+	if (any_map_get(g_operators, name) != NULL) {
+		void (*cb)(void) = any_map_get(g_operators, name);
 		cb();
 	}
 }

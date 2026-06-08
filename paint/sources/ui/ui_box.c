@@ -25,7 +25,7 @@ void ui_box_window_border() {
 		gpu_disable_scissor();
 	}
 	// Border
-	draw_set_color(g_ui->ops->theme->SEPARATOR_COL);
+	draw_set_color(g_theme->SEPARATOR_COL);
 	draw_filled_rect(0, 0, 1, g_ui->_window_h);
 	draw_filled_rect(0 + g_ui->_window_w - 1, 0, 1, g_ui->_window_h);
 	draw_filled_rect(0, 0 + g_ui->_window_h - 1, g_ui->_window_w, 1);

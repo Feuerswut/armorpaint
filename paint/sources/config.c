@@ -460,37 +460,37 @@ i32 config_get_texture_res_pos(i32 i) {
 }
 
 void config_load_theme(char *theme, bool tag_redraw) {
-	gc_unroot(base_theme);
-	base_theme = ui_theme_create();
-	gc_root(base_theme);
+	gc_unroot(g_theme);
+	g_theme = ui_theme_create();
+	gc_root(g_theme);
 
 	if (!string_equals(theme, "default.json")) {
 		buffer_t   *b      = data_get_blob(string("themes/%s", theme));
 		ui_theme_t *parsed = json_parse(sys_buffer_to_string(b));
-		gc_unroot(base_theme);
-		base_theme = parsed;
-		gc_root(base_theme);
+		gc_unroot(g_theme);
+		g_theme = parsed;
+		gc_root(g_theme);
 	}
 
-	base_theme->FILL_WINDOW_BG = true;
+	g_theme->FILL_WINDOW_BG = true;
 
 	if (tag_redraw) {
-		g_ui->ops->theme = base_theme;
+		g_ui->ops->theme = g_theme;
 		base_redraw_ui();
 	}
 
 	if (g_config->touch_ui) {
 		// Enlarge elements
-		base_theme->FULL_TABS         = true;
-		base_theme->ELEMENT_H         = 24 + 6;
-		base_theme->BUTTON_H          = 22 + 6;
-		base_theme->FONT_SIZE         = 13 + 2;
-		base_theme->ARROW_SIZE        = 5 + 2;
-		base_theme->CHECK_SIZE        = 15 + 4;
-		base_theme->CHECK_SELECT_SIZE = 8 + 2;
+		g_theme->FULL_TABS         = true;
+		g_theme->ELEMENT_H         = 24 + 6;
+		g_theme->BUTTON_H          = 22 + 6;
+		g_theme->FONT_SIZE         = 13 + 2;
+		g_theme->ARROW_SIZE        = 5 + 2;
+		g_theme->CHECK_SIZE        = 15 + 4;
+		g_theme->CHECK_SELECT_SIZE = 8 + 2;
 	}
 	else {
-		base_theme->FULL_TABS = false;
+		g_theme->FULL_TABS = false;
 	}
 }
 

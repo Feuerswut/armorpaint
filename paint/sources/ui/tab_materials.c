@@ -217,15 +217,15 @@ void tab_materials_draw_slots(bool mini) {
 			if (g_context->material == g_project->_->materials->buffer[i]) {
 				if (mini) {
 					f32 w = g_ui->_w / (float)UI_SCALE();
-					ui_rect(0, -2, w - 2, w - 4, g_ui->ops->theme->HIGHLIGHT_COL, 3);
+					ui_rect(0, -2, w - 2, w - 4, g_theme->HIGHLIGHT_COL, 3);
 				}
 				else {
 					i32 off = row % 2 == 1 ? 1 : 0;
 					i32 w   = 50 + math_floor(g_config->window_scale * 2);
-					ui_fill(-1, -2, w + 3, 2, g_ui->ops->theme->HIGHLIGHT_COL);
-					ui_fill(-1, w - off, w + 3, 2 + off, g_ui->ops->theme->HIGHLIGHT_COL);
-					ui_fill(-1, -2, 2, w + 3, g_ui->ops->theme->HIGHLIGHT_COL);
-					ui_fill(w + 1, -2, 2, w + 4, g_ui->ops->theme->HIGHLIGHT_COL);
+					ui_fill(-1, -2, w + 3, 2, g_theme->HIGHLIGHT_COL);
+					ui_fill(-1, w - off, w + 3, 2 + off, g_theme->HIGHLIGHT_COL);
+					ui_fill(-1, -2, 2, w + 3, g_theme->HIGHLIGHT_COL);
+					ui_fill(w + 1, -2, 2, w + 4, g_theme->HIGHLIGHT_COL);
 				}
 			}
 
@@ -236,7 +236,7 @@ void tab_materials_draw_slots(bool mini) {
 			f32 imgh = mini ? ui_sidebar_default_w_mini * 0.85 * UI_SCALE() : 50 * UI_SCALE();
 
 			if (base_drag_material != NULL && tab_materials_drag_pos == i) {
-				ui_fill(-1, -2, 2, imgw_val + 4, g_ui->ops->theme->HIGHLIGHT_COL);
+				ui_fill(-1, -2, 2, imgw_val + 4, g_theme->HIGHLIGHT_COL);
 			}
 
 			ui_state_t state = g_project->_->materials->buffer[i]->preview_ready
@@ -253,11 +253,11 @@ void tab_materials_draw_slots(bool mini) {
 			if (!is_typing) {
 				if (i < 9 && operator_shortcut(any_map_get(g_keymap, "select_material"), SHORTCUT_TYPE_DOWN)) {
 					char *number = i32_to_string(i + 1);
-					i32   width  = draw_string_width(g_ui->ops->font, g_ui->font_size, number) + 10;
-					i32   height = draw_font_height(g_ui->ops->font, g_ui->font_size);
-					draw_set_color(g_ui->ops->theme->TEXT_COL);
+					i32   width  = draw_string_width(g_font, g_ui->font_size, number) + 10;
+					i32   height = draw_font_height(g_font, g_ui->font_size);
+					draw_set_color(g_theme->TEXT_COL);
 					draw_filled_rect(uix, uiy, width, height);
-					draw_set_color(g_ui->ops->theme->BUTTON_COL);
+					draw_set_color(g_theme->BUTTON_COL);
 					draw_string(number, uix + 5, uiy);
 				}
 			}
@@ -328,7 +328,7 @@ void tab_materials_draw_slots(bool mini) {
 	if (base_drag_material != NULL && tab_materials_drag_pos == g_project->_->materials->length) {
 		g_ui->_x = uix;
 		g_ui->_y = uiy;
-		ui_fill(imgw_val + 1, -2, 2, imgw_val + 4, g_ui->ops->theme->HIGHLIGHT_COL);
+		ui_fill(imgw_val + 1, -2, 2, imgw_val + 4, g_theme->HIGHLIGHT_COL);
 	}
 
 	if (!drag_pos_set) {

@@ -101,7 +101,7 @@ void ui_base_init() {
 	ui_menubar_w = math_floor(ui_menubar_default_w * g_config->window_scale);
 
 	if (g_context->empty_envmap == NULL) {
-		ui_base_make_empty_envmap(base_theme->VIEWPORT_COL);
+		ui_base_make_empty_envmap(g_theme->VIEWPORT_COL);
 	}
 	if (g_context->preview_envmap == NULL) {
 		u8_array_t *b             = u8_array_create(4);
@@ -133,7 +133,7 @@ void ui_base_init() {
 	f32           scale = g_config->window_scale;
 	ui_options_t *ops   = GC_ALLOC_INIT(
         ui_options_t,
-        {.theme = base_theme, .font = base_font, .scale_factor = scale, .color_wheel = base_color_wheel, .black_white_gradient = base_color_wheel_gradient});
+        {.theme = g_theme, .font = g_font, .scale_factor = scale, .color_wheel = base_color_wheel, .black_white_gradient = base_color_wheel_gradient});
 
 	g_ui = ui_create(ops);
 	gc_root(g_ui);
@@ -237,9 +237,9 @@ void ui_base_update(void *_) {
 
 	operator_update();
 
-	string_array_t *keys = map_keys(plugin_map);
+	string_array_t *keys = map_keys(g_plugins);
 	for (i32 i = 0; i < keys->length; ++i) {
-		plugin_t *p = any_map_get(plugin_map, keys->buffer[i]);
+		plugin_t *p = any_map_get(g_plugins, keys->buffer[i]);
 		if (p->on_update != NULL) {
 			minic_ctx_call_fn(p->ctx, p->on_update, NULL, 0);
 		}
@@ -299,7 +299,7 @@ void ui_base_update(void *_) {
 
 	// Nothing to display in the main area
 	if (!base_view3d_show && !ui_nodes_show && !ui_view2d_show) {
-		draw_begin(NULL, true, base_theme->SEPARATOR_COL);
+		draw_begin(NULL, true, g_theme->SEPARATOR_COL);
 		gpu_texture_t *img = data_get_image("badge_bw.k");
 		draw_set_color(0x22ffffff);
 		draw_image(img, base_view3d_w() / 2.0 - img->width / 2.0, base_h() / 2.0 - img->height / 2.0);

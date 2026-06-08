@@ -246,8 +246,8 @@ void _kickstart() {
 	ui_nodes_custom_buttons = any_map_create();
 	gc_root(ui_nodes_custom_buttons);
 
-	operator_ops = any_map_create();
-	gc_root(operator_ops);
+	g_operators = any_map_create();
+	gc_root(g_operators);
 
 	physics_body_object_map = any_imap_create();
 	gc_root(physics_body_object_map);
@@ -431,8 +431,8 @@ void _kickstart() {
 	ui_header_handle = ui_handle_create();
 	gc_root(ui_header_handle);
 
-	plugin_map = any_map_create();
-	gc_root(plugin_map);
+	g_plugins = any_map_create();
+	gc_root(g_plugins);
 
 	parser_logic_custom_nodes = any_map_create();
 	gc_root(parser_logic_custom_nodes);

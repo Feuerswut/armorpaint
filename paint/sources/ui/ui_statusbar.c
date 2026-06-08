@@ -13,7 +13,7 @@ void ui_statusbar_render_ui() {
 	i32 statush = g_config->layout->buffer[LAYOUT_SIZE_STATUS_H];
 	if (ui_window(ui_base_hwnds->buffer[TAB_AREA_STATUS], 0, iron_window_height() - statush, ui_statusbar_width(), statush, false)) {
 		g_ui->_y += 2;
-		draw_set_color(g_ui->ops->theme->SEPARATOR_COL);
+		draw_set_color(g_theme->SEPARATOR_COL);
 		draw_filled_rect(0, 0, 1, g_ui->_window_h);
 		draw_filled_rect(g_ui->_window_w - 1, 0, 1, g_ui->_window_h);
 		tab_draw_t_array_t *hwnd_draws = ui_base_hwnd_tabs->buffer[TAB_AREA_STATUS];

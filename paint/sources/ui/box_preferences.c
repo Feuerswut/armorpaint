@@ -34,7 +34,7 @@ void box_preferences_interface_tab_reset_layout_menu() {
 }
 
 void box_preferences_interface_tab_restore_menu_import_on_next_frame(config_t *raw) {
-	g_ui->ops->theme->ELEMENT_H = base_default_element_h;
+	g_theme->ELEMENT_H = base_default_element_h;
 	config_import_from(raw);
 	box_preferences_set_scale();
 	make_material_parse_mesh_material();
@@ -48,7 +48,7 @@ void box_preferences_interface_tab_restore_menu_import(char *path) {
 }
 
 void box_preferences_interface_tab_restore_menu_confirm(void *_) {
-	g_ui->ops->theme->ELEMENT_H = base_default_element_h;
+	g_theme->ELEMENT_H = base_default_element_h;
 	config_restore();
 	box_preferences_set_scale();
 	if (g_config->plugins != NULL) {
@@ -63,7 +63,7 @@ void box_preferences_interface_tab_restore_menu_confirm(void *_) {
 	box_preferences_files_keymap = NULL;
 	make_material_parse_mesh_material();
 	make_material_parse_paint_material(true);
-	ui_base_set_viewport_col(g_ui->ops->theme->VIEWPORT_COL);
+	ui_base_set_viewport_col(g_theme->VIEWPORT_COL);
 }
 
 void box_preferences_interface_tab_restore_menu() {
@@ -191,8 +191,8 @@ void box_preferences_interface_tab() {
 
 void box_preferences_theme_tab_theme_field_menu() {
 	g_ui->changed                     = false;
-	i32  color                        = ui_color_wheel(_box_preferences_h, false, -1, 11 * g_ui->ops->theme->ELEMENT_H * UI_SCALE(), true, NULL, NULL);
-	u32 *u32_theme                    = base_theme;
+	i32  color                        = ui_color_wheel(_box_preferences_h, false, -1, 11 * g_theme->ELEMENT_H * UI_SCALE(), true, NULL, NULL);
+	u32 *u32_theme                    = g_theme;
 	*(u32_theme + _box_preferences_i) = color;
 	if (g_ui->changed) {
 		ui_menu_keep_open = true;
@@ -215,7 +215,7 @@ void box_preferences_theme_tab_export(char *path) {
 	if (!ends_with(path, ".json")) {
 		path = string("%s.json", path);
 	}
-	iron_file_save_bytes(path, sys_string_to_buffer(box_preferences_theme_to_json(base_theme)), 0);
+	iron_file_save_bytes(path, sys_string_to_buffer(box_preferences_theme_to_json(g_theme)), 0);
 }
 
 void box_preferences_theme_tab_import(char *path) {
@@ -230,7 +230,7 @@ void box_preferences_theme_tab_new_box() {
 	}
 	char *theme_name = ui_text_input(h, tr("Name"), UI_ALIGN_LEFT, true, false);
 	if (ui_icon_button(tr("OK"), ICON_CHECK, UI_ALIGN_CENTER) || g_ui->is_return_down) {
-		char *template = box_preferences_theme_to_json(base_theme);
+		char *template = box_preferences_theme_to_json(g_theme);
 		if (!ends_with(theme_name, ".json")) {
 			theme_name = string("%s.json", theme_name);
 		}
@@ -289,7 +289,7 @@ void box_preferences_theme_tab() {
 	// Theme fields
 	char        *theme_search = to_lower_case(box_preferences_theme_hsearch->text);
 	ui_handle_t *h_list       = ui_handle(__ID__);
-	u32         *u32_theme    = base_theme;
+	u32         *u32_theme    = g_theme;
 	g_ui->input_enabled       = !ui_menu_show;
 	for (i32 i = 0; i < ui_theme_keys_count; ++i) {
 		char *key = ui_theme_keys[i];
@@ -354,7 +354,7 @@ void box_preferences_theme_tab() {
 		}
 		if (g_ui->changed) {
 			g_ui->elements_baked = false;
-			g_ui->font_size      = g_ui->ops->theme->FONT_SIZE;
+			g_ui->font_size      = g_theme->FONT_SIZE;
 		}
 	}
 	g_ui->input_enabled = true;
@@ -849,14 +849,14 @@ void box_preferences_model_panel(neural_node_model_t *m) {
 			box_preferences_htab->redraws = 2;
 			iron_delay_idle_sleep();
 
-			i32 _BUTTON_COL              = g_ui->ops->theme->BUTTON_COL;
-			g_ui->ops->theme->BUTTON_COL = g_ui->ops->theme->HIGHLIGHT_COL;
+			i32 _BUTTON_COL     = g_theme->BUTTON_COL;
+			g_theme->BUTTON_COL = g_theme->HIGHLIGHT_COL;
 
 			ui_handle_t *h = ui_handle(__ID__);
 			h->f           = f / (float)parse_float(m->size);
 			ui_slider(h, string("%s / %s", downloaded, m->size), 0.0, 1.0, true, 100, false, UI_ALIGN_CENTER, true);
 
-			g_ui->ops->theme->BUTTON_COL = _BUTTON_COL;
+			g_theme->BUTTON_COL = _BUTTON_COL;
 
 			g_ui->enabled = true;
 		}

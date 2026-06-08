@@ -41,7 +41,7 @@ void ui_toolbar_tool_properties_menu() {
 
 void ui_toolbar_draw_highlight() {
 	i32 size = ui_toolbar_w(false) - 4;
-	draw_set_color(g_ui->ops->theme->HIGHLIGHT_COL);
+	draw_set_color(g_theme->HIGHLIGHT_COL);
 	ui_draw_rect(true, g_ui->_x + -1, g_ui->_y + 2, size + 2, size + 2);
 }
 
@@ -119,7 +119,7 @@ i32 ui_toolbar_x() {
 void ui_toolbar_draw_show_3d_view() {
 	if (context_is_floating_toolbar()) {
 		i32 toolbar_w      = ui_toolbar_default_w * UI_SCALE() + 14 * UI_SCALE();
-		i32 _WINDOW_BG_COL = g_ui->ops->theme->WINDOW_BG_COL;
+		i32 _WINDOW_BG_COL = g_theme->WINDOW_BG_COL;
 		// ui.ops.theme.WINDOW_BG_COL = ui.ops.theme.SEPARATOR_COL;
 		i32 y = ui_header_h + 8 * UI_SCALE();
 
@@ -128,27 +128,27 @@ void ui_toolbar_draw_show_3d_view() {
 		}
 
 		if (ui_window(ui_toolbar_handle, ui_toolbar_x(), y, toolbar_w, toolbar_w, false)) {
-			i32 _ELEMENT_H               = g_ui->ops->theme->ELEMENT_H;
-			i32 _BUTTON_H                = g_ui->ops->theme->BUTTON_H;
-			i32 _BUTTON_COL              = g_ui->ops->theme->BUTTON_COL;
-			i32 _fontOffsetY             = g_ui->font_offset_y;
-			g_ui->ops->theme->ELEMENT_H  = math_floor(g_ui->ops->theme->ELEMENT_H * 1.5);
-			g_ui->ops->theme->BUTTON_H   = g_ui->ops->theme->ELEMENT_H;
-			g_ui->ops->theme->BUTTON_COL = g_ui->ops->theme->WINDOW_BG_COL;
-			i32 font_height              = draw_font_height(g_ui->ops->font, g_ui->font_size);
-			g_ui->font_offset_y          = (UI_ELEMENT_H() - font_height) / 2.0;
-			i32 _w                       = g_ui->_w;
-			g_ui->_w                     = toolbar_w;
+			i32 _ELEMENT_H      = g_theme->ELEMENT_H;
+			i32 _BUTTON_H       = g_theme->BUTTON_H;
+			i32 _BUTTON_COL     = g_theme->BUTTON_COL;
+			i32 _fontOffsetY    = g_ui->font_offset_y;
+			g_theme->ELEMENT_H  = math_floor(g_theme->ELEMENT_H * 1.5);
+			g_theme->BUTTON_H   = g_theme->ELEMENT_H;
+			g_theme->BUTTON_COL = g_theme->WINDOW_BG_COL;
+			i32 font_height     = draw_font_height(g_font, g_ui->font_size);
+			g_ui->font_offset_y = (UI_ELEMENT_H() - font_height) / 2.0;
+			i32 _w              = g_ui->_w;
+			g_ui->_w            = toolbar_w;
 			if (ui_icon_button("", ICON_CUBE, UI_ALIGN_CENTER)) {
 				ui_base_show_3d_view();
 			}
-			g_ui->_w                     = _w;
-			g_ui->ops->theme->ELEMENT_H  = _ELEMENT_H;
-			g_ui->ops->theme->BUTTON_H   = _BUTTON_H;
-			g_ui->ops->theme->BUTTON_COL = _BUTTON_COL;
-			g_ui->font_offset_y          = _fontOffsetY;
+			g_ui->_w            = _w;
+			g_theme->ELEMENT_H  = _ELEMENT_H;
+			g_theme->BUTTON_H   = _BUTTON_H;
+			g_theme->BUTTON_COL = _BUTTON_COL;
+			g_ui->font_offset_y = _fontOffsetY;
 		}
-		g_ui->ops->theme->WINDOW_BG_COL = _WINDOW_BG_COL;
+		g_theme->WINDOW_BG_COL = _WINDOW_BG_COL;
 	}
 }
 
@@ -156,7 +156,7 @@ void ui_toolbar_render_ui() {
 	i32 x              = 0;
 	i32 y              = ui_header_h;
 	i32 h              = iron_window_height() - ui_header_h - g_config->layout->buffer[LAYOUT_SIZE_STATUS_H];
-	i32 _WINDOW_BG_COL = g_ui->ops->theme->WINDOW_BG_COL;
+	i32 _WINDOW_BG_COL = g_theme->WINDOW_BG_COL;
 
 	if (!base_view3d_show && !ui_view2d_show && !ui_nodes_show) {
 		ui_toolbar_draw_show_3d_view();
@@ -174,8 +174,8 @@ void ui_toolbar_render_ui() {
 	if (context_is_floating_toolbar()) {
 		x += ui_toolbar_x();
 		y += ui_toolbar_x() + 3 * UI_SCALE();
-		h                               = (ui_toolbar_tool_names->length + 1) * (ui_toolbar_w(false) + 2);
-		g_ui->ops->theme->WINDOW_BG_COL = g_ui->ops->theme->SEPARATOR_COL;
+		h                      = (ui_toolbar_tool_names->length + 1) * (ui_toolbar_w(false) + 2);
+		g_theme->WINDOW_BG_COL = g_theme->SEPARATOR_COL;
 		if (!base_view3d_show && ui_view2d_show && !g_config->touch_ui) {
 			y += ui_toolbar_w(false);
 		}
@@ -191,40 +191,40 @@ void ui_toolbar_render_ui() {
 		g_ui->_y -= 4 * UI_SCALE();
 		g_ui->image_scroll_align   = false;
 		gpu_texture_t *img         = resource_get("icons.k");
-		u32            col         = g_ui->ops->theme->WINDOW_BG_COL;
+		u32            col         = g_theme->WINDOW_BG_COL;
 		bool           light       = col > 0xff666666;
 		i32            icon_accent = light ? 0xff666666 : -1;
 
 		// Properties icon
 		if (!context_is_floating_toolbar()) {
 			rect_t *rect = resource_tile50(img, ICON_PROPERTIES);
-			if (ui_sub_image(img, light ? 0xff666666 : g_ui->ops->theme->BUTTON_COL, -1.0, rect->x, rect->y, rect->w, rect->h) == UI_STATE_RELEASED) {
+			if (ui_sub_image(img, light ? 0xff666666 : g_theme->BUTTON_COL, -1.0, rect->x, rect->y, rect->w, rect->h) == UI_STATE_RELEASED) {
 				g_config->layout->buffer[LAYOUT_SIZE_HEADER] = 0;
 			}
 		}
 		// Draw ">" button if header is hidden
 		else {
-			i32 _ELEMENT_H               = g_ui->ops->theme->ELEMENT_H;
-			i32 _BUTTON_H                = g_ui->ops->theme->BUTTON_H;
-			i32 _BUTTON_COL              = g_ui->ops->theme->BUTTON_COL;
-			i32 _fontOffsetY             = g_ui->font_offset_y;
-			g_ui->ops->theme->ELEMENT_H  = math_floor(g_ui->ops->theme->ELEMENT_H * 1.5);
-			g_ui->ops->theme->BUTTON_H   = g_ui->ops->theme->ELEMENT_H;
-			g_ui->ops->theme->BUTTON_COL = g_ui->ops->theme->WINDOW_BG_COL;
-			i32 font_height              = draw_font_height(g_ui->ops->font, g_ui->font_size);
-			g_ui->font_offset_y          = (UI_ELEMENT_H() - font_height) / 2.0;
-			i32 _w                       = g_ui->_w;
-			g_ui->_w                     = ui_toolbar_w(false);
+			i32 _ELEMENT_H      = g_theme->ELEMENT_H;
+			i32 _BUTTON_H       = g_theme->BUTTON_H;
+			i32 _BUTTON_COL     = g_theme->BUTTON_COL;
+			i32 _fontOffsetY    = g_ui->font_offset_y;
+			g_theme->ELEMENT_H  = math_floor(g_theme->ELEMENT_H * 1.5);
+			g_theme->BUTTON_H   = g_theme->ELEMENT_H;
+			g_theme->BUTTON_COL = g_theme->WINDOW_BG_COL;
+			i32 font_height     = draw_font_height(g_font, g_ui->font_size);
+			g_ui->font_offset_y = (UI_ELEMENT_H() - font_height) / 2.0;
+			i32 _w              = g_ui->_w;
+			g_ui->_w            = ui_toolbar_w(false);
 
 			if (ui_button(">", UI_ALIGN_CENTER, "")) {
 				ui_toolbar_tool_properties_menu();
 			}
 
-			g_ui->_w                     = _w;
-			g_ui->ops->theme->ELEMENT_H  = _ELEMENT_H;
-			g_ui->ops->theme->BUTTON_H   = _BUTTON_H;
-			g_ui->ops->theme->BUTTON_COL = _BUTTON_COL;
-			g_ui->font_offset_y          = _fontOffsetY;
+			g_ui->_w            = _w;
+			g_theme->ELEMENT_H  = _ELEMENT_H;
+			g_theme->BUTTON_H   = _BUTTON_H;
+			g_theme->BUTTON_COL = _BUTTON_COL;
+			g_ui->font_offset_y = _fontOffsetY;
 		}
 		if (g_ui->is_hovered) {
 			ui_tooltip(tr("Toggle header"));
@@ -239,14 +239,14 @@ void ui_toolbar_render_ui() {
 	}
 
 	if (context_is_floating_toolbar()) {
-		g_ui->ops->theme->WINDOW_BG_COL = _WINDOW_BG_COL;
+		g_theme->WINDOW_BG_COL = _WINDOW_BG_COL;
 	}
 
 	if (g_config->touch_ui) {
 		// Hide scrollbar
-		i32 _SCROLL_W              = g_ui->ops->theme->SCROLL_W;
-		g_ui->ops->theme->SCROLL_W = 0;
+		i32 _SCROLL_W     = g_theme->SCROLL_W;
+		g_theme->SCROLL_W = 0;
 		ui_end_window();
-		g_ui->ops->theme->SCROLL_W = _SCROLL_W;
+		g_theme->SCROLL_W = _SCROLL_W;
 	}
 }

@@ -341,7 +341,7 @@ void ui_view2d_update(void *_) {
 		// let x: f32    = math_fmod(ui_view2d_pan_x, step) - step;
 		// let y: f32    = math_fmod(ui_view2d_pan_y, step) - step;
 		// draw_image(ui_view2d_grid, x, y);
-		draw_set_color(g_ui->ops->theme->SEPARATOR_COL + 0x00020202);
+		draw_set_color(g_theme->SEPARATOR_COL + 0x00020202);
 		draw_filled_rect(0, 0, ui_view2d_ww, ui_view2d_wh);
 		draw_set_color(0xffffffff);
 
@@ -487,7 +487,7 @@ void ui_view2d_update(void *_) {
 		// Menu
 		i32 top_y = ui_menu_top_y();
 		i32 ew    = math_floor(UI_ELEMENT_W());
-		draw_set_color(g_ui->ops->theme->WINDOW_BG_COL);
+		draw_set_color(g_theme->WINDOW_BG_COL);
 		draw_filled_rect(0, top_y, ui_view2d_ww, UI_ELEMENT_H() + UI_ELEMENT_OFFSET() * 2);
 		draw_set_color(0xffffffff);
 
@@ -500,7 +500,7 @@ void ui_view2d_update(void *_) {
 		ui_handle_t *h    = ui_handle(__ID__);
 		char        *text = ui_view2d_type == VIEW_2D_TYPE_NODE ? g_context->node_preview_name : h->text;
 
-		g_ui->_w = math_floor(math_min(draw_string_width(g_ui->ops->font, g_ui->font_size, text) + 15 * UI_SCALE(), 100 * UI_SCALE()));
+		g_ui->_w = math_floor(math_min(draw_string_width(g_font, g_ui->font_size, text) + 15 * UI_SCALE(), 100 * UI_SCALE()));
 
 		if (ui_view2d_type == VIEW_2D_TYPE_ASSET) {
 			asset_t *asset = g_context->texture;

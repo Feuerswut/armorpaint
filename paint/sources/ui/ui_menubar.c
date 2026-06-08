@@ -94,7 +94,7 @@ void ui_menubar_draw_tab_header() {
 
 	if (ui_window(ui_menubar_hwnd, panel_x, 0, ww, ui_header_h, false)) {
 		if (g_config->touch_ui) {
-			ui_fill(0, 0, g_ui->_window_w, g_ui->_window_h + 4, g_ui->ops->theme->SEPARATOR_COL);
+			ui_fill(0, 0, g_ui->_window_w, g_ui->_window_h + 4, g_theme->SEPARATOR_COL);
 		}
 		else {
 			bool a = ui_tab(ui_menubar_tab, tr("3D View"), false, -1, false);
@@ -899,19 +899,19 @@ void ui_menubar_render_ui() {
 			}
 			i32 size = math_floor(g_ui->_w / (float)UI_SCALE());
 			if (ui_menu_show && ui_menubar_category == MENUBAR_CATEGORY_VIEWPORT) {
-				ui_fill(0, -6, size, size - 4, g_ui->ops->theme->HIGHLIGHT_COL);
+				ui_fill(0, -6, size, size - 4, g_theme->HIGHLIGHT_COL);
 			}
 			if (ui_menubar_icon_button(ICON_IMAGE)) {
 				ui_menubar_show_menu(MENUBAR_CATEGORY_VIEWPORT);
 			}
 			if (ui_menu_show && ui_menubar_category == MENUBAR_CATEGORY_MODE) {
-				ui_fill(0, -6, size, size - 4, g_ui->ops->theme->HIGHLIGHT_COL);
+				ui_fill(0, -6, size, size - 4, g_theme->HIGHLIGHT_COL);
 			}
 			if (ui_menubar_icon_button(ICON_SUN)) {
 				ui_menubar_show_menu(MENUBAR_CATEGORY_MODE);
 			}
 			if (ui_menu_show && ui_menubar_category == MENUBAR_CATEGORY_CAMERA) {
-				ui_fill(0, -6, size, size - 4, g_ui->ops->theme->HIGHLIGHT_COL);
+				ui_fill(0, -6, size, size - 4, g_theme->HIGHLIGHT_COL);
 			}
 			if (ui_menubar_icon_button(ICON_CAMERA)) {
 				ui_menubar_show_menu(MENUBAR_CATEGORY_CAMERA);
@@ -920,7 +920,7 @@ void ui_menubar_render_ui() {
 			// ui_menubar_show_menu(MENUBAR_CATEGORY_WORKSPACE);
 			// }
 			if (ui_menu_show && ui_menubar_category == MENUBAR_CATEGORY_HELP) {
-				ui_fill(0, -6, size, size - 4, g_ui->ops->theme->HIGHLIGHT_COL);
+				ui_fill(0, -6, size, size - 4, g_theme->HIGHLIGHT_COL);
 			}
 
 			bool full = true;
@@ -986,7 +986,7 @@ void ui_menubar_render_ui() {
 }
 
 bool ui_menubar_icon_button(i32 i) {
-	u32            col         = g_ui->ops->theme->WINDOW_BG_COL;
+	u32            col         = g_theme->WINDOW_BG_COL;
 	bool           light       = col > 0xff666666;
 	i32            icon_accent = light ? 0xff666666 : 0xffaaaaaa;
 	gpu_texture_t *img         = resource_get("icons.k");

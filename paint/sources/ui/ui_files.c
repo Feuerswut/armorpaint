@@ -319,9 +319,9 @@ char *ui_files_file_browser(ui_handle_t *handle, bool drag_files, char *search, 
 				rect = cube;
 			}
 
-			i32 col = rect == file ? g_ui->ops->theme->LABEL_COL : base_darker(g_ui->ops->theme->LABEL_COL, 0x00202020);
+			i32 col = rect == file ? g_theme->LABEL_COL : base_darker(g_theme->LABEL_COL, 0x00202020);
 			if (ui_files_selected == i)
-				col = g_ui->ops->theme->HIGHLIGHT_COL;
+				col = g_theme->HIGHLIGHT_COL;
 
 			f32 off = g_ui->_w / 2.0 - 25 * UI_SCALE();
 			g_ui->_x += off;
@@ -362,10 +362,10 @@ char *ui_files_file_browser(ui_handle_t *handle, bool drag_files, char *search, 
 				if (icon != NULL && icon != icons) {
 					i32 w = 50;
 					if (i == ui_files_selected) {
-						ui_fill(-2, -2, w + 4, 2, g_ui->ops->theme->HIGHLIGHT_COL);
-						ui_fill(-2, w + 2, w + 4, 2, g_ui->ops->theme->HIGHLIGHT_COL);
-						ui_fill(-2, 0, 2, w + 4, g_ui->ops->theme->HIGHLIGHT_COL);
-						ui_fill(w + 2, -2, 2, w + 6, g_ui->ops->theme->HIGHLIGHT_COL);
+						ui_fill(-2, -2, w + 4, 2, g_theme->HIGHLIGHT_COL);
+						ui_fill(-2, w + 2, w + 4, 2, g_theme->HIGHLIGHT_COL);
+						ui_fill(-2, 0, 2, w + 4, g_theme->HIGHLIGHT_COL);
+						ui_fill(w + 2, -2, 2, w + 6, g_theme->HIGHLIGHT_COL);
 					}
 					state = ui_image(icon, 0xffffffff, w * UI_SCALE());
 					if (g_ui->is_hovered) {
@@ -433,10 +433,10 @@ char *ui_files_file_browser(ui_handle_t *handle, bool drag_files, char *search, 
 				if (icon != NULL) {
 					i32 w = 50;
 					if (i == ui_files_selected) {
-						ui_fill(-2, -2, w + 4, 2, g_ui->ops->theme->HIGHLIGHT_COL);
-						ui_fill(-2, w + 2, w + 4, 2, g_ui->ops->theme->HIGHLIGHT_COL);
-						ui_fill(-2, 0, 2, w + 4, g_ui->ops->theme->HIGHLIGHT_COL);
-						ui_fill(w + 2, -2, 2, w + 6, g_ui->ops->theme->HIGHLIGHT_COL);
+						ui_fill(-2, -2, w + 4, 2, g_theme->HIGHLIGHT_COL);
+						ui_fill(-2, w + 2, w + 4, 2, g_theme->HIGHLIGHT_COL);
+						ui_fill(-2, 0, 2, w + 4, g_theme->HIGHLIGHT_COL);
+						ui_fill(w + 2, -2, 2, w + 6, g_theme->HIGHLIGHT_COL);
 					}
 					state = ui_image(icon, 0xffffffff, w * UI_SCALE());
 					if (g_ui->is_hovered) {
@@ -472,10 +472,10 @@ char *ui_files_file_browser(ui_handle_t *handle, bool drag_files, char *search, 
 				}
 				if (icon != NULL) {
 					if (i == ui_files_selected) {
-						ui_fill(-2, -2, w + 4, 2, g_ui->ops->theme->HIGHLIGHT_COL);
-						ui_fill(-2, w + 2, w + 4, 2, g_ui->ops->theme->HIGHLIGHT_COL);
-						ui_fill(-2, 0, 2, w + 4, g_ui->ops->theme->HIGHLIGHT_COL);
-						ui_fill(w + 2, -2, 2, w + 6, g_ui->ops->theme->HIGHLIGHT_COL);
+						ui_fill(-2, -2, w + 4, 2, g_theme->HIGHLIGHT_COL);
+						ui_fill(-2, w + 2, w + 4, 2, g_theme->HIGHLIGHT_COL);
+						ui_fill(-2, 0, 2, w + 4, g_theme->HIGHLIGHT_COL);
+						ui_fill(w + 2, -2, 2, w + 6, g_theme->HIGHLIGHT_COL);
 					}
 					state   = ui_image(icon, 0xffffffff, icon->height * UI_SCALE());
 					generic = false;
@@ -539,7 +539,7 @@ char *ui_files_file_browser(ui_handle_t *handle, bool drag_files, char *search, 
 			g_ui->_y += slotw * 0.75;
 			char *label0 = (is_folder || ui_files_show_extensions || string_index_of(f, ".") <= 0) ? f : substring(f, 0, string_last_index_of(f, "."));
 			char *label1 = "";
-			while (string_length(label0) > 0 && draw_string_width(g_ui->ops->font, g_ui->font_size, label0) > g_ui->_w - 6) { // 2 line split
+			while (string_length(label0) > 0 && draw_string_width(g_font, g_ui->font_size, label0) > g_ui->_w - 6) { // 2 line split
 				label1 = string("%s%s", char_at(label0, string_length(label0) - 1), label1);
 				label0 = string_copy(substring(label0, 0, string_length(label0) - 1));
 			}
@@ -552,12 +552,12 @@ char *ui_files_file_browser(ui_handle_t *handle, bool drag_files, char *search, 
 			}
 			if (!string_equals(label1, "")) { // Second line
 				g_ui->_x = _x;
-				g_ui->_y += draw_font_height(g_ui->ops->font, g_ui->font_size);
+				g_ui->_y += draw_font_height(g_font, g_ui->font_size);
 				ui_text(label1, UI_ALIGN_CENTER, 0x00000000);
 				if (g_ui->is_hovered) {
 					ui_tooltip(string("%s%s", label0, label1));
 				}
-				g_ui->_y -= draw_font_height(g_ui->ops->font, g_ui->font_size);
+				g_ui->_y -= draw_font_height(g_font, g_ui->font_size);
 			}
 
 			g_ui->_y -= slotw * 0.75;

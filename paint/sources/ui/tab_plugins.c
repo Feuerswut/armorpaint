@@ -20,9 +20,9 @@ void tab_plugins_draw(ui_handle_t *htab) {
 		ui_end_sticky();
 
 		// Draw plugins
-		string_array_t *keys = map_keys(plugin_map);
+		string_array_t *keys = map_keys(g_plugins);
 		for (i32 i = 0; i < keys->length; ++i) {
-			plugin_t *p = any_map_get(plugin_map, keys->buffer[i]);
+			plugin_t *p = any_map_get(g_plugins, keys->buffer[i]);
 			if (p->on_ui != NULL) {
 				minic_ctx_call_fn(p->ctx, p->on_ui, NULL, 0);
 			}

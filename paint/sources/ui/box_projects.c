@@ -119,7 +119,7 @@ void box_projects_tab() {
 
 				i32 uix = g_ui->_x;
 				if (icon != NULL) {
-					ui_fill(0, 0, 128, 128, g_ui->ops->theme->SEPARATOR_COL);
+					ui_fill(0, 0, 128, 128, g_theme->SEPARATOR_COL);
 
 					i32 state = ui_image(icon, 0xffffffff, 128 * UI_SCALE());
 					if (state == UI_STATE_RELEASED) {

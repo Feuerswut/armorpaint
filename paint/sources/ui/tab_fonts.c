@@ -110,10 +110,10 @@ void tab_fonts_draw(ui_handle_t *htab) {
 					if (g_config->window_scale > 1) {
 						w += math_floor(g_config->window_scale * 2);
 					}
-					ui_fill(-1, -2, w + 3, 2, g_ui->ops->theme->HIGHLIGHT_COL);
-					ui_fill(-1, w - off, w + 3, 2 + off, g_ui->ops->theme->HIGHLIGHT_COL);
-					ui_fill(-1, -2, 2, w + 3, g_ui->ops->theme->HIGHLIGHT_COL);
-					ui_fill(w + 1, -2, 2, w + 4, g_ui->ops->theme->HIGHLIGHT_COL);
+					ui_fill(-1, -2, w + 3, 2, g_theme->HIGHLIGHT_COL);
+					ui_fill(-1, w - off, w + 3, 2 + off, g_theme->HIGHLIGHT_COL);
+					ui_fill(-1, -2, 2, w + 3, g_theme->HIGHLIGHT_COL);
+					ui_fill(w + 1, -2, 2, w + 4, g_theme->HIGHLIGHT_COL);
 				}
 
 				uix      = g_ui->_x;
@@ -121,7 +121,7 @@ void tab_fonts_draw(ui_handle_t *htab) {
 				i32 tile = UI_SCALE() > 1 ? 100 : 50;
 
 				if (base_drag_font != NULL && tab_fonts_drag_pos == i) {
-					ui_fill(-1, -2, 2, imgw_val + 4, g_ui->ops->theme->HIGHLIGHT_COL);
+					ui_fill(-1, -2, 2, imgw_val + 4, g_theme->HIGHLIGHT_COL);
 				}
 
 				ui_state_t state = UI_STATE_IDLE;
@@ -190,7 +190,7 @@ void tab_fonts_draw(ui_handle_t *htab) {
 		if (base_drag_font != NULL && tab_fonts_drag_pos == g_project->_->fonts->length) {
 			g_ui->_x = uix;
 			g_ui->_y = uiy;
-			ui_fill(imgw_val + 1, -2, 2, imgw_val + 4, g_ui->ops->theme->HIGHLIGHT_COL);
+			ui_fill(imgw_val + 1, -2, 2, imgw_val + 4, g_theme->HIGHLIGHT_COL);
 		}
 
 		if (!drag_pos_set) {

@@ -37,12 +37,12 @@ void ui_menu_fit_to_screen() {
 void ui_menu_render() {
 	i32 menu_w = ui_menu_commands != NULL ? math_floor(base_default_element_w * UI_SCALE() * 2.3) : math_floor(UI_ELEMENT_W() * 2.3);
 
-	i32 _FILL_BUTTON_BG              = g_ui->ops->theme->FILL_BUTTON_BG;
-	g_ui->ops->theme->FILL_BUTTON_BG = false;
-	i32 _ELEMENT_OFFSET              = g_ui->ops->theme->ELEMENT_OFFSET;
-	g_ui->ops->theme->ELEMENT_OFFSET = 0;
-	i32 _ELEMENT_H                   = g_ui->ops->theme->ELEMENT_H;
-	g_ui->ops->theme->ELEMENT_H      = g_config->touch_ui ? (28 + 2) : 28;
+	i32 _FILL_BUTTON_BG     = g_theme->FILL_BUTTON_BG;
+	g_theme->FILL_BUTTON_BG = false;
+	i32 _ELEMENT_OFFSET     = g_theme->ELEMENT_OFFSET;
+	g_theme->ELEMENT_OFFSET = 0;
+	i32 _ELEMENT_H          = g_theme->ELEMENT_H;
+	g_theme->ELEMENT_H      = g_config->touch_ui ? (28 + 2) : 28;
 
 	if (ui_menu_nested) {
 		ui_menu_show_first = true;
@@ -68,9 +68,9 @@ void ui_menu_render() {
 	                    (g_ui->changed || g_ui->input_released || g_ui->input_released_r || g_ui->is_escape_down);
 	ui_menu_keep_open = false;
 
-	g_ui->ops->theme->FILL_BUTTON_BG = _FILL_BUTTON_BG;
-	g_ui->ops->theme->ELEMENT_OFFSET = _ELEMENT_OFFSET;
-	g_ui->ops->theme->ELEMENT_H      = _ELEMENT_H;
+	g_theme->FILL_BUTTON_BG = _FILL_BUTTON_BG;
+	g_theme->ELEMENT_OFFSET = _ELEMENT_OFFSET;
+	g_theme->ELEMENT_H      = _ELEMENT_H;
 	ui_menu_end();
 	ui_end_region();
 	g_ui->input_enabled = true;
@@ -111,7 +111,7 @@ void ui_menu_draw(void (*commands)(void), i32 x, i32 y) {
 
 void ui_menu_separator() {
 	g_ui->_y++;
-	ui_fill(26, 0, g_ui->_w / (float)UI_SCALE() - 26, 1, g_ui->ops->theme->BUTTON_COL);
+	ui_fill(26, 0, g_ui->_w / (float)UI_SCALE() - 26, 1, g_theme->BUTTON_COL);
 }
 
 bool ui_menu_button(char *text, char *label, icon_t icon) {
@@ -136,7 +136,7 @@ bool ui_menu_button(char *text, char *label, icon_t icon) {
 			g_ui->_x = _x_left - 2 * UI_SCALE();
 			g_ui->_y = _y_top + 2 * UI_SCALE();
 		}
-		ui_sub_image(icons, base_darker(g_ui->ops->theme->LABEL_COL, 0x00222222), icon_h, rect->x / 2.0, rect->y / 2.0, rect->w / 2.0, rect->h / 2.0);
+		ui_sub_image(icons, base_darker(g_theme->LABEL_COL, 0x00222222), icon_h, rect->x / 2.0, rect->y / 2.0, rect->w / 2.0, rect->h / 2.0);
 		g_ui->_x = _x_left;
 		g_ui->_y = _y_bottom;
 	}
@@ -157,7 +157,7 @@ bool ui_icon_button(char *text, icon_t icon, ui_align_t align) {
 	}
 
 	char *tooltip = "";
-	i32   textw   = draw_string_width(g_ui->ops->font, g_ui->font_size, text);
+	i32   textw   = draw_string_width(g_font, g_ui->font_size, text);
 	f32   wmax    = g_config->touch_ui ? 0.9 : 0.8;
 	if (textw > _w * wmax) {
 		tooltip = string_copy(text);
@@ -192,8 +192,8 @@ bool ui_icon_button(char *text, icon_t icon, ui_align_t align) {
 		}
 
 		g_ui->image_scroll_align = false;
-		ui_sub_image(icons, g_ui->enabled ? ui_menu_color_sub(g_ui->ops->theme->LABEL_COL, 0x00333333) : 0xffffffff, icon_h, rect->x / 2.0, rect->y / 2.0,
-		             rect->w / 2.0, rect->h / 2.0);
+		ui_sub_image(icons, g_ui->enabled ? ui_menu_color_sub(g_theme->LABEL_COL, 0x00333333) : 0xffffffff, icon_h, rect->x / 2.0, rect->y / 2.0, rect->w / 2.0,
+		             rect->h / 2.0);
 		g_ui->image_scroll_align = true;
 
 		g_ui->_x = _x_right;
@@ -218,15 +218,15 @@ bool ui_menu_sub_button(ui_handle_t *handle, char *text) {
 }
 
 void ui_menu_label(char *text, char *shortcut) {
-	i32 _y                     = g_ui->_y;
-	i32 _TEXT_COL              = g_ui->ops->theme->TEXT_COL;
-	g_ui->ops->theme->TEXT_COL = g_ui->ops->theme->LABEL_COL;
+	i32 _y            = g_ui->_y;
+	i32 _TEXT_COL     = g_theme->TEXT_COL;
+	g_theme->TEXT_COL = g_theme->LABEL_COL;
 	ui_text(text, UI_ALIGN_LEFT, 0x00000000);
 	if (shortcut != NULL) {
 		g_ui->_y = _y;
 		ui_text(shortcut, UI_ALIGN_RIGHT, 0x00000000);
 	}
-	g_ui->ops->theme->TEXT_COL = _TEXT_COL;
+	g_theme->TEXT_COL = _TEXT_COL;
 }
 
 void ui_menu_align() {
@@ -244,7 +244,7 @@ void ui_menu_align() {
 
 void ui_menu_begin() {
 	ui_draw_shadow(g_ui->_x, g_ui->_y, g_ui->_w, ui_menu_h);
-	draw_set_color(g_ui->ops->theme->SEPARATOR_COL);
+	draw_set_color(g_theme->SEPARATOR_COL);
 	ui_draw_rect(true, g_ui->_x, g_ui->_y, g_ui->_w, ui_menu_h);
 	draw_set_color(0xffffffff);
 }
@@ -257,7 +257,7 @@ void ui_menu_sub_begin(i32 items) {
 	g_ui->_x += g_ui->_w + 2;
 	g_ui->_y -= UI_ELEMENT_H();
 	ui_draw_shadow(g_ui->_x, g_ui->_y, g_ui->_w, UI_ELEMENT_H() * items);
-	draw_set_color(g_ui->ops->theme->SEPARATOR_COL);
+	draw_set_color(g_theme->SEPARATOR_COL);
 	ui_draw_rect(true, g_ui->_x, g_ui->_y, g_ui->_w, UI_ELEMENT_H() * items);
 	draw_set_color(0xffffffff);
 }
