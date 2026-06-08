@@ -304,9 +304,9 @@ void ui_header_draw_tool_properties() {
 				    ui_slider(brush_decal_mask_radius_handle, tr("Radius"), 0.01, 2.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 				if (ui->is_hovered) {
 					any_map_t *vars = any_map_create();
-					any_map_set(vars, "brush_radius", any_map_get(config_keymap, "brush_radius"));
-					any_map_set(vars, "brush_radius_decrease", any_map_get(config_keymap, "brush_radius_decrease"));
-					any_map_set(vars, "brush_radius_increase", any_map_get(config_keymap, "brush_radius_increase"));
+					any_map_set(vars, "brush_radius", any_map_get(g_keymap, "brush_radius"));
+					any_map_set(vars, "brush_radius_decrease", any_map_get(g_keymap, "brush_radius_decrease"));
+					any_map_set(vars, "brush_radius_increase", any_map_get(g_keymap, "brush_radius_increase"));
 					ui_tooltip(
 					    vtr("Hold {brush_radius} and move mouse to the left or press {brush_radius_decrease} to decrease the radius\nHold {brush_radius} "
 					        "and move mouse to the right or press {brush_radius_increase} to increase the radius",
@@ -319,9 +319,9 @@ void ui_header_draw_tool_properties() {
 				g_context->brush_radius          = ui_slider(brush_radius_handle, tr("Radius"), 0.01, 2.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 				if (ui->is_hovered) {
 					any_map_t *vars = any_map_create();
-					any_map_set(vars, "brush_radius", any_map_get(config_keymap, "brush_radius"));
-					any_map_set(vars, "brush_radius_decrease", any_map_get(config_keymap, "brush_radius_decrease"));
-					any_map_set(vars, "brush_radius_increase", any_map_get(config_keymap, "brush_radius_increase"));
+					any_map_set(vars, "brush_radius", any_map_get(g_keymap, "brush_radius"));
+					any_map_set(vars, "brush_radius_decrease", any_map_get(g_keymap, "brush_radius_decrease"));
+					any_map_set(vars, "brush_radius_increase", any_map_get(g_keymap, "brush_radius_increase"));
 					ui_tooltip(
 					    vtr("Hold {brush_radius} and move mouse to the left or press {brush_radius_decrease} to decrease the radius\nHold {brush_radius} "
 					        "and move mouse to the right or press {brush_radius_increase} to increase the radius",
@@ -355,7 +355,7 @@ void ui_header_draw_tool_properties() {
 			g_context->brush_angle          = ui_slider(brush_angle_handle, tr("Angle"), 0.0, 360.0, true, 1, true, UI_ALIGN_RIGHT, true);
 			if (ui->is_hovered) {
 				any_map_t *vars = any_map_create();
-				any_map_set(vars, "brush_angle", any_map_get(config_keymap, "brush_angle"));
+				any_map_set(vars, "brush_angle", any_map_get(g_keymap, "brush_angle"));
 				ui_tooltip(vtr(
 				    "Hold {brush_angle} and move mouse to the left to decrease the angle\nHold {brush_angle} and move mouse to the right to increase the angle",
 				    vars));
@@ -371,7 +371,7 @@ void ui_header_draw_tool_properties() {
 		g_context->brush_opacity          = ui_slider(brush_opacity_handle, tr("Opacity"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 		if (ui->is_hovered) {
 			any_map_t *vars = any_map_create();
-			any_map_set(vars, "brush_opacity", any_map_get(config_keymap, "brush_opacity"));
+			any_map_set(vars, "brush_opacity", any_map_get(g_keymap, "brush_opacity"));
 			ui_tooltip(vtr("Hold {brush_opacity} and move mouse to the left to decrease the opacity\nHold {brush_opacity} and move mouse to the right to "
 			               "increase the opacity",
 			               vars));

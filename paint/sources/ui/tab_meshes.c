@@ -368,7 +368,7 @@ void tab_meshes_draw_append_shape() {
 }
 
 void tab_meshes_draw_import() {
-	if (ui_menu_button(tr("Replace Existing"), any_map_get(config_keymap, "file_import_assets"), ICON_NONE)) {
+	if (ui_menu_button(tr("Replace Existing"), any_map_get(g_keymap, "file_import_assets"), ICON_NONE)) {
 		project_import_mesh(true, NULL);
 	}
 	if (ui_menu_button(tr("Append File"), "", ICON_NONE)) {

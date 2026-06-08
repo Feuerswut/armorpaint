@@ -9,6 +9,13 @@ typedef enum {
 } shortcut_type_t;
 
 typedef enum {
+	BORDER_SIDE_LEFT   = 0,
+	BORDER_SIDE_RIGHT  = 1,
+	BORDER_SIDE_TOP    = 2,
+	BORDER_SIDE_BOTTOm = 3,
+} border_side_t;
+
+typedef enum {
 	BAKE_TYPE_INIT          = -1,
 	BAKE_TYPE_CURVATURE     = 0,
 	BAKE_TYPE_NORMAL        = 1,

@@ -622,7 +622,7 @@ void render_path_paint_commands_live_brush() {
 	i32 _pdirty                 = g_context->pdirty;
 	g_context->last_paint_vec_x = g_context->paint_vec.x;
 	g_context->last_paint_vec_y = g_context->paint_vec.y;
-	if (operator_shortcut(any_map_get(config_keymap, "brush_ruler"), SHORTCUT_TYPE_STARTED)) {
+	if (operator_shortcut(any_map_get(g_keymap, "brush_ruler"), SHORTCUT_TYPE_STARTED)) {
 		g_context->last_paint_vec_x = g_context->last_paint_x;
 		g_context->last_paint_vec_y = g_context->last_paint_y;
 	}
@@ -826,6 +826,9 @@ void render_path_paint_begin() {
 void render_path_paint_end() {
 	g_context->ddirty--;
 	g_context->rdirty--;
+
+	g_context->last_paint_vec_x = g_context->paint_vec.x;
+	g_context->last_paint_vec_y = g_context->paint_vec.y;
 
 	if (!render_path_paint_paint_enabled()) {
 		return;

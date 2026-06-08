@@ -11,7 +11,7 @@ void render_gizmo_update() {
 	bool is_decal  = base_is_decal_layer();
 
 	object_t *gizmo = g_context->gizmo;
-	bool      hide  = operator_shortcut(any_map_get(config_keymap, "stencil_hide"), SHORTCUT_TYPE_DOWN);
+	bool      hide  = operator_shortcut(any_map_get(g_keymap, "stencil_hide"), SHORTCUT_TYPE_DOWN);
 	gizmo->visible  = (is_object || is_decal) && !hide && g_config->workspace != WORKSPACE_PLAYER;
 	if (!gizmo->visible) {
 		return;

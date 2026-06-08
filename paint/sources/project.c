@@ -4,11 +4,6 @@
 bool _project_save_and_quit;
 bool _project_import_mesh_replace_existing;
 void (*_project_import_mesh_done)(void);
-char *_project_import_mesh_box_path;
-bool  _project_import_mesh_box_replace_existing;
-bool  _project_import_mesh_box_clear_layers;
-bool  _project_import_mesh_box_keep_camera;
-void (*_project_import_mesh_box_done)(void);
 bool     _project_import_asset_hdr_as_envmap;
 bool     _project_import_swatches_replace_existing;
 asset_t *_project_reimport_texture_asset;
@@ -80,41 +75,6 @@ void project_save_as_on_file_picked(char *path) {
 void project_save_as(bool save_and_quit) {
 	_project_save_and_quit = save_and_quit;
 	ui_files_show("arm", true, false, &project_save_as_on_file_picked);
-}
-
-void project_fetch_default_meshes() {
-	if (project_default_mesh_list == NULL) {
-		gc_unroot(project_default_mesh_list);
-		project_default_mesh_list = file_read_directory(string("%s%smeshes", path_data(), PATH_SEP));
-		gc_root(project_default_mesh_list);
-		for (i32 i = 0; i < project_default_mesh_list->length; ++i) {
-			char *s                      = project_default_mesh_list->buffer[i];
-			project_default_mesh_list->buffer[i] = substring(project_default_mesh_list->buffer[i], 0, string_length(s) - 4); // Trim .arm
-		}
-		any_array_push(project_default_mesh_list, "plane");
-		any_array_push(project_default_mesh_list, "sphere");
-	}
-}
-
-void project_new_box_draw() {
-	project_fetch_default_meshes();
-
-	ui_handle_t *h_project_type = ui_handle(__ID__);
-	h_project_type->i           = g_context->project_type;
-	g_context->project_type     = ui_combo(h_project_type, project_default_mesh_list, tr("Template"), true, UI_ALIGN_LEFT, true);
-	ui_end_element();
-	ui_row2();
-	if (ui_icon_button(tr("Cancel"), ICON_CLOSE, UI_ALIGN_CENTER)) {
-		ui_box_hide();
-	}
-	if (ui_icon_button(tr("OK"), ICON_CHECK, UI_ALIGN_CENTER) || ui->is_return_down) {
-		project_new(true);
-		ui_box_hide();
-	}
-}
-
-void project_new_box() {
-	ui_box_show_custom(&project_new_box_draw, 400, 200, NULL, true, tr("New Project"));
 }
 
 void project_cleanup() {
@@ -389,90 +349,6 @@ void project_append_mesh() {
 	project_import_mesh(false, import_mesh_finish_import);
 }
 
-extern int plugins_skinning_frame;
-extern int plugins_split_by;
-
-void project_import_mesh_box_draw() {
-	char *path             = _project_import_mesh_box_path;
-	bool  replace_existing = _project_import_mesh_box_replace_existing;
-	bool  clear_layers     = _project_import_mesh_box_clear_layers;
-	bool  keep_camera      = _project_import_mesh_box_keep_camera;
-	void (*done)(void)     = _project_import_mesh_box_done;
-
-	if (ends_with(to_lower_case(path), ".obj") || ends_with(to_lower_case(path), ".fbx")) {
-		string_array_t *split_by_combo = any_array_create_from_raw(
-		    (void *[]){
-		        tr("Object"),
-		        tr("Material"),
-		        tr("UDIM Tile"),
-		    },
-		    3);
-		ui_text(tr("Split By"), UI_ALIGN_LEFT, 0);
-		g_context->split_by = plugins_split_by = ui_inline_radio(ui_handle(__ID__), split_by_combo, UI_ALIGN_LEFT);
-		if (ui->is_hovered) {
-			ui_tooltip(tr("Split mesh into objects"));
-		}
-	}
-
-	if (ends_with(to_lower_case(path), ".blend")) {
-		import_blend_mesh_ui();
-	}
-
-	if (ends_with(to_lower_case(path), ".fbx") || ends_with(to_lower_case(path), ".gltf") || ends_with(to_lower_case(path), ".glb")) {
-		ui_row2();
-		bool b                 = ui_check(ui_handle(__ID__), tr("Apply Skinning"), "");
-		ui->enabled            = b;
-		plugins_skinning_frame = ui_slider(ui_handle(__ID__), tr("Frame"), 1, 99, false, 1, true, UI_ALIGN_RIGHT, true);
-		ui->enabled            = true;
-		if (!b) {
-			plugins_skinning_frame = -1;
-		}
-	}
-
-	f32_array_t *row = f32_array_create_from_raw(
-	    (f32[]){
-	        0.45,
-	        0.45,
-	        0.1,
-	    },
-	    3);
-
-	ui_end_element();
-	ui_row(row);
-	if (ui_icon_button(tr("Cancel"), ICON_CLOSE, UI_ALIGN_CENTER)) {
-		ui_box_hide();
-	}
-	if (ui_icon_button(tr("Import"), ICON_CHECK, UI_ALIGN_CENTER) || ui->is_return_down) {
-		ui_box_hide();
-
-#if defined(IRON_ANDROID) || defined(IRON_IOS)
-		console_toast(tr("Importing mesh"));
-#endif
-
-		import_mesh_run(path, clear_layers, replace_existing, keep_camera);
-		if (done != NULL) {
-			done();
-		}
-	}
-	if (ui_button(tr("?"), UI_ALIGN_CENTER, "")) {
-		iron_load_url("https://github.com/armory3d/armorpaint_web/blob/main/manual.md#faq");
-	}
-}
-
-void project_import_mesh_box(char *path, bool replace_existing, bool clear_layers, bool keep_camera, void (*done)(void)) {
-	gc_unroot(_project_import_mesh_box_path);
-	_project_import_mesh_box_path = string_copy(path);
-	gc_root(_project_import_mesh_box_path);
-	_project_import_mesh_box_replace_existing = replace_existing;
-	_project_import_mesh_box_clear_layers     = clear_layers;
-	_project_import_mesh_box_keep_camera      = keep_camera;
-	gc_unroot(_project_import_mesh_box_done);
-	_project_import_mesh_box_done = done;
-	gc_root(_project_import_mesh_box_done);
-	ui_box_show_custom(&project_import_mesh_box_draw, 400, 200, NULL, true, tr("Import Mesh"));
-	ui_box_click_to_hide = false; // Prevent closing when going back to window from file browser
-}
-
 void project_reimport_mesh() {
 	if (g_project->mesh_assets != NULL && g_project->mesh_assets->length > 0 && iron_file_exists(g_project->mesh_assets->buffer[0])) {
 		project_import_mesh_box(g_project->mesh_assets->buffer[0], true, false, true, NULL);
@@ -484,6 +360,7 @@ void project_reimport_mesh() {
 
 void project_reimport_mesh_skinned(int frame) {
 	extern bool import_mesh_no_scale;
+	extern int  plugins_skinning_frame;
 	if (g_project->mesh_assets != NULL && g_project->mesh_assets->length > 0 && iron_file_exists(g_project->mesh_assets->buffer[0])) {
 		plugins_skinning_frame = frame;
 		import_mesh_no_scale   = true;

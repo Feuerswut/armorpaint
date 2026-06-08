@@ -402,16 +402,16 @@ bool context_is_decal() {
 }
 
 bool context_is_decal_mask() {
-	return context_is_decal() && operator_shortcut(any_map_get(config_keymap, "decal_mask"), SHORTCUT_TYPE_DOWN);
+	return context_is_decal() && operator_shortcut(any_map_get(g_keymap, "decal_mask"), SHORTCUT_TYPE_DOWN);
 }
 
 bool context_is_decal_camera_align() {
-	return context_is_decal() && (g_context->decal_camera_align || operator_shortcut(any_map_get(config_keymap, "decal_camera_align"), SHORTCUT_TYPE_DOWN));
+	return context_is_decal() && (g_context->decal_camera_align || operator_shortcut(any_map_get(g_keymap, "decal_camera_align"), SHORTCUT_TYPE_DOWN));
 }
 
 bool context_is_decal_mask_paint() {
 	return context_is_decal() &&
-	       operator_shortcut(string("%s+%s", any_map_get(config_keymap, "decal_mask"), any_map_get(config_keymap, "action_paint")), SHORTCUT_TYPE_DOWN);
+	       operator_shortcut(string("%s+%s", any_map_get(g_keymap, "decal_mask"), any_map_get(g_keymap, "action_paint")), SHORTCUT_TYPE_DOWN);
 }
 
 bool context_is_floating_toolbar() {

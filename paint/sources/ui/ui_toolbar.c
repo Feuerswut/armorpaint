@@ -82,13 +82,13 @@ void ui_toolbar_draw_tool(i32 tool, gpu_texture_t *img, i32 icon_accent) {
 
 	if (ui->is_hovered) {
 		char *tooltip = tr(ui_toolbar_tool_names->buffer[tool]);
-		char *key     = any_map_get(config_keymap, string("tool_%s", to_lower_case(ui_toolbar_tool_names->buffer[tool])));
+		char *key     = any_map_get(g_keymap, string("tool_%s", to_lower_case(ui_toolbar_tool_names->buffer[tool])));
 		if (!string_equals(key, "")) {
 			tooltip = string("%s (%s)", tooltip, key);
 		}
 		char *extra = ui_toolbar_tooltip_extras->buffer[tool];
 		if (!string_equals(extra, "")) {
-			tooltip = string("%s - %s", tooltip, vtr(extra, config_keymap));
+			tooltip = string("%s - %s", tooltip, vtr(extra, g_keymap));
 		}
 		ui_tooltip(tooltip);
 	}

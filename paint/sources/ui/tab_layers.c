@@ -3,7 +3,6 @@
 
 i32           tab_layers_layer_name_edit   = -1;
 bool          tab_layers_show_context_menu = false;
-slot_layer_t *tab_layers_l;
 bool          tab_layers_mini;
 
 void tab_layers_button_2d_view() {
@@ -11,7 +10,7 @@ void tab_layers_button_2d_view() {
 		ui_base_show_2d_view(VIEW_2D_TYPE_LAYER);
 	}
 	else if (ui->is_hovered) {
-		ui_tooltip(string("%s (%s)", tr("Show 2D View"), (char *)any_map_get(config_keymap, "toggle_2d_view")));
+		ui_tooltip(string("%s (%s)", tr("Show 2D View"), (char *)any_map_get(g_keymap, "toggle_2d_view")));
 	}
 }
 
@@ -39,7 +38,7 @@ void tab_layers_handle_layer_icon_state(slot_layer_t *l, i32 i, ui_state_t state
 		}
 		if (i < 9) {
 			i32 i1 = (i + 1);
-			ui_tooltip(string("%s - (%s %d)", l->name, (char *)any_map_get(config_keymap, "select_layer"), i1));
+			ui_tooltip(string("%s - (%s %d)", l->name, (char *)any_map_get(g_keymap, "select_layer"), i1));
 		}
 		else {
 			ui_tooltip(l->name);
@@ -128,7 +127,7 @@ ui_state_t tab_layers_draw_layer_icon(slot_layer_t *l, i32 i, f32 uix, f32 uiy, 
 		// Draw layer numbers when selecting a layer via keyboard shortcut
 		bool is_typing = ui->is_typing;
 		if (!is_typing) {
-			if (i < 9 && operator_shortcut(any_map_get(config_keymap, "select_layer"), SHORTCUT_TYPE_DOWN)) {
+			if (i < 9 && operator_shortcut(any_map_get(g_keymap, "select_layer"), SHORTCUT_TYPE_DOWN)) {
 				char *number = i32_to_string(i + 1);
 				i32   width  = draw_string_width(ui->ops->font, ui->font_size, number) + 10;
 				i32   height = draw_font_height(ui->ops->font, ui->font_size);
@@ -529,16 +528,6 @@ void tab_layers_draw_layer_context_menu_to_fill_layer(void *_) {
 	slot_layer_t *l = tab_layers_l;
 	slot_layer_is_layer(l) ? history_to_fill_layer() : history_to_fill_mask();
 	slot_layer_to_fill_layer(l);
-}
-
-void tab_layers_make_mask_preview_rgba32_on_next_frame(void *_) {
-	slot_layer_t *l = tab_layers_l;
-	draw_begin(g_context->mask_preview_rgba32, true, 0xff000000);
-	draw_set_pipeline(ui_view2d_pipe);
-	gpu_set_int(ui_view2d_channel_loc, 1);
-	draw_image(l->texpaint_preview, 0, 0);
-	draw_end();
-	draw_set_pipeline(NULL);
 }
 
 bool tab_layers_can_merge_down(slot_layer_t *l) {
@@ -1138,41 +1127,6 @@ void tab_layers_button_new(char *text) {
 	}
 }
 
-void tab_layers_apply_filter(i32 filter) {
-	g_context->layer_filter = filter;
-	char *filter_name       = NULL;
-	if (filter > 0 && filter <= g_project->_->paint_objects->length) {
-		filter_name = g_project->_->paint_objects->buffer[filter - 1]->base->name;
-	}
-	else if (filter > g_project->_->paint_objects->length) {
-		string_array_t *atlases = project_get_used_atlases();
-		if (atlases != NULL) {
-			filter_name = atlases->buffer[filter - g_project->_->paint_objects->length - 1];
-		}
-	}
-	for (i32 i = 0; i < g_project->_->paint_objects->length; ++i) {
-		mesh_object_t *p = g_project->_->paint_objects->buffer[i];
-		p->base->visible = filter == 0 || (filter_name != NULL && string_equals(p->base->name, filter_name)) || project_is_atlas_object(p);
-	}
-	if (filter == 0 && g_context->merged_object_is_atlas) {
-		util_mesh_merge(NULL);
-	}
-	else if (filter > g_project->_->paint_objects->length) {
-		mesh_object_t_array_t *visibles = any_array_create_from_raw((void *[]){}, 0);
-		for (i32 i = 0; i < g_project->_->paint_objects->length; ++i) {
-			mesh_object_t *p = g_project->_->paint_objects->buffer[i];
-			if (p->base->visible) {
-				any_array_push(visibles, p);
-			}
-		}
-		util_mesh_merge(visibles);
-	}
-	layers_set_object_mask();
-	util_uv_uvmap_cached       = false;
-	g_context->ddirty          = 2;
-	render_path_raytrace_ready = false;
-}
-
 void tab_layers_combo_filter() {
 	string_array_t *ar = any_array_create_from_raw(
 	    (void *[]){
@@ -1286,50 +1240,6 @@ void tab_layers_draw_full(ui_handle_t *htab) {
 void tab_layers_draw(ui_handle_t *htab) {
 	bool mini = g_config->layout->buffer[LAYOUT_SIZE_SIDEBAR_W] <= ui_sidebar_w_mini;
 	mini ? tab_layers_draw_mini(htab) : tab_layers_draw_full(htab);
-}
-
-void tab_layers_remap_layer_pointers(ui_node_t_array_t *nodes, i32_imap_t *pointer_map) {
-	for (i32 i = 0; i < nodes->length; ++i) {
-		ui_node_t *n = nodes->buffer[i];
-		if (string_equals(n->type, "LAYER") || string_equals(n->type, "LAYER_MASK")) {
-			i32 i = n->buttons->buffer[0]->default_value->buffer[0];
-			if (i32_imap_get(pointer_map, i) != -1) {
-				n->buttons->buffer[0]->default_value->buffer[0] = i32_imap_get(pointer_map, i);
-			}
-		}
-	}
-}
-
-i32_map_t *tab_layers_init_layer_map() {
-	i32_map_t *res = any_map_create();
-	for (i32 i = 0; i < g_project->_->layers->length; ++i) {
-		i32_map_set(res, g_project->_->layers->buffer[i], i);
-	}
-	return res;
-}
-
-i32_imap_t *tab_layers_fill_layer_map(i32_map_t *map) {
-	i32_imap_t     *res  = any_map_create();
-	string_array_t *keys = map_keys(map);
-	for (i32 i = 0; i < keys->length; ++i) {
-		char *l = keys->buffer[i];
-		i32_imap_set(res, i32_map_get(map, l), array_index_of(g_project->_->layers, l) > -1 ? array_index_of(g_project->_->layers, l) : 9999);
-	}
-	return res;
-}
-
-void tab_layers_make_mask_preview_rgba32(slot_layer_t *l) {
-	if (g_context->mask_preview_rgba32 == NULL) {
-		g_context->mask_preview_rgba32 = gpu_create_render_target(util_render_layer_preview_size, util_render_layer_preview_size, GPU_TEXTURE_FORMAT_RGBA32);
-	}
-	// Convert from R8 to RGBA32 for tooltip display
-	if (g_context->mask_preview_last != l) {
-		g_context->mask_preview_last = l;
-		gc_unroot(tab_layers_l);
-		tab_layers_l = l;
-		gc_root(tab_layers_l);
-		sys_notify_on_next_frame(&tab_layers_make_mask_preview_rgba32_on_next_frame, NULL);
-	}
 }
 
 bool tab_layers_can_drop_new_layer(i32 position) {

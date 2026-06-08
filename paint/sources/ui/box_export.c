@@ -164,7 +164,7 @@ void box_export_tab_export_textures(char *title, bool bake_material) {
 			}
 		}
 		if (ui->is_hovered) {
-			char *key = any_map_get(config_keymap, "file_export_textures");
+			char *key = any_map_get(g_keymap, "file_export_textures");
 			char *tip = string("%s (%s)", tr("Export texture files"), key);
 			ui_tooltip(tip);
 		}

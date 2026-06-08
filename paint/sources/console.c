@@ -36,10 +36,10 @@ void console_draw_progress(void *_) {
 void console_progress(char *s) {
 	// Keep popup message displayed until s == NULL
 	if (s == NULL) {
-		sys_remove_render(console_draw_progress);
+		sys_remove_update(console_draw_progress);
 	}
 	else if (console_progress_text == NULL) {
-		sys_notify_on_render(console_draw_progress, NULL);
+		sys_notify_on_update(console_draw_progress, NULL);
 	}
 	if (s != NULL) {
 		console_log(s);

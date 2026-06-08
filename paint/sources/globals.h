@@ -16,6 +16,7 @@ char *manifest_url_ios         = "https://apps.apple.com/app/armorpaint/id153396
 context_t *g_context;
 project_t *g_project;
 config_t  *g_config;
+any_map_t *g_keymap;
 ui_t      *ui;
 
 any_map_t       *ui_children;
@@ -29,7 +30,6 @@ gpu_texture_t   *layers_expc          = NULL;
 f32              layers_default_base  = 0.5;
 f32              layers_default_rough = 0.4;
 any_map_t       *operator_ops;
-any_map_t       *config_keymap;
 ui_align_t       config_button_align   = UI_ALIGN_LEFT;
 char            *config_button_spacing = "       ";
 any_imap_t      *physics_body_object_map;
@@ -140,6 +140,8 @@ bool                      ui_base_show = true;
 i32                       ui_base_viewport_col;
 ui_handle_t_array_t      *ui_base_hwnds;
 ui_handle_t_array_t      *ui_base_htabs;
+i32                       ui_base_border_started;
+ui_handle_t              *ui_base_border_handle;
 tab_draw_array_t_array_t *ui_base_hwnd_tabs;
 i32                       ui_toolbar_default_w = 36;
 ui_handle_t              *ui_toolbar_handle;
@@ -174,7 +176,7 @@ bool                      ui_menu_show_first                 = true;
 i32                       render_path_base_bloom_current_mip = 0;
 f32                       render_path_base_bloom_sample_scale;
 bool                      render_path_base_buf_swapped = false;
-string_array_t           *project_default_mesh_list = NULL;
+string_array_t           *project_default_mesh_list    = NULL;
 gpu_pipeline_t           *ui_view2d_pipe;
 i32                       ui_view2d_channel_loc;
 view_2d_type_t            ui_view2d_type = VIEW_2D_TYPE_LAYER;
@@ -314,6 +316,7 @@ bool            ui_box_click_to_hide = true;
 i32             ui_box_modalw        = 400;
 i32             ui_box_modalh        = 170;
 ui_handle_t    *tab_layers_layer_name_handle;
+slot_layer_t   *tab_layers_l;
 gpu_texture_t  *util_uv_uvmap                    = NULL;
 bool            util_uv_uvmap_cached             = false;
 gpu_texture_t  *util_uv_trianglemap              = NULL;
@@ -380,7 +383,7 @@ fun brightcontrast(col: float3, bright: float, contr: float): float3 { \
 } \
 ";
 
-char                     *str_cotangent_frame        = "\
+char *str_cotangent_frame = "\
 fun cotangent_frame(n: float3, p: float3, tex_coord: float2): float3x3 { \
 	var duv1: float2 = ddx2(tex_coord); \
 	var duv2: float2 = ddy2(tex_coord); \
@@ -432,7 +435,7 @@ fun pack_f32_i16(f: float, i: uint): float { \
 } \
 ";
 
-char           *str_dither_bayer          = "\
+char *str_dither_bayer = "\
 fun dither_bayer(uv: float2): float { \
 	var x: int = int(uv.x % 4.0); \
 	var y: int = int(uv.y % 4.0); \

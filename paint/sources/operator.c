@@ -14,10 +14,10 @@ void operator_run(char *name) {
 
 void operator_update() {
 	if (mouse_started_any() || keyboard_started_any()) {
-		string_array_t *keys = map_keys(config_keymap);
+		string_array_t *keys = map_keys(g_keymap);
 		for (i32 i = 0; i < keys->length; ++i) {
 			char *op = keys->buffer[i];
-			if (operator_shortcut(any_map_get(config_keymap, op), SHORTCUT_TYPE_STARTED)) {
+			if (operator_shortcut(any_map_get(g_keymap, op), SHORTCUT_TYPE_STARTED)) {
 				operator_run(op);
 			}
 		}

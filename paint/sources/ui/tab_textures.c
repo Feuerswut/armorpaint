@@ -174,7 +174,7 @@ void tab_textures_draw(ui_handle_t *htab) {
 			ui_files_show(string_array_join(path_texture_formats(), ","), false, true, &tab_textures_draw_import);
 		}
 		if (ui->is_hovered) {
-			ui_tooltip(string("%s (%s)", tr("Import texture file"), (char *)any_map_get(config_keymap, "file_import_assets")));
+			ui_tooltip(string("%s (%s)", tr("Import texture file"), (char *)any_map_get(g_keymap, "file_import_assets")));
 		}
 		if (ui_icon_button(tr("2D View"), ICON_WINDOW, UI_ALIGN_CENTER)) {
 			ui_base_show_2d_view(VIEW_2D_TYPE_ASSET);

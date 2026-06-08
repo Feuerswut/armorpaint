@@ -9,7 +9,7 @@ void tab_materials_button_nodes() {
 		ui_base_show_material_nodes();
 	}
 	else if (ui->is_hovered) {
-		ui_tooltip(string("%s (%s)", tr("Show Node Editor"), (char *)any_map_get(config_keymap, "toggle_node_editor")));
+		ui_tooltip(string("%s (%s)", tr("Show Node Editor"), (char *)any_map_get(g_keymap, "toggle_node_editor")));
 	}
 }
 
@@ -250,7 +250,7 @@ void tab_materials_draw_slots(bool mini) {
 			// Draw material numbers when selecting a material via keyboard shortcut
 			bool is_typing = ui->is_typing;
 			if (!is_typing) {
-				if (i < 9 && operator_shortcut(any_map_get(config_keymap, "select_material"), SHORTCUT_TYPE_DOWN)) {
+				if (i < 9 && operator_shortcut(any_map_get(g_keymap, "select_material"), SHORTCUT_TYPE_DOWN)) {
 					char *number = i32_to_string(i + 1);
 					i32   width  = draw_string_width(ui->ops->font, ui->font_size, number) + 10;
 					i32   height = draw_font_height(ui->ops->font, ui->font_size);
@@ -294,7 +294,7 @@ void tab_materials_draw_slots(bool mini) {
 				ui_tooltip_image(img_full, 0);
 				if (i < 9) {
 					i32 i1 = i + 1;
-					ui_tooltip(string("%s - (%s %d)", g_project->_->materials->buffer[i]->canvas->name, (char *)any_map_get(config_keymap, "select_material"), i1));
+					ui_tooltip(string("%s - (%s %d)", g_project->_->materials->buffer[i]->canvas->name, (char *)any_map_get(g_keymap, "select_material"), i1));
 				}
 				else {
 					ui_tooltip(g_project->_->materials->buffer[i]->canvas->name);
@@ -308,7 +308,7 @@ void tab_materials_draw_slots(bool mini) {
 					if (i < 9) {
 						i32 i1 = i + 1;
 						ui_tooltip(
-						    string("%s - (%s %d)", g_project->_->materials->buffer[i]->canvas->name, (char *)any_map_get(config_keymap, "select_material"), i1));
+						    string("%s - (%s %d)", g_project->_->materials->buffer[i]->canvas->name, (char *)any_map_get(g_keymap, "select_material"), i1));
 					}
 					else {
 						ui_tooltip(g_project->_->materials->buffer[i]->canvas->name);

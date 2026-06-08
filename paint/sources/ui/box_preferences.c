@@ -976,19 +976,19 @@ void box_preferences_keymap_tab() {
 
 	i32 index            = 0;
 	ui->changed          = false;
-	string_array_t *keys = map_keys(config_keymap);
+	string_array_t *keys = map_keys(g_keymap);
 	array_sort(keys, NULL);
 	char *search = to_lower_case(box_preferences_keymap_hsearch->text);
 	for (i32 i = 0; i < keys->length; ++i) {
 		char *key   = keys->buffer[i];
-		char *value = any_map_get(config_keymap, key);
+		char *value = any_map_get(g_keymap, key);
 		if (!string_equals(search, "") && string_index_of(to_lower_case(key), search) == -1 && string_index_of(to_lower_case(value), search) == -1) {
 			continue;
 		}
 		ui_handle_t *h = ui_nest(ui_handle(__ID__), index++);
 		h->text        = string_copy(value);
 		char *text     = ui_text_input(h, key, UI_ALIGN_LEFT, true, false);
-		any_map_set(config_keymap, key, text);
+		any_map_set(g_keymap, key, text);
 	}
 	if (ui->changed) {
 		config_apply();

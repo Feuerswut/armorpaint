@@ -148,6 +148,8 @@
 #include "render/render_pathsphere.c"
 
 #include "ui/box_export.c"
+#include "ui/box_import_mesh.c"
+#include "ui/box_new_project.c"
 #include "ui/box_preferences.c"
 #include "ui/box_projects.c"
 #include "ui/tab_browser.c"
@@ -164,26 +166,38 @@
 #include "ui/tab_swatches.c"
 #include "ui/tab_textures.c"
 #include "ui/tab_timeline.c"
+#include "ui/ui_base.c"
 #include "ui/ui_box.c"
 #include "ui/ui_files.c"
 #include "ui/ui_header.c"
 #include "ui/ui_menu.c"
 #include "ui/ui_menubar.c"
 #include "ui/ui_nodes.c"
+#include "ui/ui_search.c"
 #include "ui/ui_sidebar.c"
 #include "ui/ui_statusbar.c"
 #include "ui/ui_toolbar.c"
 #include "ui/ui_view2d.c"
 
 #include "util/edit_uvmap.c"
-#include "util/geom.c"
+#include "util/util_brush.c"
 #include "util/util_clone.c"
+#include "util/util_cursor.c"
 #include "util/util_encode.c"
+#include "util/util_geom.c"
 #include "util/util_layer.c"
 #include "util/util_mesh.c"
+#include "util/util_nodes.c"
 #include "util/util_particle.c"
+#include "util/util_path.c"
 #include "util/util_render.c"
+#include "util/util_resize.c"
+#include "util/util_select.c"
+#include "util/util_shortcut.c"
+#include "util/util_stencil.c"
 #include "util/util_texture.c"
+#include "util/util_touch.c"
+#include "util/util_ui.c"
 #include "util/util_uv.c"
 
 #include "args.c"
@@ -527,8 +541,8 @@ void _kickstart() {
 
 	iron_set_app_name(manifest_title); // Used to locate external application data folder
 	config_load();
-	config_init();
 	context_init();
+	config_init();
 	sys_start(config_get_options());
 
 #ifdef is_debug
