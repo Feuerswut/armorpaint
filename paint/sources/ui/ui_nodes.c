@@ -660,106 +660,104 @@ void ui_nodes_draw_menubar() {
 }
 
 void ui_nodes_update(void *_) {
-	if (!ui_nodes_show || !base_ui_enabled) {
-		return;
-	}
+	if (ui_nodes_show && base_ui_enabled) {
 
-	ui_nodes_wx = math_floor(sys_w()) + ui_toolbar_w(true);
-	ui_nodes_wy = ui_header_h * 2;
+		ui_nodes_wx = math_floor(sys_w()) + ui_toolbar_w(true);
+		ui_nodes_wy = ui_header_h * 2;
 
-	if (ui_view2d_show && base_view3d_show) {
-		ui_nodes_wy += sys_h() - g_config->layout->buffer[LAYOUT_SIZE_NODES_H];
-	}
-
-	i32 ww = g_config->layout->buffer[LAYOUT_SIZE_NODES_W];
-	if (!ui_base_show) {
-		ww += g_config->layout->buffer[LAYOUT_SIZE_SIDEBAR_W] + ui_toolbar_w(true);
-		ui_nodes_wx -= ui_toolbar_w(true);
-		ui_nodes_wy = 0;
-	}
-	if (!base_view3d_show) {
-		ww += base_view3d_w();
-	}
-
-	if (!base_view3d_show && ui_view2d_show) {
-		ui_nodes_wx = base_view3d_w();
-		ui_nodes_wy = 0;
-		ui_nodes_ww = g_config->layout->buffer[LAYOUT_SIZE_NODES_W];
-		ui_nodes_wh = sys_h();
-		if (g_config->layout->buffer[LAYOUT_SIZE_HEADER] == 1) {
-			ui_nodes_wh += ui_header_h * 2;
+		if (ui_view2d_show && base_view3d_show) {
+			ui_nodes_wy += sys_h() - g_config->layout->buffer[LAYOUT_SIZE_NODES_H];
 		}
-	}
 
-	if (!base_view3d_show) {
-		ui_nodes_wh -= ui_header_h * 4;
-	}
+		i32 ww = g_config->layout->buffer[LAYOUT_SIZE_NODES_W];
+		if (!ui_base_show) {
+			ww += g_config->layout->buffer[LAYOUT_SIZE_SIDEBAR_W] + ui_toolbar_w(true);
+			ui_nodes_wx -= ui_toolbar_w(true);
+			ui_nodes_wy = 0;
+		}
+		if (!base_view3d_show) {
+			ww += base_view3d_w();
+		}
 
-	i32  mx      = mouse_x;
-	i32  my      = mouse_y;
-	bool enabled = true;
-	if (mx < ui_nodes_wx || mx > ui_nodes_wx + ww || my < ui_nodes_wy) {
-		enabled = false;
-	}
-	if (g_ui->is_typing || !g_ui->input_enabled) {
-		enabled = false;
-	}
-
-	if (enabled) {
-
-		ui_nodes_t *nodes = ui_nodes_get_nodes();
-		if (nodes->nodes_selected_id->length > 0 && g_ui->is_key_pressed) {
-			if (g_ui->key_code == KEY_CODE_LEFT) {
-				for (i32 i = 0; i < nodes->nodes_selected_id->length; ++i) {
-					i32                n      = nodes->nodes_selected_id->buffer[i];
-					ui_node_t_array_t *_nodes = ui_nodes_get_canvas(true)->nodes;
-					ui_get_node(_nodes, n)->x -= 1;
-				}
-			}
-			else if (g_ui->key_code == KEY_CODE_RIGHT) {
-				for (i32 i = 0; i < nodes->nodes_selected_id->length; ++i) {
-					i32                n      = nodes->nodes_selected_id->buffer[i];
-					ui_node_t_array_t *_nodes = ui_nodes_get_canvas(true)->nodes;
-					ui_get_node(_nodes, n)->x += 1;
-				}
-			}
-			if (g_ui->key_code == KEY_CODE_UP) {
-				for (i32 i = 0; i < nodes->nodes_selected_id->length; ++i) {
-					i32                n      = nodes->nodes_selected_id->buffer[i];
-					ui_node_t_array_t *_nodes = ui_nodes_get_canvas(true)->nodes;
-					ui_get_node(_nodes, n)->y -= 1;
-				}
-			}
-			else if (g_ui->key_code == KEY_CODE_DOWN) {
-				for (i32 i = 0; i < nodes->nodes_selected_id->length; ++i) {
-					i32                n      = nodes->nodes_selected_id->buffer[i];
-					ui_node_t_array_t *_nodes = ui_nodes_get_canvas(true)->nodes;
-					ui_get_node(_nodes, n)->y += 1;
-				}
+		if (!base_view3d_show && ui_view2d_show) {
+			ui_nodes_wx = base_view3d_w();
+			ui_nodes_wy = 0;
+			ui_nodes_ww = g_config->layout->buffer[LAYOUT_SIZE_NODES_W];
+			ui_nodes_wh = sys_h();
+			if (g_config->layout->buffer[LAYOUT_SIZE_HEADER] == 1) {
+				ui_nodes_wh += ui_header_h * 2;
 			}
 		}
 
-		// Node search popup
-		if (operator_shortcut(any_map_get(g_keymap, "node_search"), SHORTCUT_TYPE_STARTED)) {
-			ui_nodes_node_search(-1, -1, NULL);
-		}
-		if (ui_nodes_node_search_spawn != NULL) {
-			g_ui->input_x = mouse_x; // Fix input_dx after popup removal
-			g_ui->input_y = mouse_y;
-			gc_unroot(ui_nodes_node_search_spawn);
-			ui_nodes_node_search_spawn = NULL;
+		if (!base_view3d_show) {
+			ui_nodes_wh -= ui_header_h * 4;
 		}
 
-		if (operator_shortcut(any_map_get(g_keymap, "view_reset"), SHORTCUT_TYPE_STARTED)) {
-			nodes->pan_x = 0.0;
-			nodes->pan_y = 0.0;
-			nodes->zoom  = 1.0;
+		i32  mx      = mouse_x;
+		i32  my      = mouse_y;
+		bool enabled = true;
+		if (mx < ui_nodes_wx || mx > ui_nodes_wx + ww || my < ui_nodes_wy) {
+			enabled = false;
+		}
+		if (g_ui->is_typing || !g_ui->input_enabled) {
+			enabled = false;
 		}
 
-		if (operator_shortcut(any_map_get(g_keymap, "node_overview"), SHORTCUT_TYPE_STARTED)) {
-			nodes->zoom = nodes->zoom == 1.0 ? 0.2 : 1.0;
-			nodes->uiw  = ui_nodes_ww;
-			nodes->uih  = ui_nodes_wh;
+		if (enabled) {
+			ui_nodes_t *nodes = ui_nodes_get_nodes();
+			if (nodes->nodes_selected_id->length > 0 && g_ui->is_key_pressed) {
+				if (g_ui->key_code == KEY_CODE_LEFT) {
+					for (i32 i = 0; i < nodes->nodes_selected_id->length; ++i) {
+						i32                n      = nodes->nodes_selected_id->buffer[i];
+						ui_node_t_array_t *_nodes = ui_nodes_get_canvas(true)->nodes;
+						ui_get_node(_nodes, n)->x -= 1;
+					}
+				}
+				else if (g_ui->key_code == KEY_CODE_RIGHT) {
+					for (i32 i = 0; i < nodes->nodes_selected_id->length; ++i) {
+						i32                n      = nodes->nodes_selected_id->buffer[i];
+						ui_node_t_array_t *_nodes = ui_nodes_get_canvas(true)->nodes;
+						ui_get_node(_nodes, n)->x += 1;
+					}
+				}
+				if (g_ui->key_code == KEY_CODE_UP) {
+					for (i32 i = 0; i < nodes->nodes_selected_id->length; ++i) {
+						i32                n      = nodes->nodes_selected_id->buffer[i];
+						ui_node_t_array_t *_nodes = ui_nodes_get_canvas(true)->nodes;
+						ui_get_node(_nodes, n)->y -= 1;
+					}
+				}
+				else if (g_ui->key_code == KEY_CODE_DOWN) {
+					for (i32 i = 0; i < nodes->nodes_selected_id->length; ++i) {
+						i32                n      = nodes->nodes_selected_id->buffer[i];
+						ui_node_t_array_t *_nodes = ui_nodes_get_canvas(true)->nodes;
+						ui_get_node(_nodes, n)->y += 1;
+					}
+				}
+			}
+
+			// Node search popup
+			if (operator_shortcut(any_map_get(g_keymap, "node_search"), SHORTCUT_TYPE_STARTED)) {
+				ui_nodes_node_search(-1, -1, NULL);
+			}
+			if (ui_nodes_node_search_spawn != NULL) {
+				g_ui->input_x = mouse_x; // Fix input_dx after popup removal
+				g_ui->input_y = mouse_y;
+				gc_unroot(ui_nodes_node_search_spawn);
+				ui_nodes_node_search_spawn = NULL;
+			}
+
+			if (operator_shortcut(any_map_get(g_keymap, "view_reset"), SHORTCUT_TYPE_STARTED)) {
+				nodes->pan_x = 0.0;
+				nodes->pan_y = 0.0;
+				nodes->zoom  = 1.0;
+			}
+
+			if (operator_shortcut(any_map_get(g_keymap, "node_overview"), SHORTCUT_TYPE_STARTED)) {
+				nodes->zoom = nodes->zoom == 1.0 ? 0.2 : 1.0;
+				nodes->uiw  = ui_nodes_ww;
+				nodes->uih  = ui_nodes_wh;
+			}
 		}
 	}
 

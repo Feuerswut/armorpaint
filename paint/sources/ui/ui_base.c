@@ -216,26 +216,22 @@ void ui_base_update(void *_) {
 
 	ui_sidebar_w_mini = math_floor(ui_sidebar_default_w_mini * UI_SCALE());
 
-	if (!base_ui_enabled) {
-		return;
+	if (base_ui_enabled) {
+		render_gizmo_update();
+		util_layer_update_path();
+		util_touch_update();
+		util_stencil_transform();
+		util_select_update();
+		util_brush_update();
+		util_layer_update_preview();
+		util_shortcut_undo_redo();
+		util_shortcut_global();
+		util_shortcut_brush();
+		util_shortcut_viewport();
+		util_resize_borders();
+		util_particle_update();
+		operator_update();
 	}
-
-	render_gizmo_update();
-	util_layer_update_path();
-
-	util_touch_update();
-
-	util_stencil_transform();
-
-	util_select_update();
-
-	util_brush_update();
-
-	util_layer_update_preview();
-
-	util_shortcut_undo_redo();
-
-	operator_update();
 
 	string_array_t *keys = map_keys(g_plugins);
 	for (i32 i = 0; i < keys->length; ++i) {
@@ -245,25 +241,11 @@ void ui_base_update(void *_) {
 		}
 	}
 
-	if (!base_ui_enabled) {
-		return;
-	}
-
-	util_shortcut_global();
-
-	util_shortcut_brush();
-
-	util_shortcut_viewport();
-
-	util_resize_borders();
-
 	if (!mouse_down("left")) {
 		gc_unroot(ui_base_border_handle);
 		ui_base_border_handle = NULL;
 		base_is_resizing      = false;
 	}
-
-	util_particle_update();
 
 	util_cursor_render(_);
 
