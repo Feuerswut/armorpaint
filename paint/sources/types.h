@@ -564,6 +564,7 @@ typedef struct project {
 	struct string_array                         *mesh_assets;
 	struct buffer_t_array                       *mesh_icons;
 	struct f32_array_t_array                    *mesh_transforms;
+	struct i32_array                            *mesh_materials;
 	struct i32_array                            *atlas_objects;
 	struct string_array                         *atlas_names;
 	struct string_array                         *script_datas;

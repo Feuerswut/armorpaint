@@ -8,12 +8,6 @@ stage_t *tab_stages_create_stage(char *name) {
 	s->name    = name;
 	s->objects = string_array_create(0);
 	s->layers  = string_array_create(0);
-	for (i32 i = 0; i < g_project->_->paint_objects->length; ++i) {
-		string_array_push(s->objects, g_project->_->paint_objects->buffer[i]->base->name);
-	}
-	for (i32 i = 0; i < g_project->_->layers->length; ++i) {
-		string_array_push(s->layers, g_project->_->layers->buffer[i]->name);
-	}
 	return s;
 }
 

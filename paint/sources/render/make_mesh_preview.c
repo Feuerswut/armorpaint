@@ -1,27 +1,32 @@
 
 #include "../global.h"
 
-node_shader_context_t *make_mesh_preview_run(material_t *data, material_context_t *matcon) {
-	char                  *context_id = "mesh";
-	shader_context_t      *props      = GC_ALLOC_INIT(shader_context_t, {.name            = context_id,
-	                                                                     .depth_write     = true,
-	                                                                     .compare_mode    = "less",
-	                                                                     .cull_mode       = "clockwise",
-	                                                                     .vertex_elements = any_array_create_from_raw(
+node_shader_context_t *make_mesh_preview_run(material_t *data, material_context_t *matcon, bool viewport) {
+	char             *context_id = "mesh";
+	shader_context_t *props      = GC_ALLOC_INIT(shader_context_t, {.name            = context_id,
+	                                                                .depth_write     = true,
+	                                                                .compare_mode    = "less",
+	                                                                .cull_mode       = "clockwise",
+	                                                                .vertex_elements = any_array_create_from_raw(
                                                                    (void *[]){
                                                                        GC_ALLOC_INIT(vertex_element_t, {.name = "pos", .data = "short4norm"}),
                                                                        GC_ALLOC_INIT(vertex_element_t, {.name = "nor", .data = "short2norm"}),
                                                                        GC_ALLOC_INIT(vertex_element_t, {.name = "tex", .data = "short2norm"}),
                                                                    },
                                                                    3),
-	                                                                     .color_attachments = any_array_create_from_raw(
+	                                                                .color_attachments = any_array_create_from_raw(
                                                                    (void *[]){
                                                                        "RGBA64",
                                                                        "RGBA64",
                                                                    },
                                                                    2),
-	                                                                     .depth_attachment = "D32"});
-	node_shader_context_t *con_mesh   = node_shader_context_create(data, props);
+	                                                                .depth_attachment = "D32"});
+
+	if (viewport) {
+		string_array_push(props->color_attachments, "RGBA64");
+	}
+
+	node_shader_context_t *con_mesh = node_shader_context_create(data, props);
 
 	node_shader_t *kong = node_shader_context_make_kong(con_mesh);
 
@@ -124,10 +129,39 @@ node_shader_context_t *make_mesh_preview_run(material_t *data, material_context_
 		node_shader_write_frag(kong, "output[1] = float4(lerp3(float3(0.0, 0.0, 0.0), basecol, opacity), occlusion);");
 	}
 
+	if (viewport) {
+		node_shader_write_frag(kong, "output[2] = float4(0.0, 0.0, 0.0, 0.0);");
+	}
+
 	parser_material_finalize(con_mesh);
 
 	con_mesh->data->shader_from_source = true;
 	gpu_create_shaders_from_kong(node_shader_get(kong), &con_mesh->data->vertex_shader, &con_mesh->data->fragment_shader,
 	                             &con_mesh->data->_->vertex_shader_size, &con_mesh->data->_->fragment_shader_size);
 	return con_mesh;
+}
+
+material_data_t *make_mesh_preview_viewport(slot_material_t *slot) {
+	slot_material_t *_material = g_context->material;
+	g_context->material        = slot;
+
+	material_context_t    *mcon = GC_ALLOC_INIT(material_context_t, {.name = "mesh", .bind_textures = any_array_create_from_raw((void *[]){}, 0)});
+	material_t            *mm   = GC_ALLOC_INIT(material_t, {.name = "Material", .canvas = NULL});
+	node_shader_context_t *con  = make_mesh_preview_run(mm, mcon, true);
+	shader_context_load(con->data);
+	material_context_load(mcon);
+
+	shader_data_t *sd = GC_ALLOC_INIT(shader_data_t, {0});
+	sd->name          = string("_material_%s", i32_to_string(slot->id));
+	sd->contexts      = any_array_create_from_raw((void *[]){con->data}, 1);
+
+	material_data_t *md = GC_ALLOC_INIT(material_data_t, {0});
+	md->name            = sd->name;
+	md->contexts        = any_array_create_from_raw((void *[]){mcon}, 1);
+	md->_               = GC_ALLOC_INIT(material_data_runtime_t, {0});
+	md->_->shader       = sd;
+	md->_->uid          = 0;
+
+	g_context->material = _material;
+	return md;
 }

@@ -201,7 +201,7 @@ buffer_t *util_encode_project(project_t *raw) {
 	buffer_t *encoded = buffer_create(size);
 
 	armpack_encode_start(encoded->buffer);
-	armpack_encode_map(33);
+	armpack_encode_map(34);
 
 	armpack_encode_string("version");
 	armpack_encode_string(raw->version);
@@ -462,6 +462,9 @@ buffer_t *util_encode_project(project_t *raw) {
 	else {
 		armpack_encode_null();
 	}
+
+	armpack_encode_string("mesh_materials");
+	armpack_encode_array_i32(raw->mesh_materials);
 
 	armpack_encode_string("atlas_objects");
 	armpack_encode_array_i32(raw->atlas_objects);

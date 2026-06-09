@@ -969,7 +969,14 @@ void tab_timeline_draw(ui_handle_t *htab) {
 		// Stage
 		if (g_project->stages == NULL) {
 			g_project->stages = any_array_create_from_raw((void *[]){}, 0);
-			any_array_push(g_project->stages, tab_stages_create_stage("Stage 1"));
+			stage_t *s        = tab_stages_create_stage("Stage 1");
+			for (i32 i = 0; i < g_project->_->paint_objects->length; ++i) {
+				string_array_push(s->objects, g_project->_->paint_objects->buffer[i]->base->name);
+			}
+			for (i32 i = 0; i < g_project->_->layers->length; ++i) {
+				string_array_push(s->layers, g_project->_->layers->buffer[i]->name);
+			}
+			any_array_push(g_project->stages, s);
 		}
 
 		string_array_t *stage_names = string_array_create(0);

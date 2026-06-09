@@ -259,6 +259,12 @@ void export_arm_run_project() {
 	}
 	g_project->mesh_transforms = mesh_transforms;
 
+	i32_array_t *mesh_materials = i32_array_create(g_project->_->paint_objects->length);
+	for (i32 i = 0; i < g_project->_->paint_objects->length; ++i) {
+		mesh_materials->buffer[i] = tab_meshes_get_override(g_project->_->paint_objects->buffer[i]);
+	}
+	g_project->mesh_materials = mesh_materials;
+
 	g_project->material_nodes = mnodes;
 	g_project->brush_nodes    = bnodes;
 	g_project->layer_datas    = ld;

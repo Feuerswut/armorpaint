@@ -600,6 +600,15 @@ void import_arm_run_project(char *path) {
 		}
 	}
 
+	if (project->mesh_materials != NULL) {
+		for (i32 i = 0; i < g_project->_->paint_objects->length && i < project->mesh_materials->length; ++i) {
+			i32 mat_index = project->mesh_materials->buffer[i];
+			if (mat_index >= 0) {
+				tab_meshes_set_override(g_project->_->paint_objects->buffer[i], mat_index);
+			}
+		}
+	}
+
 	tab_timeline_import(project);
 
 	sys_notify_on_next_frame(&import_arm_run_project_on_next_frame, NULL);

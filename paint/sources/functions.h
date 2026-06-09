@@ -330,7 +330,8 @@ void                      render_path_preview_init();
 void                      render_path_preview_commands_preview();
 void                      render_path_preview_commands_decal();
 node_shader_context_t    *make_paint_run(material_t *data, material_context_t *matcon);
-node_shader_context_t    *make_mesh_preview_run(material_t *data, material_context_t *matcon);
+node_shader_context_t    *make_mesh_preview_run(material_t *data, material_context_t *matcon, bool viewport);
+material_data_t          *make_mesh_preview_viewport(slot_material_t *slot);
 void                      import_audio_run(char *path);
 void                      import_mesh_run(char *path, bool _clear_layers, bool replace_existing, bool keep_camera);
 void                      import_mesh_finish_import(void *_);
@@ -657,6 +658,8 @@ void                         ui_box_show_custom(void (*commands)(void), i32 mw, 
 void                         ui_box_hide();
 void                         tab_meshes_draw(ui_handle_t *htab);
 void                         tab_meshes_reset_preview_map();
+void                         tab_meshes_set_override(mesh_object_t *o, i32 mat_index);
+i32                          tab_meshes_get_override(mesh_object_t *o);
 void                         util_particle_init_physics();
 void                         util_particle_update();
 void                         tab_layers_apply_filter(i32 filter);

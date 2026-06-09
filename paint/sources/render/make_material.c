@@ -112,7 +112,7 @@ void make_material_parse_mesh_preview_material() {
 
 	material_context_t    *mcon = GC_ALLOC_INIT(material_context_t, {.name = "mesh", .bind_textures = any_array_create_from_raw((void *[]){}, 0)});
 	material_t            *sd   = GC_ALLOC_INIT(material_t, {.name = "Material", .canvas = NULL});
-	node_shader_context_t *con  = make_mesh_preview_run(sd, mcon);
+	node_shader_context_t *con  = make_mesh_preview_run(sd, mcon, false);
 
 	for (i32 i = 0; i < m->contexts->length; ++i) {
 		if (string_equals(m->contexts->buffer[i]->name, "mesh")) {

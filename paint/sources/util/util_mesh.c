@@ -141,8 +141,9 @@ void util_mesh_merge(mesh_object_t_array_t *paint_objects) {
 		any_array_push(raw->vertex_arrays, va);
 	}
 	util_mesh_remove_merged();
-	mesh_data_t *md                         = mesh_data_create(raw);
-	g_context->merged_object                = mesh_object_create(md, g_context->paint_object->material);
+	mesh_data_t     *md                     = mesh_data_create(raw);
+	material_data_t *paint_material         = g_project->_->materials->buffer[0]->data;
+	g_context->merged_object                = mesh_object_create(md, paint_material);
 	g_context->merged_object->base->name    = string("%s_merged", g_context->paint_object->base->name);
 	g_context->merged_object->force_context = "paint";
 	object_set_parent(g_context->merged_object->base, context_main_object()->base);
