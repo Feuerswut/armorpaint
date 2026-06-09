@@ -88,7 +88,7 @@ node_shader_context_t *make_mesh_preview_run(material_t *data, material_context_
 		node_shader_write_frag(
 		    kong, "var fragcoord1: float2 = float2(input.wvpposition.x / input.wvpposition.w, input.wvpposition.y / input.wvpposition.w) * 0.5 + 0.5;");
 		node_shader_write_frag(kong, "var dither: float = dither_bayer(fragcoord1 * float2(256.0, 256.0));");
-		node_shader_write_frag(kong, "if (opacity < dither) { discard; }");
+		node_shader_write_frag(kong, "if (opacity <= dither) { discard; }");
 	}
 
 	if (make_material_height_used) {
