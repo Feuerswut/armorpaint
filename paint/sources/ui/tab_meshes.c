@@ -605,9 +605,6 @@ void tab_meshes_draw_mesh_slot(mesh_object_t *o, i32 i) {
 	f32 uix    = g_ui->_x;
 	f32 uiy    = g_ui->_y;
 
-	// Separator
-	ui_fill(0, 0, (g_ui->_w / (float)UI_SCALE() - 2), 1 * UI_SCALE(), g_theme->SEPARATOR_COL);
-
 	// Eye icon
 	f32_array_t *row = f32_array_create_from_raw(
 	    (f32[]){
@@ -700,6 +697,9 @@ void tab_meshes_draw_mesh_slot(mesh_object_t *o, i32 i) {
 	g_ui->_x = uix;
 	g_ui->_y = uiy + step * 2 * UI_SCALE();
 	g_ui->_w = uiw;
+
+	// Separator line
+	ui_fill(0, 0, (g_ui->_w / (float)UI_SCALE() - 2), 1 * UI_SCALE(), g_theme->SEPARATOR_COL);
 
 	// Highlight selected
 	if (g_context->paint_object == o) {

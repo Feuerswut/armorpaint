@@ -95,6 +95,16 @@ void ui_view2d_draw_edit() {
 		}
 		g_ui->enabled = true;
 	}
+
+	char *view_type = ui_view2d_type == VIEW_2D_TYPE_ASSET   ? tr("Asset")
+	                  : ui_view2d_type == VIEW_2D_TYPE_NODE  ? tr("Node")
+	                  : ui_view2d_type == VIEW_2D_TYPE_FONT  ? tr("Font")
+	                  : ui_view2d_type == VIEW_2D_TYPE_UVMAP ? tr("UVMap")
+	                                                         : tr("Layer");
+
+	g_ui->enabled = false;
+	ui_text(view_type, UI_ALIGN_LEFT, 0x00000000);
+	g_ui->enabled = true;
 }
 
 void ui_view2d_draw_image(gpu_texture_t *image, f32 dx, f32 dy, f32 dw, f32 dh, i32 channel) {
@@ -587,14 +597,8 @@ void ui_view2d_update(void *_) {
 			g_ui->_y = 2 + start_y;
 		}
 
-		char *view_type = ui_view2d_type == VIEW_2D_TYPE_ASSET   ? tr("Asset")
-		                  : ui_view2d_type == VIEW_2D_TYPE_NODE  ? tr("Node")
-		                  : ui_view2d_type == VIEW_2D_TYPE_FONT  ? tr("Font")
-		                  : ui_view2d_type == VIEW_2D_TYPE_UVMAP ? tr("UVMap")
-		                                                         : tr("Layer");
-
 		g_ui->_w = math_floor(ew * 0.7 + 3);
-		if (ui_icon_button(view_type, ICON_EDIT, UI_ALIGN_CENTER)) {
+		if (ui_icon_button("Edit", ICON_EDIT, UI_ALIGN_CENTER)) {
 			gc_unroot(ui_view2d_tex);
 			ui_view2d_tex = tex;
 			gc_root(ui_view2d_tex);
