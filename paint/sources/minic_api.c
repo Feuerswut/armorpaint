@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../../paint/sources/types.h"
+#include "types.h"
 
 void console_log(char *s);
 

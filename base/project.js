@@ -213,7 +213,6 @@ if (flags.with_audio) {
 if (flags.with_eval) {
 	project.add_define("WITH_EVAL");
 	project.add_cfiles("sources/libs/minic.c");
-	project.add_cfiles("sources/libs/minic_api.c");
 	project.add_cfiles("sources/libs/minic_tests.c");
 }
 
