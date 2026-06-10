@@ -179,7 +179,6 @@ char *iron_get_arg(i32 index) {
 #include "iron_raycast.h"
 #include "iron_shape.h"
 #include "iron_sys.h"
-#include "iron_tilesheet.h"
 #include "iron_tween.h"
 #include "kong/dir.h"
 #include <lz4x.h>
