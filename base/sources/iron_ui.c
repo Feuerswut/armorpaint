@@ -1134,7 +1134,13 @@ void ui_update_text_edit(int align, bool editable, bool live_update) {
 				current->cursor_x = i;
 			}
 			else if (current->cursor_x > 0) {
-				current->cursor_x--;
+				if (!current->tab_switch_enabled && current->cursor_x >= 4 && text[current->cursor_x - 1] == ' ' && text[current->cursor_x - 2] == ' ' &&
+				    text[current->cursor_x - 3] == ' ' && text[current->cursor_x - 4] == ' ') {
+					current->cursor_x -= 4; // Tab
+				}
+				else {
+					current->cursor_x--;
+				}
 			}
 		}
 		else if (current->key_code == KEY_CODE_RIGHT) {
@@ -1148,13 +1154,26 @@ void ui_update_text_edit(int align, bool editable, bool live_update) {
 				current->cursor_x = i;
 			}
 			else if (current->cursor_x < strlen(text)) {
-				current->cursor_x++;
+				if (!current->tab_switch_enabled && current->cursor_x + 4 <= strlen(text) && text[current->cursor_x] == ' ' &&
+				    text[current->cursor_x + 1] == ' ' && text[current->cursor_x + 2] == ' ' && text[current->cursor_x + 3] == ' ') {
+					current->cursor_x += 4; // Tab
+				}
+				else {
+					current->cursor_x++;
+				}
 			}
 		}
 		else if (editable && current->key_code == KEY_CODE_BACKSPACE) { // Remove char
 			if (current->cursor_x > 0 && current->highlight_anchor == current->cursor_x) {
-				ui_remove_char_at(text, current->cursor_x - 1);
-				current->cursor_x--;
+				if (!current->tab_switch_enabled && current->cursor_x >= 4 && text[current->cursor_x - 1] == ' ' && text[current->cursor_x - 2] == ' ' &&
+				    text[current->cursor_x - 3] == ' ' && text[current->cursor_x - 4] == ' ') {
+					ui_remove_chars_at(text, current->cursor_x - 4, 4); // Tab
+					current->cursor_x -= 4;
+				}
+				else {
+					ui_remove_char_at(text, current->cursor_x - 1);
+					current->cursor_x--;
+				}
 			}
 			else if (current->highlight_anchor < current->cursor_x) {
 				int count = current->cursor_x - current->highlight_anchor;
@@ -1168,7 +1187,14 @@ void ui_update_text_edit(int align, bool editable, bool live_update) {
 		}
 		else if (editable && current->key_code == KEY_CODE_DELETE) {
 			if (current->highlight_anchor == current->cursor_x) {
-				ui_remove_char_at(text, current->cursor_x);
+				int len = strlen(text);
+				if (!current->tab_switch_enabled && current->cursor_x + 4 <= len && text[current->cursor_x] == ' ' && text[current->cursor_x + 1] == ' ' &&
+				    text[current->cursor_x + 2] == ' ' && text[current->cursor_x + 3] == ' ') {
+					ui_remove_chars_at(text, current->cursor_x, 4); // Tab
+				}
+				else {
+					ui_remove_char_at(text, current->cursor_x);
+				}
 			}
 			else if (current->highlight_anchor < current->cursor_x) {
 				int count = current->cursor_x - current->highlight_anchor;

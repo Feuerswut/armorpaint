@@ -856,8 +856,18 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 		if (editable && current->key_code == KEY_CODE_RETURN && !word_wrap) {
 			handle->i++;
 			ui_insert_char_at(lines, ui_line_pos(lines, handle->i - 1) + current->cursor_x, '\n');
+			// Auto indent
+			char *prev_line = ui_extract_line(lines, handle->i - 1);
+			int   indent    = 0;
+			while (prev_line[indent] == ' ') {
+				indent++;
+			}
+			int new_line_pos = ui_line_pos(lines, handle->i);
+			for (int s = 0; s < indent; ++s) {
+				ui_insert_char_at(lines, new_line_pos, ' ');
+			}
 			ui_start_text_edit(handle, UI_ALIGN_LEFT);
-			current->cursor_x = current->highlight_anchor = 0;
+			current->cursor_x = current->highlight_anchor = indent;
 			scroll_align(current, handle);
 		}
 		// Delete line
