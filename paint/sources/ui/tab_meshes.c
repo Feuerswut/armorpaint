@@ -293,7 +293,7 @@ void tab_meshes_draw_context_menu() {
 	ui_combo(hmat, mat_combo, tr("Material"), true, UI_ALIGN_LEFT, false);
 	if (hmat->changed) {
 		tab_meshes_set_override(o, hmat->i - 1);
-		g_context->ddirty = 2;
+		g_context->ddirty         = 2;
 		g_project->mesh_materials = i32_array_create(0);
 	}
 
@@ -519,6 +519,9 @@ void tab_meshes_make_preview(mesh_object_t *o) {
 	mesh_object_t *painto   = g_context->paint_object;
 	g_context->paint_object = o;
 
+	material_data_t *_override = o->material;
+	o->material                = g_project->_->materials->buffer[0]->data;
+
 	g_context->saved_camera = scene_camera->base->transform->local;
 	mat4_t m =
 	    (mat4_t){0.9146286343879498, 0.404295023959927,   0.000007410128652369705, 0, -0.0032648027153306235, 0.007367569133732468, 0.9999675337275382,   0,
@@ -580,6 +583,8 @@ void tab_meshes_make_preview(mesh_object_t *o) {
 	o->base->transform->loc   = saved_loc;
 	o->base->transform->rot   = saved_rot;
 	transform_build_matrix(o->base->transform);
+
+	o->material = _override;
 
 	gc_unroot(scene_meshes);
 	scene_meshes = _scene_meshes;
