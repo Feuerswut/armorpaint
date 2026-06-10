@@ -1,7 +1,21 @@
+
+// Exposes the engine and app api to minic scripts
+
 #include "engine.h"
+#include "iron_armpack.h"
 #include "iron_array.h"
+#include "iron_draw.h"
+#include "iron_file.h"
+#include "iron_gc.h"
 #include "iron_input.h"
+#include "iron_json.h"
+#include "iron_map.h"
+#include "iron_obj.h"
+#include "iron_shape.h"
 #include "iron_string.h"
+#include "iron_sys.h"
+#include "iron_tilesheet.h"
+#include "iron_ui.h"
 #include "minic.h"
 #include <math.h>
 #include <stdbool.h>
@@ -10,6 +24,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "../../../paint/sources/types.h"
 
 void console_log(char *s);
 
@@ -33,6 +49,9 @@ static int minic_vformat(const char *fmt, minic_val_t *args, int argc, char *buf
 		}
 		fmt++;
 		char spec = *fmt++;
+		if (spec == '\0') {
+			break;
+		}
 		char tmp[64];
 		int  n = 0;
 		if (spec == 'd' || spec == 'i') {
@@ -43,17 +62,10 @@ static int minic_vformat(const char *fmt, minic_val_t *args, int argc, char *buf
 			unsigned uv = arg < argc ? (unsigned)(int)minic_val_to_d(args[arg++]) : 0u;
 			n           = snprintf(tmp, sizeof(tmp), "%u", uv);
 		}
-		else if (spec == 'f') {
-			double dv = arg < argc ? minic_val_to_d(args[arg++]) : 0.0;
-			n         = snprintf(tmp, sizeof(tmp), "%f", dv);
-		}
-		else if (spec == 'g') {
-			double dv = arg < argc ? minic_val_to_d(args[arg++]) : 0.0;
-			n         = snprintf(tmp, sizeof(tmp), "%g", dv);
-		}
-		else if (spec == 'e') {
-			double dv = arg < argc ? minic_val_to_d(args[arg++]) : 0.0;
-			n         = snprintf(tmp, sizeof(tmp), "%e", dv);
+		else if (spec == 'f' || spec == 'g' || spec == 'e') {
+			double     dv       = arg < argc ? minic_val_to_d(args[arg++]) : 0.0;
+			const char fspec[3] = {'%', spec, '\0'};
+			n                   = snprintf(tmp, sizeof(tmp), fspec, dv);
 		}
 		else if (spec == 's') {
 			const char *sv   = arg < argc ? minic_read_str(args[arg++]) : "";
@@ -76,19 +88,15 @@ static int minic_vformat(const char *fmt, minic_val_t *args, int argc, char *buf
 			pos++;
 			continue;
 		}
-		else if (spec == '%') {
-			if (buf && pos < bufsize - 1)
-				buf[pos] = '%';
-			pos++;
-			continue;
-		}
 		else {
 			if (buf && pos < bufsize - 1)
 				buf[pos] = '%';
 			pos++;
-			if (buf && pos < bufsize - 1)
-				buf[pos] = spec;
-			pos++;
+			if (spec != '%') {
+				if (buf && pos < bufsize - 1)
+					buf[pos] = spec;
+				pos++;
+			}
 			continue;
 		}
 		if (n > 0) {
@@ -112,7 +120,6 @@ static minic_val_t minic_printf_native(minic_val_t *args, int argc) {
 	int         len = minic_vformat(fmt, args + 1, argc - 1, NULL, 0);
 	char       *buf = (char *)malloc(len + 1);
 	minic_vformat(fmt, args + 1, argc - 1, buf, len + 1);
-	// int written = fputs(buf, stdout);
 	console_log(buf);
 	free(buf);
 	return minic_val_int(len);
@@ -128,173 +135,34 @@ static minic_val_t minic_string_native(minic_val_t *args, int argc) {
 	return minic_val_ptr(buf);
 }
 
-#include "engine.h"
-#include "iron_armpack.h"
-#include "iron_array.h"
-#include "iron_draw.h"
-#include "iron_file.h"
-#include "iron_gc.h"
-#include "iron_input.h"
-#include "iron_json.h"
-#include "iron_map.h"
-#include "iron_obj.h"
-#include "iron_shape.h"
-#include "iron_sys.h"
-#include "iron_tilesheet.h"
-#include "iron_ui.h"
-
-#include "../../../paint/sources/types.h"
-
-#define R(name, sig) minic_register(#name, sig, (minic_ext_fn_raw_t)name)
-
-// iron_math.h struct layout helpers
-
-static vec2_t minic_get_vec2(void *p) {
-	minic_val_t *f = (minic_val_t *)p;
-	vec2_t       v;
-	v.x = f[0].f;
-	v.y = f[1].f;
-	return v;
-}
-static void minic_set_vec2(void *p, vec2_t v) {
-	minic_val_t *f = (minic_val_t *)p;
-	f[0]           = minic_val_float(v.x);
-	f[1]           = minic_val_float(v.y);
-}
-static vec4_t minic_get_vec4(void *p) {
-	minic_val_t *f = (minic_val_t *)p;
-	vec4_t       v;
-	v.x = f[0].f;
-	v.y = f[1].f;
-	v.z = f[2].f;
-	v.w = f[3].f;
-	return v;
-}
-static void minic_set_vec4(void *p, vec4_t v) {
-	minic_val_t *f = (minic_val_t *)p;
-	f[0]           = minic_val_float(v.x);
-	f[1]           = minic_val_float(v.y);
-	f[2]           = minic_val_float(v.z);
-	f[3]           = minic_val_float(v.w);
-}
-static quat_t minic_get_quat(void *p) {
-	minic_val_t *f = (minic_val_t *)p;
-	quat_t       q;
-	q.x = f[0].f;
-	q.y = f[1].f;
-	q.z = f[2].f;
-	q.w = f[3].f;
-	return q;
-}
-static void minic_set_quat(void *p, quat_t q) {
-	minic_val_t *f = (minic_val_t *)p;
-	f[0]           = minic_val_float(q.x);
-	f[1]           = minic_val_float(q.y);
-	f[2]           = minic_val_float(q.z);
-	f[3]           = minic_val_float(q.w);
-}
-static mat3_t minic_get_mat3(void *p) {
-	minic_val_t *f = (minic_val_t *)p;
-	mat3_t       m;
-	m.m00 = f[0].f;
-	m.m01 = f[1].f;
-	m.m02 = f[2].f;
-	m.m10 = f[3].f;
-	m.m11 = f[4].f;
-	m.m12 = f[5].f;
-	m.m20 = f[6].f;
-	m.m21 = f[7].f;
-	m.m22 = f[8].f;
-	return m;
-}
-static void minic_set_mat3(void *p, mat3_t m) {
-	minic_val_t *f = (minic_val_t *)p;
-	f[0]           = minic_val_float(m.m00);
-	f[1]           = minic_val_float(m.m01);
-	f[2]           = minic_val_float(m.m02);
-	f[3]           = minic_val_float(m.m10);
-	f[4]           = minic_val_float(m.m11);
-	f[5]           = minic_val_float(m.m12);
-	f[6]           = minic_val_float(m.m20);
-	f[7]           = minic_val_float(m.m21);
-	f[8]           = minic_val_float(m.m22);
-}
-static mat4_t minic_get_mat4(void *p) {
-	minic_val_t *f = (minic_val_t *)p;
-	mat4_t       m;
-	m.m00 = f[0].f;
-	m.m01 = f[1].f;
-	m.m02 = f[2].f;
-	m.m03 = f[3].f;
-	m.m10 = f[4].f;
-	m.m11 = f[5].f;
-	m.m12 = f[6].f;
-	m.m13 = f[7].f;
-	m.m20 = f[8].f;
-	m.m21 = f[9].f;
-	m.m22 = f[10].f;
-	m.m23 = f[11].f;
-	m.m30 = f[12].f;
-	m.m31 = f[13].f;
-	m.m32 = f[14].f;
-	m.m33 = f[15].f;
-	return m;
-}
-static void minic_set_mat4(void *p, mat4_t m) {
-	minic_val_t *f = (minic_val_t *)p;
-	f[0]           = minic_val_float(m.m00);
-	f[1]           = minic_val_float(m.m01);
-	f[2]           = minic_val_float(m.m02);
-	f[3]           = minic_val_float(m.m03);
-	f[4]           = minic_val_float(m.m10);
-	f[5]           = minic_val_float(m.m11);
-	f[6]           = minic_val_float(m.m12);
-	f[7]           = minic_val_float(m.m13);
-	f[8]           = minic_val_float(m.m20);
-	f[9]           = minic_val_float(m.m21);
-	f[10]          = minic_val_float(m.m22);
-	f[11]          = minic_val_float(m.m23);
-	f[12]          = minic_val_float(m.m30);
-	f[13]          = minic_val_float(m.m31);
-	f[14]          = minic_val_float(m.m32);
-	f[15]          = minic_val_float(m.m33);
+// iron_math wrappers: scripts store math types as arrays of boxed minic_val_t floats,
+// the C functions take and return them by value
+static void minic_box(minic_val_t *dst, const float *src, int n) {
+	for (int i = 0; i < n; ++i) {
+		dst[i] = minic_val_float(src[i]);
+	}
 }
 
-#define MN(sym) static minic_val_t mn_##sym(minic_val_t *_a, int _c)
-#define RV2()   ((minic_val_t *)minic_alloc(2 * (int)sizeof(minic_val_t)))
-#define RV4()   ((minic_val_t *)minic_alloc(4 * (int)sizeof(minic_val_t)))
-#define RM3()   ((minic_val_t *)minic_alloc(9 * (int)sizeof(minic_val_t)))
-#define RM4()   ((minic_val_t *)minic_alloc(16 * (int)sizeof(minic_val_t)))
-#define RET2(v)                   \
-	do {                          \
-		minic_val_t *_o = RV2();  \
-		minic_set_vec2(_o, v);    \
-		return minic_val_ptr(_o); \
-	} while (0)
-#define RET4(v)                   \
-	do {                          \
-		minic_val_t *_o = RV4();  \
-		minic_set_vec4(_o, v);    \
-		return minic_val_ptr(_o); \
-	} while (0)
-#define RETQ(q)                   \
-	do {                          \
-		minic_val_t *_o = RV4();  \
-		minic_set_quat(_o, q);    \
-		return minic_val_ptr(_o); \
-	} while (0)
-#define RET3(m)                   \
-	do {                          \
-		minic_val_t *_o = RM3();  \
-		minic_set_mat3(_o, m);    \
-		return minic_val_ptr(_o); \
-	} while (0)
-#define RET4M(m)                  \
-	do {                          \
-		minic_val_t *_o = RM4();  \
-		minic_set_mat4(_o, m);    \
-		return minic_val_ptr(_o); \
-	} while (0)
+static void minic_unbox(float *dst, const minic_val_t *src, int n) {
+	for (int i = 0; i < n; ++i) {
+		dst[i] = src[i].f;
+	}
+}
+
+// clang-format off
+static vec2_t minic_get_vec2(void *p) { vec2_t v; minic_unbox(&v.x, (minic_val_t *)p, 2); return v; }
+static vec4_t minic_get_vec4(void *p) { vec4_t v; minic_unbox(&v.x, (minic_val_t *)p, 4); return v; }
+static quat_t minic_get_quat(void *p) { quat_t q; minic_unbox(&q.x, (minic_val_t *)p, 4); return q; }
+static mat3_t minic_get_mat3(void *p) { mat3_t m; minic_unbox(m.m, (minic_val_t *)p, 9); return m; }
+static mat4_t minic_get_mat4(void *p) { mat4_t m; minic_unbox(m.m, (minic_val_t *)p, 16); return m; }
+static void minic_set_vec2(minic_val_t *o, vec2_t v) { minic_box(o, &v.x, 2); }
+static void minic_set_vec4(minic_val_t *o, vec4_t v) { minic_box(o, &v.x, 4); }
+static void minic_set_quat(minic_val_t *o, quat_t q) { minic_box(o, &q.x, 4); }
+static void minic_set_mat3(minic_val_t *o, mat3_t m) { minic_box(o, m.m, 9); }
+static void minic_set_mat4(minic_val_t *o, mat4_t m) { minic_box(o, m.m, 16); }
+// clang-format on
+
+// Argument accessors for the wrapper table
 #define V2(i) minic_get_vec2(_a[i].p)
 #define V4(i) minic_get_vec4(_a[i].p)
 #define QT(i) minic_get_quat(_a[i].p)
@@ -303,318 +171,146 @@ static void minic_set_mat4(void *p, mat4_t m) {
 #define AF(i) (_a[i].f)
 #define AP(i) (_a[i].p)
 
-// vec2
-MN(vec2_len) {
-	return minic_val_float(vec2_len(V2(0)));
-}
-MN(vec2_set_len) {
-	RET2(vec2_set_len(V2(0), AF(1)));
-}
-MN(vec2_mult) {
-	RET2(vec2_mult(V2(0), AF(1)));
-}
-MN(vec2_add) {
-	RET2(vec2_add(V2(0), V2(1)));
-}
-MN(vec2_sub) {
-	RET2(vec2_sub(V2(0), V2(1)));
-}
-MN(vec2_cross) {
-	return minic_val_float(vec2_cross(V2(0), V2(1)));
-}
-MN(vec2_norm) {
-	RET2(vec2_norm(V2(0)));
-}
-MN(vec2_dot) {
-	return minic_val_float(vec2_dot(V2(0), V2(1)));
-}
-MN(vec2_nan) {
-	RET2(vec2_nan());
-}
-MN(vec2_isnan) {
-	return minic_val_int(vec2_isnan(V2(0)));
-}
-
-// vec4
-MN(vec4_cross) {
-	RET4(vec4_cross(V4(0), V4(1)));
-}
-MN(vec4_add) {
-	RET4(vec4_add(V4(0), V4(1)));
-}
-MN(vec4_fadd) {
-	RET4(vec4_fadd(V4(0), AF(1), AF(2), AF(3), AF(4)));
-}
-MN(vec4_norm) {
-	RET4(vec4_norm(V4(0)));
-}
-MN(vec4_mult) {
-	RET4(vec4_mult(V4(0), AF(1)));
-}
-MN(vec4_dot) {
-	return minic_val_float(vec4_dot(V4(0), V4(1)));
-}
-MN(vec4_apply_proj) {
-	RET4(vec4_apply_proj(V4(0), M4(1)));
-}
-MN(vec4_apply_mat4) {
-	RET4(vec4_apply_mat4(V4(0), M4(1)));
-}
-MN(vec4_apply_axis_angle) {
-	RET4(vec4_apply_axis_angle(V4(0), V4(1), AF(2)));
-}
-MN(vec4_apply_quat) {
-	RET4(vec4_apply_quat(V4(0), QT(1)));
-}
-MN(vec4_equals) {
-	return minic_val_int(vec4_equals(V4(0), V4(1)));
-}
-MN(vec4_almost_equals) {
-	return minic_val_int(vec4_almost_equals(V4(0), V4(1), AF(2)));
-}
-MN(vec4_len) {
-	return minic_val_float(vec4_len(V4(0)));
-}
-MN(vec4_sub) {
-	RET4(vec4_sub(V4(0), V4(1)));
-}
-MN(vec4_dist) {
-	return minic_val_float(vec4_dist(V4(0), V4(1)));
-}
-MN(vec4_reflect) {
-	RET4(vec4_reflect(V4(0), V4(1)));
-}
-MN(vec4_clamp) {
-	RET4(vec4_clamp(V4(0), AF(1), AF(2)));
-}
-MN(vec4_x_axis) {
-	RET4(vec4_x_axis());
-}
-MN(vec4_y_axis) {
-	RET4(vec4_y_axis());
-}
-MN(vec4_z_axis) {
-	RET4(vec4_z_axis());
-}
-MN(vec4_nan) {
-	RET4(vec4_nan());
-}
-MN(vec4_isnan) {
-	return minic_val_int(vec4_isnan(V4(0)));
-}
-
-// quat
-MN(quat_from_axis_angle) {
-	RETQ(quat_from_axis_angle(V4(0), AF(1)));
-}
-MN(quat_from_mat) {
-	RETQ(quat_from_mat(M4(0)));
-}
-MN(quat_from_rot_mat) {
-	RETQ(quat_from_rot_mat(M4(0)));
-}
-MN(quat_mult) {
-	RETQ(quat_mult(QT(0), QT(1)));
-}
-MN(quat_norm) {
-	RETQ(quat_norm(QT(0)));
-}
-MN(quat_get_euler) {
-	RET4(quat_get_euler(QT(0)));
-}
-MN(quat_from_euler) {
-	RETQ(quat_from_euler(AF(0), AF(1), AF(2)));
-}
-MN(quat_dot) {
-	return minic_val_float(quat_dot(QT(0), QT(1)));
-}
-MN(quat_from_to) {
-	RETQ(quat_from_to(V4(0), V4(1)));
-}
-MN(quat_inv) {
-	RETQ(quat_inv(QT(0)));
-}
-
-// mat3
-MN(mat3_identity) {
-	RET3(mat3_identity());
-}
-MN(mat3_translation) {
-	RET3(mat3_translation(AF(0), AF(1)));
-}
-MN(mat3_rotation) {
-	RET3(mat3_rotation(AF(0)));
-}
-MN(mat3_scale) {
-	RET3(mat3_scale(M3(0), V4(1)));
-}
-MN(mat3_set_from4) {
-	RET3(mat3_set_from4(M4(0)));
-}
-MN(mat3_multmat) {
-	RET3(mat3_multmat(M3(0), M3(1)));
-}
-MN(mat3_transpose) {
-	RET3(mat3_transpose(M3(0)));
-}
-MN(mat3_nan) {
-	RET3(mat3_nan());
-}
-MN(mat3_isnan) {
-	return minic_val_int(mat3_isnan(M3(0)));
-}
-
-// mat4
-MN(mat4_identity) {
-	RET4M(mat4_identity());
-}
-MN(mat4_persp) {
-	RET4M(mat4_persp(AF(0), AF(1), AF(2), AF(3)));
-}
-MN(mat4_ortho) {
-	RET4M(mat4_ortho(AF(0), AF(1), AF(2), AF(3), AF(4), AF(5)));
-}
-MN(mat4_rot_z) {
-	RET4M(mat4_rot_z(AF(0)));
-}
-MN(mat4_compose) {
-	RET4M(mat4_compose(V4(0), QT(1), V4(2)));
-}
-MN(mat4_set_loc) {
-	RET4M(mat4_set_loc(M4(0), V4(1)));
-}
-MN(mat4_from_quat) {
-	RET4M(mat4_from_quat(QT(0)));
-}
-MN(mat4_translate) {
-	RET4M(mat4_translate(M4(0), AF(1), AF(2), AF(3)));
-}
-MN(mat4_scale) {
-	RET4M(mat4_scale(M4(0), V4(1)));
-}
-MN(mat4_mult_mat3x4) {
-	RET4M(mat4_mult_mat3x4(M4(0), M4(1)));
-}
-MN(mat4_mult_mat) {
-	RET4M(mat4_mult_mat(M4(0), M4(1)));
-}
-MN(mat4_inv) {
-	RET4M(mat4_inv(M4(0)));
-}
-MN(mat4_transpose) {
-	RET4M(mat4_transpose(M4(0)));
-}
-MN(mat4_transpose3) {
-	RET4M(mat4_transpose3(M4(0)));
-}
-MN(mat4_get_loc) {
-	RET4(mat4_get_loc(M4(0)));
-}
-MN(mat4_get_scale) {
-	RET4(mat4_get_scale(M4(0)));
-}
-MN(mat4_mult) {
-	RET4M(mat4_mult(M4(0), AF(1)));
-}
-MN(mat4_to_rot) {
-	RET4M(mat4_to_rot(M4(0)));
-}
-MN(mat4_right) {
-	RET4(mat4_right(M4(0)));
-}
-MN(mat4_look) {
-	RET4(mat4_look(M4(0)));
-}
-MN(mat4_up) {
-	RET4(mat4_up(M4(0)));
-}
-MN(mat4_to_f32_array) {
-	return minic_val_ptr(mat4_to_f32_array(M4(0)));
-}
-MN(mat4_determinant) {
-	return minic_val_float(mat4_determinant(M4(0)));
-}
-MN(mat4_nan) {
-	RET4M(mat4_nan());
-}
-MN(mat4_isnan) {
-	return minic_val_int(mat4_isnan(M4(0)));
-}
-
-// transform
-MN(transform_set_matrix) {
-	transform_set_matrix(AP(0), M4(1));
-	return minic_val_void();
-}
-MN(transform_rotate) {
-	transform_rotate(AP(0), V4(1), AF(2));
-	return minic_val_void();
-}
-MN(transform_move) {
-	transform_move(AP(0), V4(1), AF(2));
-	return minic_val_void();
-}
-MN(transform_look) {
-	RET4(transform_look(AP(0)));
-}
-MN(transform_right) {
-	RET4(transform_right(AP(0)));
-}
-MN(transform_up) {
-	RET4(transform_up(AP(0)));
-}
-
-// raycast
 vec4_t raycast_aabb(object_t *object);
-MN(raycast_aabb) {
-	RET4(raycast_aabb((object_t *)AP(0)));
-}
 
-// iron_shape / iron_draw
-MN(line_draw_render) {
-	line_draw_render(M4(0));
-	return minic_val_void();
-}
-MN(line_draw_bounds) {
-	line_draw_bounds(M4(0), V4(1));
-	return minic_val_void();
-}
-MN(shape_draw_sphere) {
-	shape_draw_sphere(M4(0));
-	return minic_val_void();
-}
-MN(draw_set_transform) {
-	draw_set_transform(M3(0));
-	return minic_val_void();
-}
+// One X(return-kind, name, call) line per math function; expanded twice:
+// once to define the mn_* wrappers, once to register them
+#define MINIC_MATH_API                                                       \
+	X(F, vec2_len, vec2_len(V2(0)))                                          \
+	X(V2, vec2_set_len, vec2_set_len(V2(0), AF(1)))                          \
+	X(V2, vec2_mult, vec2_mult(V2(0), AF(1)))                                \
+	X(V2, vec2_add, vec2_add(V2(0), V2(1)))                                  \
+	X(V2, vec2_sub, vec2_sub(V2(0), V2(1)))                                  \
+	X(F, vec2_cross, vec2_cross(V2(0), V2(1)))                               \
+	X(V2, vec2_norm, vec2_norm(V2(0)))                                       \
+	X(F, vec2_dot, vec2_dot(V2(0), V2(1)))                                   \
+	X(V2, vec2_nan, vec2_nan())                                              \
+	X(I, vec2_isnan, vec2_isnan(V2(0)))                                      \
+	X(V4, vec4_cross, vec4_cross(V4(0), V4(1)))                              \
+	X(V4, vec4_add, vec4_add(V4(0), V4(1)))                                  \
+	X(V4, vec4_fadd, vec4_fadd(V4(0), AF(1), AF(2), AF(3), AF(4)))           \
+	X(V4, vec4_norm, vec4_norm(V4(0)))                                       \
+	X(V4, vec4_mult, vec4_mult(V4(0), AF(1)))                                \
+	X(F, vec4_dot, vec4_dot(V4(0), V4(1)))                                   \
+	X(V4, vec4_apply_proj, vec4_apply_proj(V4(0), M4(1)))                    \
+	X(V4, vec4_apply_mat4, vec4_apply_mat4(V4(0), M4(1)))                    \
+	X(V4, vec4_apply_axis_angle, vec4_apply_axis_angle(V4(0), V4(1), AF(2))) \
+	X(V4, vec4_apply_quat, vec4_apply_quat(V4(0), QT(1)))                    \
+	X(I, vec4_equals, vec4_equals(V4(0), V4(1)))                             \
+	X(I, vec4_almost_equals, vec4_almost_equals(V4(0), V4(1), AF(2)))        \
+	X(F, vec4_len, vec4_len(V4(0)))                                          \
+	X(V4, vec4_sub, vec4_sub(V4(0), V4(1)))                                  \
+	X(F, vec4_dist, vec4_dist(V4(0), V4(1)))                                 \
+	X(V4, vec4_reflect, vec4_reflect(V4(0), V4(1)))                          \
+	X(V4, vec4_clamp, vec4_clamp(V4(0), AF(1), AF(2)))                       \
+	X(V4, vec4_x_axis, vec4_x_axis())                                        \
+	X(V4, vec4_y_axis, vec4_y_axis())                                        \
+	X(V4, vec4_z_axis, vec4_z_axis())                                        \
+	X(V4, vec4_nan, vec4_nan())                                              \
+	X(I, vec4_isnan, vec4_isnan(V4(0)))                                      \
+	X(Q, quat_from_axis_angle, quat_from_axis_angle(V4(0), AF(1)))           \
+	X(Q, quat_from_mat, quat_from_mat(M4(0)))                                \
+	X(Q, quat_from_rot_mat, quat_from_rot_mat(M4(0)))                        \
+	X(Q, quat_mult, quat_mult(QT(0), QT(1)))                                 \
+	X(Q, quat_norm, quat_norm(QT(0)))                                        \
+	X(V4, quat_get_euler, quat_get_euler(QT(0)))                             \
+	X(Q, quat_from_euler, quat_from_euler(AF(0), AF(1), AF(2)))              \
+	X(F, quat_dot, quat_dot(QT(0), QT(1)))                                   \
+	X(Q, quat_from_to, quat_from_to(V4(0), V4(1)))                           \
+	X(Q, quat_inv, quat_inv(QT(0)))                                          \
+	X(M3, mat3_identity, mat3_identity())                                    \
+	X(M3, mat3_translation, mat3_translation(AF(0), AF(1)))                  \
+	X(M3, mat3_rotation, mat3_rotation(AF(0)))                               \
+	X(M3, mat3_scale, mat3_scale(M3(0), V4(1)))                              \
+	X(M3, mat3_set_from4, mat3_set_from4(M4(0)))                             \
+	X(M3, mat3_multmat, mat3_multmat(M3(0), M3(1)))                          \
+	X(M3, mat3_transpose, mat3_transpose(M3(0)))                             \
+	X(M3, mat3_nan, mat3_nan())                                              \
+	X(I, mat3_isnan, mat3_isnan(M3(0)))                                      \
+	X(M4, mat4_identity, mat4_identity())                                    \
+	X(M4, mat4_persp, mat4_persp(AF(0), AF(1), AF(2), AF(3)))                \
+	X(M4, mat4_ortho, mat4_ortho(AF(0), AF(1), AF(2), AF(3), AF(4), AF(5)))  \
+	X(M4, mat4_rot_z, mat4_rot_z(AF(0)))                                     \
+	X(M4, mat4_compose, mat4_compose(V4(0), QT(1), V4(2)))                   \
+	X(M4, mat4_set_loc, mat4_set_loc(M4(0), V4(1)))                          \
+	X(M4, mat4_from_quat, mat4_from_quat(QT(0)))                             \
+	X(M4, mat4_translate, mat4_translate(M4(0), AF(1), AF(2), AF(3)))        \
+	X(M4, mat4_scale, mat4_scale(M4(0), V4(1)))                              \
+	X(M4, mat4_mult_mat3x4, mat4_mult_mat3x4(M4(0), M4(1)))                  \
+	X(M4, mat4_mult_mat, mat4_mult_mat(M4(0), M4(1)))                        \
+	X(M4, mat4_inv, mat4_inv(M4(0)))                                         \
+	X(M4, mat4_transpose, mat4_transpose(M4(0)))                             \
+	X(M4, mat4_transpose3, mat4_transpose3(M4(0)))                           \
+	X(V4, mat4_get_loc, mat4_get_loc(M4(0)))                                 \
+	X(V4, mat4_get_scale, mat4_get_scale(M4(0)))                             \
+	X(M4, mat4_mult, mat4_mult(M4(0), AF(1)))                                \
+	X(M4, mat4_to_rot, mat4_to_rot(M4(0)))                                   \
+	X(V4, mat4_right, mat4_right(M4(0)))                                     \
+	X(V4, mat4_look, mat4_look(M4(0)))                                       \
+	X(V4, mat4_up, mat4_up(M4(0)))                                           \
+	X(P, mat4_to_f32_array, mat4_to_f32_array(M4(0)))                        \
+	X(F, mat4_determinant, mat4_determinant(M4(0)))                          \
+	X(M4, mat4_nan, mat4_nan())                                              \
+	X(I, mat4_isnan, mat4_isnan(M4(0)))                                      \
+	X(VOID, transform_set_matrix, transform_set_matrix(AP(0), M4(1)))        \
+	X(VOID, transform_rotate, transform_rotate(AP(0), V4(1), AF(2)))         \
+	X(VOID, transform_move, transform_move(AP(0), V4(1), AF(2)))             \
+	X(V4, transform_look, transform_look(AP(0)))                             \
+	X(V4, transform_right, transform_right(AP(0)))                           \
+	X(V4, transform_up, transform_up(AP(0)))                                 \
+	X(V4, raycast_aabb, raycast_aabb((object_t *)AP(0)))                     \
+	X(VOID, line_draw_render, line_draw_render(M4(0)))                       \
+	X(VOID, line_draw_bounds, line_draw_bounds(M4(0), V4(1)))                \
+	X(VOID, shape_draw_sphere, shape_draw_sphere(M4(0)))                     \
+	X(VOID, draw_set_transform, draw_set_transform(M3(0)))
 
-#undef MN
-#undef RV2
-#undef RV4
-#undef RM3
-#undef RM4
-#undef RET2
-#undef RET4
-#undef RETQ
-#undef RET3
-#undef RET4M
-#undef V2
-#undef V4
-#undef QT
-#undef M3
-#undef M4
-#undef AF
-#undef AI
-#undef AP
+// Wrapper generators per return kind
+#define MN_HEAD(n)                                       \
+	static minic_val_t mn_##n(minic_val_t *_a, int _c) { \
+		(void)_a;                                        \
+		(void)_c;
+#define MN_F(n, e)             \
+	MN_HEAD(n)                 \
+	return minic_val_float(e); \
+	}
+#define MN_I(n, e)           \
+	MN_HEAD(n)               \
+	return minic_val_int(e); \
+	}
+#define MN_P(n, e)           \
+	MN_HEAD(n)               \
+	return minic_val_ptr(e); \
+	}
+#define MN_VOID(n, e)        \
+	MN_HEAD(n)               \
+	e;                       \
+	return minic_val_void(); \
+	}
+#define MN_BOX(n, e, setter, count)                                                 \
+	MN_HEAD(n)                                                                      \
+	minic_val_t *_o = (minic_val_t *)minic_alloc(count * (int)sizeof(minic_val_t)); \
+	setter(_o, e);                                                                  \
+	return minic_val_ptr(_o);                                                       \
+	}
+#define MN_V2(n, e) MN_BOX(n, e, minic_set_vec2, 2)
+#define MN_V4(n, e) MN_BOX(n, e, minic_set_vec4, 4)
+#define MN_Q(n, e)  MN_BOX(n, e, minic_set_quat, 4)
+#define MN_M3(n, e) MN_BOX(n, e, minic_set_mat3, 9)
+#define MN_M4(n, e) MN_BOX(n, e, minic_set_mat4, 16)
+
+#define X(kind, n, e) MN_##kind(n, e)
+MINIC_MATH_API
+#undef X
 
 // paint
+
 void *plugin_create();
 void  plugin_notify_on_ui(void *plugin, void *f);
 void  plugin_notify_on_update(void *plugin, void *f);
 void  plugin_notify_on_delete(void *plugin, void *f);
+void  iron_delay_idle_sleep();
 
 void *script_update_fn = NULL;
-void  iron_delay_idle_sleep();
 void  script_on_update(void *_) {
     iron_delay_idle_sleep();
     minic_call_fn(script_update_fn, NULL, 0);
@@ -648,12 +344,14 @@ void ui_files_show2(char *filters, bool is_save, bool open_multiple, void *files
 	_ui_files_done = files_done;
 	ui_files_show(filters, is_save, open_multiple, _ui_files_show_done);
 }
-void                          project_save(bool save_and_quit);
-extern context_t             *g_context;
-extern config_t              *g_config;
-extern project_t             *g_project;
-char                         *project_filepath_get() {
-    return g_project->_->filepath;
+
+void              project_save(bool save_and_quit);
+extern context_t *g_context;
+extern config_t  *g_config;
+extern project_t *g_project;
+
+char *project_filepath_get() {
+	return g_project->_->filepath;
 }
 void project_filepath_set(char *s) {
 	g_project->_->filepath = string_copy(s);
@@ -688,6 +386,7 @@ gpu_texture_t *gpu_create_render_target(i32 width, i32 height, i32 format);
 void           viewport_capture_screenshot_to(gpu_texture_t *target, float x, float y, float w, float h);
 void           viewport_save_texture(gpu_texture_t *screenshot);
 void           project_reimport_mesh_skinned(i32 frame);
+char          *parser_material_parse_value_input(ui_node_socket_t *inp, bool vector_as_grayscale);
 
 extern any_map_t      *import_texture_importers;
 extern string_array_t *_path_texture_formats;
@@ -715,7 +414,7 @@ raw_mesh_t             *plugin_import_custom_mesh(char *path) {
 
 void plugin_register_texture(char *format, void *fn) {
 	any_map_set(import_texture_importers, format, plugin_import_custom_texture);
-	any_array_push(_path_texture_formats, format);
+	any_array_push((any_array_t *)_path_texture_formats, format);
 
 	if (custom_texture_importers == NULL) {
 		custom_texture_importers = any_map_create();
@@ -726,12 +425,12 @@ void plugin_register_texture(char *format, void *fn) {
 
 void plugin_unregister_texture(char *format) {
 	map_delete(import_texture_importers, format);
-	array_splice(_path_texture_formats, string_array_index_of(_path_texture_formats, format), 1);
+	array_splice((any_array_t *)_path_texture_formats, string_array_index_of(_path_texture_formats, format), 1);
 }
 
 void plugin_register_mesh(char *format, void *fn) {
 	any_map_set(import_mesh_importers, format, plugin_import_custom_mesh);
-	any_array_push(_path_mesh_formats, format);
+	any_array_push((any_array_t *)_path_mesh_formats, format);
 
 	if (custom_mesh_importers == NULL) {
 		custom_mesh_importers = any_map_create();
@@ -742,7 +441,7 @@ void plugin_register_mesh(char *format, void *fn) {
 
 void plugin_unregister_mesh(char *format) {
 	map_delete(import_mesh_importers, format);
-	array_splice(_path_mesh_formats, string_array_index_of(_path_mesh_formats, format), 1);
+	array_splice((any_array_t *)_path_mesh_formats, string_array_index_of(_path_mesh_formats, format), 1);
 }
 
 raw_mesh_t *plugin_make_raw_mesh(char *name, i16_array_t *posa, i16_array_t *nora, u32_array_t *inda, float scale_pos) {
@@ -812,521 +511,362 @@ extern void *parser_material_kong;
 void        *plugin_material_kong_get() {
     return parser_material_kong;
 }
-char *parser_material_parse_value_input(ui_node_socket_t *inp, bool vector_as_grayscale);
-void  node_shader_write_frag(void *raw, char *s);
+
+// All array types share the buffer/length/capacity layout
+static void minic_register_array_struct(const char *name, int size, minic_type_t buffer_deref) {
+	minic_struct_begin(name, size);
+	minic_struct_field("buffer", (int)offsetof(u8_array_t, buffer), MINIC_T_PTR, buffer_deref, NULL);
+	minic_struct_field("length", (int)offsetof(u8_array_t, length), MINIC_T_INT, MINIC_T_INT, NULL);
+	minic_struct_field("capacity", (int)offsetof(u8_array_t, capacity), MINIC_T_INT, MINIC_T_INT, NULL);
+}
+
+#define R(name, sig) minic_register(#name, sig, (minic_ext_fn_raw_t)name)
 
 void minic_register_builtins() {
 	minic_register_native("printf", minic_printf_native);
 	minic_register_native("string", minic_string_native);
 
 	// iron_array
-	static const char        *array_fields[]  = {"buffer", "length", "capacity"};
-	static const int          array_offsets[] = {(int)offsetof(f32_array_t, buffer), (int)offsetof(f32_array_t, length), (int)offsetof(f32_array_t, capacity)};
-	static const minic_type_t array_types[]   = {MINIC_T_PTR, MINIC_T_INT, MINIC_T_INT};
-	static const minic_type_t array_int_derefs[]   = {MINIC_T_INT, MINIC_T_INT, MINIC_T_INT};
-	static const minic_type_t array_float_derefs[] = {MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_INT};
-	static const minic_type_t array_ptr_derefs[]   = {MINIC_T_PTR, MINIC_T_INT, MINIC_T_INT};
-	minic_register_struct_native("i8_array_t", array_fields, array_offsets, array_types, array_int_derefs, 3);
-	minic_register_struct_native("u8_array_t", array_fields, array_offsets, array_types, array_int_derefs, 3);
-	minic_register_struct_native("i16_array_t", array_fields, array_offsets, array_types, array_int_derefs, 3);
-	minic_register_struct_native("u16_array_t", array_fields, array_offsets, array_types, array_int_derefs, 3);
-	minic_register_struct_native("i32_array_t", array_fields, array_offsets, array_types, array_int_derefs, 3);
-	minic_register_struct_native("u32_array_t", array_fields, array_offsets, array_types, array_int_derefs, 3);
-	minic_register_struct_native("f32_array_t", array_fields, array_offsets, array_types, array_float_derefs, 3);
-	minic_register_struct_native("any_array_t", array_fields, array_offsets, array_types, array_ptr_derefs, 3);
-	minic_register_struct_native("string_array_t", array_fields, array_offsets, array_types, array_ptr_derefs, 3);
-	minic_register_struct_native("buffer_t", array_fields, array_offsets, array_types, array_int_derefs, 3);
-	minic_struct_set_size("i8_array_t", (int)sizeof(i8_array_t));
-	minic_struct_set_size("u8_array_t", (int)sizeof(u8_array_t));
-	minic_struct_set_size("i16_array_t", (int)sizeof(i16_array_t));
-	minic_struct_set_size("u16_array_t", (int)sizeof(u16_array_t));
-	minic_struct_set_size("i32_array_t", (int)sizeof(i32_array_t));
-	minic_struct_set_size("u32_array_t", (int)sizeof(u32_array_t));
-	minic_struct_set_size("f32_array_t", (int)sizeof(f32_array_t));
-	minic_struct_set_size("any_array_t", (int)sizeof(any_array_t));
-	minic_struct_set_size("string_array_t", (int)sizeof(string_array_t));
-	minic_struct_set_size("buffer_t", (int)sizeof(buffer_t));
+	minic_register_array_struct("i8_array_t", (int)sizeof(i8_array_t), MINIC_T_INT);
+	minic_register_array_struct("u8_array_t", (int)sizeof(u8_array_t), MINIC_T_INT);
+	minic_register_array_struct("i16_array_t", (int)sizeof(i16_array_t), MINIC_T_INT);
+	minic_register_array_struct("u16_array_t", (int)sizeof(u16_array_t), MINIC_T_INT);
+	minic_register_array_struct("i32_array_t", (int)sizeof(i32_array_t), MINIC_T_INT);
+	minic_register_array_struct("u32_array_t", (int)sizeof(u32_array_t), MINIC_T_INT);
+	minic_register_array_struct("f32_array_t", (int)sizeof(f32_array_t), MINIC_T_FLOAT);
+	minic_register_array_struct("any_array_t", (int)sizeof(any_array_t), MINIC_T_PTR);
+	minic_register_array_struct("string_array_t", (int)sizeof(string_array_t), MINIC_T_PTR);
+	minic_register_array_struct("buffer_t", (int)sizeof(buffer_t), MINIC_T_INT);
 
 	// iron_math
-	static const char        *vec2_fields[]  = {"x", "y"};
-	static const char        *vec3_fields[]  = {"x", "y", "z"};
-	static const char        *vec4_fields[]  = {"x", "y", "z", "w"};
-	static const char        *quat_fields[]  = {"x", "y", "z", "w"};
-	static const char        *mat3_fields[]  = {"m00", "m01", "m02", "m10", "m11", "m12", "m20", "m21", "m22"};
-	static const char        *mat4_fields[]  = {"m00", "m01", "m02", "m03", "m10", "m11", "m12", "m13", "m20", "m21", "m22", "m23", "m30", "m31", "m32", "m33"};
-	static const int          vec2_offsets[] = {(int)offsetof(vec2_t, x), (int)offsetof(vec2_t, y)};
-	static const int          vec3_offsets[] = {(int)offsetof(vec3_t, x), (int)offsetof(vec3_t, y), (int)offsetof(vec3_t, z)};
-	static const int          vec4_offsets[] = {(int)offsetof(vec4_t, x), (int)offsetof(vec4_t, y), (int)offsetof(vec4_t, z), (int)offsetof(vec4_t, w)};
-	static const minic_type_t vec2_types[]   = {MINIC_T_FLOAT, MINIC_T_FLOAT};
-	static const minic_type_t vec3_types[]   = {MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT};
-	static const minic_type_t vec4_types[]   = {MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT};
-	minic_register_struct_native("vec2_t", vec2_fields, vec2_offsets, vec2_types, NULL, 2);
-	minic_register_struct_native("vec3_t", vec3_fields, vec3_offsets, vec3_types, NULL, 3);
-	minic_register_struct_native("vec4_t", vec4_fields, vec4_offsets, vec4_types, NULL, 4);
-	minic_register_struct_native("quat_t", quat_fields, vec4_offsets, vec4_types, NULL, 4);
-	minic_struct_set_size("vec2_t", (int)sizeof(vec2_t));
-	minic_struct_set_size("vec3_t", (int)sizeof(vec3_t));
-	minic_struct_set_size("vec4_t", (int)sizeof(vec4_t));
-	minic_struct_set_size("quat_t", (int)sizeof(quat_t));
+	MINIC_STRUCT(vec2_t);
+	MINIC_F(x);
+	MINIC_F(y);
+	MINIC_END();
+
+	MINIC_STRUCT(vec3_t);
+	MINIC_F(x);
+	MINIC_F(y);
+	MINIC_F(z);
+	MINIC_END();
+
+	MINIC_STRUCT(vec4_t);
+	MINIC_F(x);
+	MINIC_F(y);
+	MINIC_F(z);
+	MINIC_F(w);
+	MINIC_END();
+
+	MINIC_STRUCT(quat_t);
+	MINIC_F(x);
+	MINIC_F(y);
+	MINIC_F(z);
+	MINIC_F(w);
+	MINIC_END();
+
+	// Script-layout matrices (boxed fields)
+	static const char *mat3_fields[] = {"m00", "m01", "m02", "m10", "m11", "m12", "m20", "m21", "m22"};
+	static const char *mat4_fields[] = {"m00", "m01", "m02", "m03", "m10", "m11", "m12", "m13", "m20", "m21", "m22", "m23", "m30", "m31", "m32", "m33"};
 	minic_register_struct("mat3_t", mat3_fields, 9);
 	minic_register_struct("mat4_t", mat4_fields, 16);
 
 	// iron_ui
-	static const char *ui_layout_names[]  = {"UI_LAYOUT_VERTICAL", "UI_LAYOUT_HORIZONTAL"};
-	static const int   ui_layout_values[] = {0, 1};
-	minic_register_enum("ui_layout_t", ui_layout_names, ui_layout_values, 2);
+	MINIC_ENUM("ui_layout_t", "UI_LAYOUT_VERTICAL", "UI_LAYOUT_HORIZONTAL");
+	MINIC_ENUM("ui_align_t", "UI_ALIGN_LEFT", "UI_ALIGN_CENTER", "UI_ALIGN_RIGHT");
+	MINIC_ENUM("ui_state_t", "UI_STATE_IDLE", "UI_STATE_STARTED", "UI_STATE_DOWN", "UI_STATE_RELEASED", "UI_STATE_HOVERED");
+	MINIC_ENUM("gpu_texture_format_t", "GPU_TEXTURE_FORMAT_RGBA32", "GPU_TEXTURE_FORMAT_RGBA64", "GPU_TEXTURE_FORMAT_RGBA128", "GPU_TEXTURE_FORMAT_R8",
+	           "GPU_TEXTURE_FORMAT_R16", "GPU_TEXTURE_FORMAT_R32", "GPU_TEXTURE_FORMAT_D32", "GPU_TEXTURE_FORMAT_RGBA32_BC7");
 
-	static const char *ui_align_names[]  = {"UI_ALIGN_LEFT", "UI_ALIGN_CENTER", "UI_ALIGN_RIGHT"};
-	static const int   ui_align_values[] = {0, 1, 2};
-	minic_register_enum("ui_align_t", ui_align_names, ui_align_values, 3);
+	MINIC_STRUCT(ui_handle_t);
+	MINIC_I(i);
+	MINIC_F(f);
+	MINIC_I(b);
+	MINIC_I(layout);
+	MINIC_F(scroll_offset);
+	MINIC_I(color);
+	MINIC_I(redraws);
+	MINIC_S(text);
+	MINIC_I(scroll_enabled);
+	MINIC_I(drag_enabled);
+	MINIC_I(changed);
+	MINIC_I(init);
+	MINIC_O(children, any_array_t);
+	MINIC_END();
 
-	static const char *ui_state_names[]  = {"UI_STATE_IDLE", "UI_STATE_STARTED", "UI_STATE_DOWN", "UI_STATE_RELEASED", "UI_STATE_HOVERED"};
-	static const int   ui_state_values[] = {0, 1, 2, 3, 4};
-	minic_register_enum("ui_state_t", ui_state_names, ui_state_values, 5);
+	MINIC_STRUCT(ui_node_socket_t);
+	MINIC_I(id);
+	MINIC_I(node_id);
+	MINIC_S(name);
+	MINIC_S(type);
+	MINIC_I(color);
+	MINIC_O(default_value, f32_array_t);
+	MINIC_F(min);
+	MINIC_F(max);
+	MINIC_F(precision);
+	MINIC_I(display);
+	MINIC_END();
 
-	static const char *gpu_texture_format_names[]  = {"GPU_TEXTURE_FORMAT_RGBA32", "GPU_TEXTURE_FORMAT_RGBA64",    "GPU_TEXTURE_FORMAT_RGBA128",
-	                                                  "GPU_TEXTURE_FORMAT_R8",     "GPU_TEXTURE_FORMAT_R16",       "GPU_TEXTURE_FORMAT_R32",
-	                                                  "GPU_TEXTURE_FORMAT_D32",    "GPU_TEXTURE_FORMAT_RGBA32_BC7"};
-	static const int   gpu_texture_format_values[] = {0, 1, 2, 3, 4, 5, 6, 7};
-	minic_register_enum("gpu_texture_format_t", gpu_texture_format_names, gpu_texture_format_values, 8);
+	MINIC_STRUCT(ui_node_button_t);
+	MINIC_S(name);
+	MINIC_S(type);
+	MINIC_I(output);
+	MINIC_O(default_value, f32_array_t);
+	MINIC_O(data, u8_array_t);
+	MINIC_F(min);
+	MINIC_F(max);
+	MINIC_F(precision);
+	MINIC_F(height);
+	MINIC_END();
 
-	static const char *ui_handle_fields[]  = {"i",       "f",       "b",       "layout",         "scroll_offset",
-	                                          "color",   "redraws", "text",    "scroll_enabled", "drag_enabled",
-	                                          "changed", "init",    "children"};
-	static const int   ui_handle_offsets[] = {
-        (int)offsetof(ui_handle_t, i),
-        (int)offsetof(ui_handle_t, f),
-        (int)offsetof(ui_handle_t, b),
-        (int)offsetof(ui_handle_t, layout),
-        (int)offsetof(ui_handle_t, scroll_offset),
-        (int)offsetof(ui_handle_t, color),
-        (int)offsetof(ui_handle_t, redraws),
-        (int)offsetof(ui_handle_t, text),
-        (int)offsetof(ui_handle_t, scroll_enabled),
-        (int)offsetof(ui_handle_t, drag_enabled),
-        (int)offsetof(ui_handle_t, changed),
-        (int)offsetof(ui_handle_t, init),
-        (int)offsetof(ui_handle_t, children),
-    };
-	static const minic_type_t ui_handle_types[]       = {MINIC_T_INT, MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_INT, MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_INT,
-	                                                     MINIC_T_PTR, MINIC_T_INT,   MINIC_T_INT, MINIC_T_INT, MINIC_T_INT,   MINIC_T_PTR};
-	static const minic_type_t ui_handle_deref_types[] = {MINIC_T_INT,  MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_INT, MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_INT,
-	                                                     MINIC_T_CHAR, MINIC_T_INT,   MINIC_T_INT, MINIC_T_INT, MINIC_T_INT,   MINIC_T_PTR};
-	minic_register_struct_native("ui_handle_t", ui_handle_fields, ui_handle_offsets, ui_handle_types, ui_handle_deref_types, 13);
-	minic_struct_set_size("ui_handle_t", (int)sizeof(ui_handle_t));
-	minic_struct_field_set_type("ui_handle_t", "children", "any_array_t");
+	MINIC_STRUCT(ui_node_link_t);
+	MINIC_I(id);
+	MINIC_I(from_id);
+	MINIC_I(from_socket);
+	MINIC_I(to_id);
+	MINIC_I(to_socket);
+	MINIC_END();
 
-	static const char *ui_node_socket_fields[]  = {"id", "node_id", "name", "type", "color", "default_value", "min", "max", "precision", "display"};
-	static const int   ui_node_socket_offsets[] = {
-        (int)offsetof(ui_node_socket_t, id),      (int)offsetof(ui_node_socket_t, node_id), (int)offsetof(ui_node_socket_t, name),
-        (int)offsetof(ui_node_socket_t, type),    (int)offsetof(ui_node_socket_t, color),   (int)offsetof(ui_node_socket_t, default_value),
-        (int)offsetof(ui_node_socket_t, min),     (int)offsetof(ui_node_socket_t, max),     (int)offsetof(ui_node_socket_t, precision),
-        (int)offsetof(ui_node_socket_t, display),
-    };
-	static const minic_type_t ui_node_socket_types[]       = {MINIC_T_INT, MINIC_T_INT,   MINIC_T_PTR,   MINIC_T_PTR,   MINIC_T_INT,
-	                                                          MINIC_T_PTR, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_INT};
-	static const minic_type_t ui_node_socket_deref_types[] = {MINIC_T_INT, MINIC_T_INT,   MINIC_T_CHAR,  MINIC_T_CHAR,  MINIC_T_INT,
-	                                                          MINIC_T_PTR, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_INT};
-	minic_register_struct_native("ui_node_socket_t", ui_node_socket_fields, ui_node_socket_offsets, ui_node_socket_types, ui_node_socket_deref_types, 10);
-	minic_struct_set_size("ui_node_socket_t", (int)sizeof(ui_node_socket_t));
-	minic_struct_field_set_type("ui_node_socket_t", "default_value", "f32_array_t");
+	MINIC_STRUCT(ui_node_t);
+	MINIC_I(id);
+	MINIC_S(name);
+	MINIC_S(type);
+	MINIC_F(x);
+	MINIC_F(y);
+	MINIC_I(color);
+	MINIC_O(inputs, any_array_t);
+	MINIC_O(outputs, any_array_t);
+	MINIC_O(buttons, any_array_t);
+	MINIC_F(width);
+	MINIC_I(flags);
+	MINIC_END();
 
-	static const char *ui_node_button_fields[]  = {"name", "type", "output", "default_value", "data", "min", "max", "precision", "height"};
-	static const int   ui_node_button_offsets[] = {
-        (int)offsetof(ui_node_button_t, name),          (int)offsetof(ui_node_button_t, type),      (int)offsetof(ui_node_button_t, output),
-        (int)offsetof(ui_node_button_t, default_value), (int)offsetof(ui_node_button_t, data),      (int)offsetof(ui_node_button_t, min),
-        (int)offsetof(ui_node_button_t, max),           (int)offsetof(ui_node_button_t, precision), (int)offsetof(ui_node_button_t, height),
-    };
-	static const minic_type_t ui_node_button_types[]       = {MINIC_T_PTR,   MINIC_T_PTR,   MINIC_T_INT,   MINIC_T_PTR,  MINIC_T_PTR,
-	                                                          MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT};
-	static const minic_type_t ui_node_button_deref_types[] = {MINIC_T_CHAR,  MINIC_T_CHAR,  MINIC_T_INT,   MINIC_T_PTR,  MINIC_T_PTR,
-	                                                          MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT};
-	minic_register_struct_native("ui_node_button_t", ui_node_button_fields, ui_node_button_offsets, ui_node_button_types, ui_node_button_deref_types, 9);
-	minic_struct_set_size("ui_node_button_t", (int)sizeof(ui_node_button_t));
-	minic_struct_field_set_type("ui_node_button_t", "default_value", "f32_array_t");
-	minic_struct_field_set_type("ui_node_button_t", "data", "u8_array_t");
+	// engine.h
+	MINIC_STRUCT(obj_t);
+	MINIC_S(name);
+	MINIC_S(type);
+	MINIC_S(data_ref);
+	MINIC_O(transform, f32_array_t);
+	MINIC_O(dimensions, f32_array_t);
+	MINIC_I(visible);
+	MINIC_I(spawn);
+	MINIC_P(anim);
+	MINIC_S(material_ref);
+	MINIC_O(children, obj_t_array_t);
+	MINIC_P(_);
+	MINIC_END();
 
-	static const char *ui_node_link_fields[]  = {"id", "from_id", "from_socket", "to_id", "to_socket"};
-	static const int   ui_node_link_offsets[] = {
-        (int)offsetof(ui_node_link_t, id),    (int)offsetof(ui_node_link_t, from_id),   (int)offsetof(ui_node_link_t, from_socket),
-        (int)offsetof(ui_node_link_t, to_id), (int)offsetof(ui_node_link_t, to_socket),
-    };
-	static const minic_type_t ui_node_link_types[]       = {MINIC_T_INT, MINIC_T_INT, MINIC_T_INT, MINIC_T_INT, MINIC_T_INT};
-	static const minic_type_t ui_node_link_deref_types[] = {MINIC_T_INT, MINIC_T_INT, MINIC_T_INT, MINIC_T_INT, MINIC_T_INT};
-	minic_register_struct_native("ui_node_link_t", ui_node_link_fields, ui_node_link_offsets, ui_node_link_types, ui_node_link_deref_types, 5);
-	minic_struct_set_size("ui_node_link_t", (int)sizeof(ui_node_link_t));
+	MINIC_STRUCT(vertex_array_t);
+	MINIC_S(attrib);
+	MINIC_S(data);
+	MINIC_O(values, i16_array_t);
+	MINIC_END();
 
-	static const char *ui_node_fields[]  = {"id", "name", "type", "x", "y", "color", "inputs", "outputs", "buttons", "width", "flags"};
-	static const int   ui_node_offsets[] = {
-        (int)offsetof(ui_node_t, id),      (int)offsetof(ui_node_t, name),  (int)offsetof(ui_node_t, type),   (int)offsetof(ui_node_t, x),
-        (int)offsetof(ui_node_t, y),       (int)offsetof(ui_node_t, color), (int)offsetof(ui_node_t, inputs), (int)offsetof(ui_node_t, outputs),
-        (int)offsetof(ui_node_t, buttons), (int)offsetof(ui_node_t, width), (int)offsetof(ui_node_t, flags),
-    };
-	static const minic_type_t ui_node_types[]       = {MINIC_T_INT, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_INT,
-	                                                   MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_FLOAT, MINIC_T_INT};
-	static const minic_type_t ui_node_deref_types[] = {MINIC_T_INT, MINIC_T_CHAR, MINIC_T_CHAR, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_INT,
-	                                                   MINIC_T_PTR, MINIC_T_PTR,  MINIC_T_PTR,  MINIC_T_FLOAT, MINIC_T_INT};
-	minic_register_struct_native("ui_node_t", ui_node_fields, ui_node_offsets, ui_node_types, ui_node_deref_types, 11);
-	minic_struct_set_size("ui_node_t", (int)sizeof(ui_node_t));
-	minic_struct_field_set_type("ui_node_t", "inputs", "any_array_t");
-	minic_struct_field_set_type("ui_node_t", "outputs", "any_array_t");
-	minic_struct_field_set_type("ui_node_t", "buttons", "any_array_t");
+	MINIC_STRUCT(mesh_data_t);
+	MINIC_S(name);
+	MINIC_F(scale_pos);
+	MINIC_F(scale_tex);
+	MINIC_O(vertex_arrays, vertex_array_t_array_t);
+	MINIC_O(index_array, u32_array_t);
+	MINIC_P(_);
+	MINIC_END();
 
-	// engine.h structs
-	// obj_t
-	static const char *obj_fields[]  = {"name", "type", "data_ref", "transform", "dimensions", "visible", "spawn", "anim", "material_ref", "children", "_"};
-	static const int   obj_offsets[] = {
-        (int)offsetof(obj_t, name),         (int)offsetof(obj_t, type),     (int)offsetof(obj_t, data_ref), (int)offsetof(obj_t, transform),
-        (int)offsetof(obj_t, dimensions),   (int)offsetof(obj_t, visible),  (int)offsetof(obj_t, spawn),    (int)offsetof(obj_t, anim),
-        (int)offsetof(obj_t, material_ref), (int)offsetof(obj_t, children), (int)offsetof(obj_t, _),
-    };
-	static const minic_type_t obj_types[]       = {MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_INT,
-	                                               MINIC_T_INT, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t obj_deref_types[] = {MINIC_T_CHAR, MINIC_T_CHAR, MINIC_T_CHAR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_INT,
-	                                               MINIC_T_INT,  MINIC_T_PTR,  MINIC_T_CHAR, MINIC_T_PTR, MINIC_T_PTR};
-	minic_register_struct_native("obj_t", obj_fields, obj_offsets, obj_types, obj_deref_types, 11);
-	minic_struct_set_size("obj_t", (int)sizeof(obj_t));
-	minic_struct_field_set_type("obj_t", "transform", "f32_array_t");
-	minic_struct_field_set_type("obj_t", "dimensions", "f32_array_t");
-	minic_struct_field_set_type("obj_t", "children", "obj_t_array_t");
+	MINIC_STRUCT(camera_data_t);
+	MINIC_S(name);
+	MINIC_F(near_plane);
+	MINIC_F(far_plane);
+	MINIC_F(fov);
+	MINIC_F(aspect);
+	MINIC_I(frustum_culling);
+	MINIC_O(ortho, f32_array_t);
+	MINIC_END();
 
-	// vertex_array_t
-	static const char *va_fields[]  = {"attrib", "data", "values"};
-	static const int   va_offsets[] = {
-        (int)offsetof(vertex_array_t, attrib),
-        (int)offsetof(vertex_array_t, data),
-        (int)offsetof(vertex_array_t, values),
-    };
-	static const minic_type_t va_types[]       = {MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t va_deref_types[] = {MINIC_T_CHAR, MINIC_T_CHAR, MINIC_T_PTR};
-	minic_register_struct_native("vertex_array_t", va_fields, va_offsets, va_types, va_deref_types, 3);
-	minic_struct_set_size("vertex_array_t", (int)sizeof(vertex_array_t));
-	minic_struct_field_set_type("vertex_array_t", "values", "i16_array_t");
+	MINIC_STRUCT(world_data_t);
+	MINIC_S(name);
+	MINIC_I(color);
+	MINIC_F(strength);
+	MINIC_S(irradiance);
+	MINIC_S(radiance);
+	MINIC_I(radiance_mipmaps);
+	MINIC_S(envmap);
+	MINIC_P(_);
+	MINIC_END();
 
-	// mesh_data_t
-	static const char *mesh_data_fields[]  = {"name", "scale_pos", "scale_tex", "vertex_arrays", "index_array", "_"};
-	static const int   mesh_data_offsets[] = {
-        (int)offsetof(mesh_data_t, name),          (int)offsetof(mesh_data_t, scale_pos),   (int)offsetof(mesh_data_t, scale_tex),
-        (int)offsetof(mesh_data_t, vertex_arrays), (int)offsetof(mesh_data_t, index_array), (int)offsetof(mesh_data_t, _),
-    };
-	static const minic_type_t mesh_data_types[]       = {MINIC_T_PTR, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t mesh_data_deref_types[] = {MINIC_T_CHAR, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR};
-	minic_register_struct_native("mesh_data_t", mesh_data_fields, mesh_data_offsets, mesh_data_types, mesh_data_deref_types, 6);
-	minic_struct_set_size("mesh_data_t", (int)sizeof(mesh_data_t));
-	minic_struct_field_set_type("mesh_data_t", "vertex_arrays", "vertex_array_t_array_t");
-	minic_struct_field_set_type("mesh_data_t", "index_array", "u32_array_t");
+	MINIC_STRUCT(vertex_element_t);
+	MINIC_S(name);
+	MINIC_S(data);
+	MINIC_END();
 
-	// camera_data_t
-	static const char *cam_data_fields[]  = {"name", "near_plane", "far_plane", "fov", "aspect", "frustum_culling", "ortho"};
-	static const int   cam_data_offsets[] = {
-        (int)offsetof(camera_data_t, name),  (int)offsetof(camera_data_t, near_plane), (int)offsetof(camera_data_t, far_plane),
-        (int)offsetof(camera_data_t, fov),   (int)offsetof(camera_data_t, aspect),     (int)offsetof(camera_data_t, frustum_culling),
-        (int)offsetof(camera_data_t, ortho),
-    };
-	static const minic_type_t cam_data_types[]       = {MINIC_T_PTR, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_PTR};
-	static const minic_type_t cam_data_deref_types[] = {MINIC_T_CHAR, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_PTR};
-	minic_register_struct_native("camera_data_t", cam_data_fields, cam_data_offsets, cam_data_types, cam_data_deref_types, 7);
-	minic_struct_set_size("camera_data_t", (int)sizeof(camera_data_t));
-	minic_struct_field_set_type("camera_data_t", "ortho", "f32_array_t");
+	MINIC_STRUCT(shader_const_t);
+	MINIC_S(name);
+	MINIC_S(type);
+	MINIC_S(link);
+	MINIC_END();
 
-	// world_data_t
-	static const char *world_data_fields[]  = {"name", "color", "strength", "irradiance", "radiance", "radiance_mipmaps", "envmap", "_"};
-	static const int   world_data_offsets[] = {
-        (int)offsetof(world_data_t, name),       (int)offsetof(world_data_t, color),    (int)offsetof(world_data_t, strength),
-        (int)offsetof(world_data_t, irradiance), (int)offsetof(world_data_t, radiance), (int)offsetof(world_data_t, radiance_mipmaps),
-        (int)offsetof(world_data_t, envmap),     (int)offsetof(world_data_t, _),
-    };
-	static const minic_type_t world_data_types[] = {MINIC_T_PTR, MINIC_T_INT, MINIC_T_FLOAT, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_INT, MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t world_data_deref_types[] = {MINIC_T_CHAR, MINIC_T_INT, MINIC_T_FLOAT, MINIC_T_CHAR,
-	                                                      MINIC_T_CHAR, MINIC_T_INT, MINIC_T_CHAR,  MINIC_T_PTR};
-	minic_register_struct_native("world_data_t", world_data_fields, world_data_offsets, world_data_types, world_data_deref_types, 8);
-	minic_struct_set_size("world_data_t", (int)sizeof(world_data_t));
+	MINIC_STRUCT(tex_unit_t);
+	MINIC_S(name);
+	MINIC_S(link);
+	MINIC_END();
 
-	// vertex_element_t
-	static const char        *ve_fields[]      = {"name", "data"};
-	static const int          ve_offsets[]     = {(int)offsetof(vertex_element_t, name), (int)offsetof(vertex_element_t, data)};
-	static const minic_type_t ve_types[]       = {MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t ve_deref_types[] = {MINIC_T_CHAR, MINIC_T_CHAR};
-	minic_register_struct_native("vertex_element_t", ve_fields, ve_offsets, ve_types, ve_deref_types, 2);
-	minic_struct_set_size("vertex_element_t", (int)sizeof(vertex_element_t));
+	MINIC_STRUCT(shader_context_t);
+	MINIC_S(name);
+	MINIC_I(depth_write);
+	MINIC_S(compare_mode);
+	MINIC_S(cull_mode);
+	MINIC_S(vertex_shader);
+	MINIC_S(fragment_shader);
+	MINIC_I(shader_from_source);
+	MINIC_S(blend_source);
+	MINIC_S(blend_destination);
+	MINIC_S(alpha_blend_source);
+	MINIC_S(alpha_blend_destination);
+	MINIC_O(color_attachments, string_array_t);
+	MINIC_S(depth_attachment);
+	MINIC_O(vertex_elements, vertex_element_t_array_t);
+	MINIC_O(constants, shader_const_t_array_t);
+	MINIC_O(texture_units, tex_unit_t_array_t);
+	MINIC_END();
 
-	// shader_const_t
-	static const char        *sc_fields[]  = {"name", "type", "link"};
-	static const int          sc_offsets[] = {(int)offsetof(shader_const_t, name), (int)offsetof(shader_const_t, type), (int)offsetof(shader_const_t, link)};
-	static const minic_type_t sc_types[]   = {MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t sc_deref_types[] = {MINIC_T_CHAR, MINIC_T_CHAR, MINIC_T_CHAR};
-	minic_register_struct_native("shader_const_t", sc_fields, sc_offsets, sc_types, sc_deref_types, 3);
-	minic_struct_set_size("shader_const_t", (int)sizeof(shader_const_t));
+	MINIC_STRUCT(shader_data_t);
+	MINIC_S(name);
+	MINIC_O(contexts, any_array_t);
+	MINIC_END();
 
-	// tex_unit_t
-	static const char        *tu_fields[]      = {"name", "link"};
-	static const int          tu_offsets[]     = {(int)offsetof(tex_unit_t, name), (int)offsetof(tex_unit_t, link)};
-	static const minic_type_t tu_types[]       = {MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t tu_deref_types[] = {MINIC_T_CHAR, MINIC_T_CHAR};
-	minic_register_struct_native("tex_unit_t", tu_fields, tu_offsets, tu_types, tu_deref_types, 2);
-	minic_struct_set_size("tex_unit_t", (int)sizeof(tex_unit_t));
+	MINIC_STRUCT(bind_const_t);
+	MINIC_S(name);
+	MINIC_O(vec, f32_array_t);
+	MINIC_END();
 
-	// shader_context_t
-	static const char *sctx_fields[]  = {"name",
-	                                     "depth_write",
-	                                     "compare_mode",
-	                                     "cull_mode",
-	                                     "vertex_shader",
-	                                     "fragment_shader",
-	                                     "shader_from_source",
-	                                     "blend_source",
-	                                     "blend_destination",
-	                                     "alpha_blend_source",
-	                                     "alpha_blend_destination",
-	                                     "color_attachments",
-	                                     "depth_attachment",
-	                                     "vertex_elements",
-	                                     "constants",
-	                                     "texture_units"};
-	static const int   sctx_offsets[] = {
-        (int)offsetof(shader_context_t, name),
-        (int)offsetof(shader_context_t, depth_write),
-        (int)offsetof(shader_context_t, compare_mode),
-        (int)offsetof(shader_context_t, cull_mode),
-        (int)offsetof(shader_context_t, vertex_shader),
-        (int)offsetof(shader_context_t, fragment_shader),
-        (int)offsetof(shader_context_t, shader_from_source),
-        (int)offsetof(shader_context_t, blend_source),
-        (int)offsetof(shader_context_t, blend_destination),
-        (int)offsetof(shader_context_t, alpha_blend_source),
-        (int)offsetof(shader_context_t, alpha_blend_destination),
-        (int)offsetof(shader_context_t, color_attachments),
-        (int)offsetof(shader_context_t, depth_attachment),
-        (int)offsetof(shader_context_t, vertex_elements),
-        (int)offsetof(shader_context_t, constants),
-        (int)offsetof(shader_context_t, texture_units),
-    };
-	static const minic_type_t sctx_types[]       = {MINIC_T_PTR, MINIC_T_INT, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_INT, MINIC_T_PTR,
-	                                                MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t sctx_deref_types[] = {MINIC_T_CHAR, MINIC_T_INT,  MINIC_T_CHAR, MINIC_T_CHAR, MINIC_T_CHAR, MINIC_T_CHAR,
-	                                                MINIC_T_INT,  MINIC_T_CHAR, MINIC_T_CHAR, MINIC_T_CHAR, MINIC_T_CHAR, MINIC_T_PTR,
-	                                                MINIC_T_CHAR, MINIC_T_PTR,  MINIC_T_PTR,  MINIC_T_PTR};
-	minic_register_struct_native("shader_context_t", sctx_fields, sctx_offsets, sctx_types, sctx_deref_types, 16);
-	minic_struct_set_size("shader_context_t", (int)sizeof(shader_context_t));
-	minic_struct_field_set_type("shader_context_t", "color_attachments", "string_array_t");
-	minic_struct_field_set_type("shader_context_t", "vertex_elements", "vertex_element_t_array_t");
-	minic_struct_field_set_type("shader_context_t", "constants", "shader_const_t_array_t");
-	minic_struct_field_set_type("shader_context_t", "texture_units", "tex_unit_t_array_t");
+	MINIC_STRUCT(bind_tex_t);
+	MINIC_S(name);
+	MINIC_S(file);
+	MINIC_END();
 
-	// shader_data_t
-	static const char        *sd_fields[]      = {"name", "contexts"};
-	static const int          sd_offsets[]     = {(int)offsetof(shader_data_t, name), (int)offsetof(shader_data_t, contexts)};
-	static const minic_type_t sd_types[]       = {MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t sd_deref_types[] = {MINIC_T_CHAR, MINIC_T_PTR};
-	minic_register_struct_native("shader_data_t", sd_fields, sd_offsets, sd_types, sd_deref_types, 2);
-	minic_struct_set_size("shader_data_t", (int)sizeof(shader_data_t));
-	minic_struct_field_set_type("shader_data_t", "contexts", "any_array_t");
+	MINIC_STRUCT(material_context_t);
+	MINIC_S(name);
+	MINIC_O(bind_constants, bind_const_t_array_t);
+	MINIC_O(bind_textures, bind_tex_t_array_t);
+	MINIC_P(_);
+	MINIC_END();
 
-	// bind_const_t
-	static const char        *bc_fields[]      = {"name", "vec"};
-	static const int          bc_offsets[]     = {(int)offsetof(bind_const_t, name), (int)offsetof(bind_const_t, vec)};
-	static const minic_type_t bc_types[]       = {MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t bc_deref_types[] = {MINIC_T_CHAR, MINIC_T_PTR};
-	minic_register_struct_native("bind_const_t", bc_fields, bc_offsets, bc_types, bc_deref_types, 2);
-	minic_struct_set_size("bind_const_t", (int)sizeof(bind_const_t));
-	minic_struct_field_set_type("bind_const_t", "vec", "f32_array_t");
+	MINIC_STRUCT(material_data_t);
+	MINIC_S(name);
+	MINIC_S(shader);
+	MINIC_O(contexts, material_context_t_array_t);
+	MINIC_P(_);
+	MINIC_END();
 
-	// bind_tex_t
-	static const char        *bt_fields[]      = {"name", "file"};
-	static const int          bt_offsets[]     = {(int)offsetof(bind_tex_t, name), (int)offsetof(bind_tex_t, file)};
-	static const minic_type_t bt_types[]       = {MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t bt_deref_types[] = {MINIC_T_CHAR, MINIC_T_CHAR};
-	minic_register_struct_native("bind_tex_t", bt_fields, bt_offsets, bt_types, bt_deref_types, 2);
-	minic_struct_set_size("bind_tex_t", (int)sizeof(bind_tex_t));
+	MINIC_STRUCT(render_target_t);
+	MINIC_S(name);
+	MINIC_I(width);
+	MINIC_I(height);
+	MINIC_S(format);
+	MINIC_F(scale);
+	MINIC_P(_image);
+	MINIC_END();
 
-	// material_context_t
-	static const char *mctx_fields[]  = {"name", "bind_constants", "bind_textures", "_"};
-	static const int   mctx_offsets[] = {
-        (int)offsetof(material_context_t, name),
-        (int)offsetof(material_context_t, bind_constants),
-        (int)offsetof(material_context_t, bind_textures),
-        (int)offsetof(material_context_t, _),
-    };
-	static const minic_type_t mctx_types[]       = {MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t mctx_deref_types[] = {MINIC_T_CHAR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR};
-	minic_register_struct_native("material_context_t", mctx_fields, mctx_offsets, mctx_types, mctx_deref_types, 4);
-	minic_struct_set_size("material_context_t", (int)sizeof(material_context_t));
-	minic_struct_field_set_type("material_context_t", "bind_constants", "bind_const_t_array_t");
-	minic_struct_field_set_type("material_context_t", "bind_textures", "bind_tex_t_array_t");
+	MINIC_STRUCT(object_t);
+	MINIC_I(uid);
+	MINIC_F(urandom);
+	MINIC_O(raw, obj_t);
+	MINIC_S(name);
+	MINIC_O(transform, transform_t);
+	MINIC_P(parent);
+	MINIC_O(children, any_array_t);
+	MINIC_I(visible);
+	MINIC_I(culled);
+	MINIC_I(is_empty);
+	MINIC_P(ext);
+	MINIC_S(ext_type);
+	MINIC_END();
 
-	// material_data_t
-	static const char *md_fields[]  = {"name", "shader", "contexts", "_"};
-	static const int   md_offsets[] = {
-        (int)offsetof(material_data_t, name),
-        (int)offsetof(material_data_t, shader),
-        (int)offsetof(material_data_t, contexts),
-        (int)offsetof(material_data_t, _),
-    };
-	static const minic_type_t md_types[]       = {MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t md_deref_types[] = {MINIC_T_CHAR, MINIC_T_CHAR, MINIC_T_PTR, MINIC_T_PTR};
-	minic_register_struct_native("material_data_t", md_fields, md_offsets, md_types, md_deref_types, 4);
-	minic_struct_set_size("material_data_t", (int)sizeof(material_data_t));
-	minic_struct_field_set_type("material_data_t", "contexts", "material_context_t_array_t");
+	MINIC_STRUCT(mesh_object_t);
+	MINIC_O(base, object_t);
+	MINIC_O(data, mesh_data_t);
+	MINIC_O(material, material_data_t);
+	MINIC_F(camera_dist);
+	MINIC_I(frustum_culling);
+	MINIC_S(skip_context);
+	MINIC_S(force_context);
+	MINIC_END();
 
-	// render_target_t
-	static const char *rt_fields[]  = {"name", "width", "height", "format", "scale", "_image"};
-	static const int   rt_offsets[] = {
-        (int)offsetof(render_target_t, name),   (int)offsetof(render_target_t, width), (int)offsetof(render_target_t, height),
-        (int)offsetof(render_target_t, format), (int)offsetof(render_target_t, scale), (int)offsetof(render_target_t, _image),
-    };
-	static const minic_type_t rt_types[]       = {MINIC_T_PTR, MINIC_T_INT, MINIC_T_INT, MINIC_T_PTR, MINIC_T_FLOAT, MINIC_T_PTR};
-	static const minic_type_t rt_deref_types[] = {MINIC_T_CHAR, MINIC_T_INT, MINIC_T_INT, MINIC_T_CHAR, MINIC_T_FLOAT, MINIC_T_PTR};
-	minic_register_struct_native("render_target_t", rt_fields, rt_offsets, rt_types, rt_deref_types, 6);
-	minic_struct_set_size("render_target_t", (int)sizeof(render_target_t));
+	MINIC_STRUCT(transform_t);
+	MINIC_E(loc, vec4_t);
+	MINIC_F(scale_world);
+	MINIC_I(dirty);
+	MINIC_O(object, object_t);
+	MINIC_F(radius);
+	MINIC_END();
 
-	// object_t
-	static const char *object_fields[]  = {"uid",      "urandom", "raw",    "name",     "transform", "parent",
-	                                       "children", "visible", "culled", "is_empty", "ext",       "ext_type"};
-	static const int   object_offsets[] = {
-        (int)offsetof(object_t, uid),       (int)offsetof(object_t, urandom),  (int)offsetof(object_t, raw),      (int)offsetof(object_t, name),
-        (int)offsetof(object_t, transform), (int)offsetof(object_t, parent),   (int)offsetof(object_t, children), (int)offsetof(object_t, visible),
-        (int)offsetof(object_t, culled),    (int)offsetof(object_t, is_empty), (int)offsetof(object_t, ext),      (int)offsetof(object_t, ext_type),
-    };
-	static const minic_type_t object_types[]       = {MINIC_T_INT, MINIC_T_FLOAT, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR,
-	                                                  MINIC_T_PTR, MINIC_T_INT,   MINIC_T_INT, MINIC_T_INT, MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t object_deref_types[] = {MINIC_T_INT, MINIC_T_FLOAT, MINIC_T_PTR, MINIC_T_CHAR, MINIC_T_PTR, MINIC_T_PTR,
-	                                                  MINIC_T_PTR, MINIC_T_INT,   MINIC_T_INT, MINIC_T_INT,  MINIC_T_PTR, MINIC_T_CHAR};
-	minic_register_struct_native("object_t", object_fields, object_offsets, object_types, object_deref_types, 12);
-	minic_struct_set_size("object_t", (int)sizeof(object_t));
-	minic_struct_field_set_type("object_t", "raw", "obj_t");
-	minic_struct_field_set_type("object_t", "transform", "transform_t");
-	minic_struct_field_set_type("object_t", "children", "any_array_t");
+	MINIC_STRUCT(camera_object_t);
+	MINIC_O(base, object_t);
+	MINIC_O(data, camera_data_t);
+	MINIC_I(frame);
+	MINIC_O(frustum_planes, frustum_plane_array_t);
+	MINIC_END();
 
-	// mesh_object_t
-	static const char *mo_fields[]  = {"base", "data", "material", "camera_dist", "frustum_culling", "skip_context", "force_context"};
-	static const int   mo_offsets[] = {
-        (int)offsetof(mesh_object_t, base),
-        (int)offsetof(mesh_object_t, data),
-        (int)offsetof(mesh_object_t, material),
-        (int)offsetof(mesh_object_t, camera_dist),
-        (int)offsetof(mesh_object_t, frustum_culling),
-        (int)offsetof(mesh_object_t, skip_context),
-        (int)offsetof(mesh_object_t, force_context),
-    };
-	static const minic_type_t mo_types[]       = {MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_PTR, MINIC_T_PTR};
-	static const minic_type_t mo_deref_types[] = {MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_CHAR, MINIC_T_CHAR};
-	minic_register_struct_native("mesh_object_t", mo_fields, mo_offsets, mo_types, mo_deref_types, 7);
-	minic_struct_set_size("mesh_object_t", (int)sizeof(mesh_object_t));
-	minic_struct_field_set_type("mesh_object_t", "base", "object_t");
-	minic_struct_field_set_type("mesh_object_t", "data", "mesh_data_t");
-	minic_struct_field_set_type("mesh_object_t", "material", "material_data_t");
+	// types.h
+	MINIC_STRUCT(config_t);
+	MINIC_I(window_w);
+	MINIC_I(window_h);
+	MINIC_F(window_scale);
+	MINIC_F(rp_supersample);
+	MINIC_O(recent_projects, string_array_t);
+	MINIC_O(plugins, string_array_t);
+	MINIC_S(keymap);
+	MINIC_S(theme);
+	MINIC_I(undo_steps);
+	MINIC_F(camera_fov);
+	MINIC_I(layer_res);
+	MINIC_I(brush_live);
+	MINIC_I(node_previews);
+	MINIC_I(material_live);
+	MINIC_I(workspace);
+	MINIC_I(workflow);
+	MINIC_END();
 
-	// transform_t
-	static const char *transform_fields[]  = {"loc", "scale_world", "dirty", "object", "radius"};
-	static const int   transform_offsets[] = {
-        (int)offsetof(transform_t, loc),    (int)offsetof(transform_t, scale_world), (int)offsetof(transform_t, dirty),
-        (int)offsetof(transform_t, object), (int)offsetof(transform_t, radius),
-    };
-	static const minic_type_t transform_types[]       = {MINIC_T_EMBED, MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_PTR, MINIC_T_FLOAT};
-	static const minic_type_t transform_deref_types[] = {MINIC_T_PTR, MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_PTR, MINIC_T_FLOAT};
-	minic_register_struct_native("transform_t", transform_fields, transform_offsets, transform_types, transform_deref_types, 5);
-	minic_struct_set_size("transform_t", (int)sizeof(transform_t));
-	minic_struct_field_set_type("transform_t", "loc", "vec4_t");
-	minic_struct_field_set_type("transform_t", "object", "object_t");
+	MINIC_STRUCT(context_t);
+	MINIC_O(paint_object, mesh_object_t);
+	MINIC_I(ddirty);
+	MINIC_I(pdirty);
+	MINIC_I(rdirty);
+	MINIC_P(material);
+	MINIC_P(layer);
+	MINIC_P(brush);
+	MINIC_I(tool);
+	MINIC_F(brush_radius);
+	MINIC_F(brush_opacity);
+	MINIC_F(brush_hardness);
+	MINIC_F(brush_scale);
+	MINIC_F(brush_angle);
+	MINIC_I(brush_blending);
+	MINIC_I(viewport_mode);
+	MINIC_I(xray);
+	MINIC_B(capturing_screenshot);
+	MINIC_END();
 
-	// camera_object_t
-	static const char *camobj_fields[]  = {"base", "data", "frame", "frustum_planes"};
-	static const int   camobj_offsets[] = {
-        (int)offsetof(camera_object_t, base),
-        (int)offsetof(camera_object_t, data),
-        (int)offsetof(camera_object_t, frame),
-        (int)offsetof(camera_object_t, frustum_planes),
-    };
-	static const minic_type_t camobj_types[]       = {MINIC_T_PTR, MINIC_T_PTR, MINIC_T_INT, MINIC_T_PTR};
-	static const minic_type_t camobj_deref_types[] = {MINIC_T_PTR, MINIC_T_PTR, MINIC_T_INT, MINIC_T_PTR};
-	minic_register_struct_native("camera_object_t", camobj_fields, camobj_offsets, camobj_types, camobj_deref_types, 4);
-	minic_struct_set_size("camera_object_t", (int)sizeof(camera_object_t));
-	minic_struct_field_set_type("camera_object_t", "base", "object_t");
-	minic_struct_field_set_type("camera_object_t", "data", "camera_data_t");
-	minic_struct_field_set_type("camera_object_t", "frustum_planes", "frustum_plane_array_t");
+	MINIC_STRUCT(project_t);
+	MINIC_S(version);
+	MINIC_O(assets, string_array_t);
+	MINIC_I(is_bgra);
+	MINIC_S(envmap);
+	MINIC_F(envmap_strength);
+	MINIC_F(envmap_angle);
+	MINIC_F(camera_fov);
+	MINIC_O(camera_world, f32_array_t);
+	MINIC_O(camera_origin, f32_array_t);
+	MINIC_P(swatches);
+	MINIC_P(brush_nodes);
+	MINIC_P(material_nodes);
+	MINIC_O(font_assets, string_array_t);
+	MINIC_P(layer_datas);
+	MINIC_P(mesh_datas);
+	MINIC_O(script_datas, string_array_t);
+	MINIC_END();
 
-	// config_t
-	static const char *config_fields[]  = {"window_w",      "window_h",      "window_scale", "rp_supersample", "recent_projects", "plugins",
-	                                       "keymap",        "theme",         "undo_steps",   "camera_fov",     "layer_res",       "brush_live",
-	                                       "node_previews", "material_live", "workspace",    "workflow"};
-	static const int   config_offsets[] = {
-        (int)offsetof(config_t, window_w),       (int)offsetof(config_t, window_h),        (int)offsetof(config_t, window_scale),
-        (int)offsetof(config_t, rp_supersample), (int)offsetof(config_t, recent_projects), (int)offsetof(config_t, plugins),
-        (int)offsetof(config_t, keymap),         (int)offsetof(config_t, theme),           (int)offsetof(config_t, undo_steps),
-        (int)offsetof(config_t, camera_fov),     (int)offsetof(config_t, layer_res),       (int)offsetof(config_t, brush_live),
-        (int)offsetof(config_t, node_previews),  (int)offsetof(config_t, material_live),   (int)offsetof(config_t, workspace),
-        (int)offsetof(config_t, workflow),
-    };
-	static const minic_type_t config_types[] = {MINIC_T_INT, MINIC_T_INT,   MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR,
-	                                            MINIC_T_INT, MINIC_T_FLOAT, MINIC_T_INT,   MINIC_T_INT,   MINIC_T_INT, MINIC_T_INT, MINIC_T_INT, MINIC_T_INT};
-	static const minic_type_t config_deref_types[] = {MINIC_T_INT,  MINIC_T_INT,  MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_PTR, MINIC_T_PTR,
-	                                                  MINIC_T_CHAR, MINIC_T_CHAR, MINIC_T_INT,   MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_INT,
-	                                                  MINIC_T_INT,  MINIC_T_INT,  MINIC_T_INT,   MINIC_T_INT};
-	minic_register_struct_native("config_t", config_fields, config_offsets, config_types, config_deref_types, 16);
-	minic_struct_set_size("config_t", (int)sizeof(config_t));
-	minic_struct_field_set_type("config_t", "recent_projects", "string_array_t");
-	minic_struct_field_set_type("config_t", "plugins", "string_array_t");
-
-	// context_t
-	static const char *ctx_fields[] = {
-	    "paint_object",        "ddirty",        "pdirty",         "rdirty",      "material",    "layer",          "brush",         "tool",
-	    "brush_radius",        "brush_opacity", "brush_hardness", "brush_scale", "brush_angle", "brush_blending", "viewport_mode", "xray",
-	    "capturing_screenshot"};
-	static const int ctx_offsets[] = {
-	    (int)offsetof(context_t, paint_object),
-	    (int)offsetof(context_t, ddirty),
-	    (int)offsetof(context_t, pdirty),
-	    (int)offsetof(context_t, rdirty),
-	    (int)offsetof(context_t, material),
-	    (int)offsetof(context_t, layer),
-	    (int)offsetof(context_t, brush),
-	    (int)offsetof(context_t, tool),
-	    (int)offsetof(context_t, brush_radius),
-	    (int)offsetof(context_t, brush_opacity),
-	    (int)offsetof(context_t, brush_hardness),
-	    (int)offsetof(context_t, brush_scale),
-	    (int)offsetof(context_t, brush_angle),
-	    (int)offsetof(context_t, brush_blending),
-	    (int)offsetof(context_t, viewport_mode),
-	    (int)offsetof(context_t, xray),
-	    (int)offsetof(context_t, capturing_screenshot),
-	};
-	static const minic_type_t ctx_types[]       = {MINIC_T_PTR,   MINIC_T_INT, MINIC_T_INT,   MINIC_T_INT,   MINIC_T_PTR,   MINIC_T_PTR,
-	                                               MINIC_T_PTR,   MINIC_T_INT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT,
-	                                               MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_INT,   MINIC_T_INT,   MINIC_T_BOOL};
-	static const minic_type_t ctx_deref_types[] = {MINIC_T_PTR,   MINIC_T_INT, MINIC_T_INT,   MINIC_T_INT,   MINIC_T_PTR,   MINIC_T_PTR,
-	                                               MINIC_T_PTR,   MINIC_T_INT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT,
-	                                               MINIC_T_FLOAT, MINIC_T_INT, MINIC_T_INT,   MINIC_T_INT,   MINIC_T_BOOL};
-	minic_register_struct_native("context_t", ctx_fields, ctx_offsets, ctx_types, ctx_deref_types, 17);
-	minic_struct_set_size("context_t", (int)sizeof(context_t));
-	minic_struct_field_set_type("context_t", "paint_object", "mesh_object_t");
-
-	// project_t
-	static const char *pf_fields[]  = {"version",     "assets",       "is_bgra",       "envmap",      "envmap_strength", "envmap_angle",
-	                                   "camera_fov",  "camera_world", "camera_origin", "swatches",    "brush_nodes",     "material_nodes",
-	                                   "font_assets", "layer_datas",  "mesh_datas",    "script_datas"};
-	static const int   pf_offsets[] = {
-        (int)offsetof(project_t, version),      (int)offsetof(project_t, assets),          (int)offsetof(project_t, is_bgra),
-        (int)offsetof(project_t, envmap),       (int)offsetof(project_t, envmap_strength), (int)offsetof(project_t, envmap_angle),
-        (int)offsetof(project_t, camera_fov),   (int)offsetof(project_t, camera_world),    (int)offsetof(project_t, camera_origin),
-        (int)offsetof(project_t, swatches),     (int)offsetof(project_t, brush_nodes),     (int)offsetof(project_t, material_nodes),
-        (int)offsetof(project_t, font_assets),  (int)offsetof(project_t, layer_datas),     (int)offsetof(project_t, mesh_datas),
-        (int)offsetof(project_t, script_datas),
-    };
-	static const minic_type_t pf_types[]       = {MINIC_T_PTR, MINIC_T_PTR, MINIC_T_INT, MINIC_T_PTR, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_FLOAT, MINIC_T_PTR,
-	                                              MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR,   MINIC_T_PTR,   MINIC_T_PTR,   MINIC_T_PTR};
-	static const minic_type_t pf_deref_types[] = {MINIC_T_CHAR,  MINIC_T_PTR, MINIC_T_INT, MINIC_T_CHAR, MINIC_T_FLOAT, MINIC_T_FLOAT,
-	                                              MINIC_T_FLOAT, MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR,  MINIC_T_PTR,   MINIC_T_PTR,
-	                                              MINIC_T_PTR,   MINIC_T_PTR, MINIC_T_PTR, MINIC_T_PTR};
-	minic_register_struct_native("project_t", pf_fields, pf_offsets, pf_types, pf_deref_types, 16);
-	minic_struct_set_size("project_t", (int)sizeof(project_t));
-	minic_struct_field_set_type("project_t", "assets", "string_array_t");
-	minic_struct_field_set_type("project_t", "camera_world", "f32_array_t");
-	minic_struct_field_set_type("project_t", "camera_origin", "f32_array_t");
-	minic_struct_field_set_type("project_t", "font_assets", "string_array_t");
-	minic_struct_field_set_type("project_t", "script_datas", "string_array_t");
-
-	// iron_math
+	// iron_math wrappers
+#define X(kind, n, e) minic_register_native(#n, mn_##n);
+	MINIC_MATH_API
+#undef X
 	R(iron_random_get, "i()");
 	R(iron_random_get_max, "i(i)");
 	R(iron_random_get_in, "i(i,i)");
@@ -1334,91 +874,6 @@ void minic_register_builtins() {
 	R(mat4_cofactor, "f(f,f,f,f,f,f,f,f,f)");
 	R(cosf, "f(f)");
 	R(sinf, "f(f)");
-
-#define MR(sym) minic_register_native(#sym, mn_##sym)
-	MR(vec2_len);
-	MR(vec2_set_len);
-	MR(vec2_mult);
-	MR(vec2_add);
-	MR(vec2_sub);
-	MR(vec2_cross);
-	MR(vec2_norm);
-	MR(vec2_dot);
-	MR(vec2_nan);
-	MR(vec2_isnan);
-	MR(vec4_cross);
-	MR(vec4_add);
-	MR(vec4_fadd);
-	MR(vec4_norm);
-	MR(vec4_mult);
-	MR(vec4_dot);
-	MR(vec4_apply_proj);
-	MR(vec4_apply_mat4);
-	MR(vec4_apply_axis_angle);
-	MR(vec4_apply_quat);
-	MR(vec4_equals);
-	MR(vec4_almost_equals);
-	MR(vec4_len);
-	MR(vec4_sub);
-	MR(vec4_dist);
-	MR(vec4_reflect);
-	MR(vec4_clamp);
-	MR(vec4_x_axis);
-	MR(vec4_y_axis);
-	MR(vec4_z_axis);
-	MR(vec4_nan);
-	MR(vec4_isnan);
-	MR(quat_from_axis_angle);
-	MR(quat_from_mat);
-	MR(quat_from_rot_mat);
-	MR(quat_mult);
-	MR(quat_norm);
-	MR(quat_get_euler);
-	MR(quat_from_euler);
-	MR(quat_dot);
-	MR(quat_from_to);
-	MR(quat_inv);
-	MR(mat3_identity);
-	MR(mat3_translation);
-	MR(mat3_rotation);
-	MR(mat3_scale);
-	MR(mat3_set_from4);
-	MR(mat3_multmat);
-	MR(mat3_transpose);
-	MR(mat3_nan);
-	MR(mat3_isnan);
-	MR(mat4_identity);
-	MR(mat4_persp);
-	MR(mat4_ortho);
-	MR(mat4_rot_z);
-	MR(mat4_compose);
-	MR(mat4_set_loc);
-	MR(mat4_from_quat);
-	MR(mat4_translate);
-	MR(mat4_scale);
-	MR(mat4_mult_mat3x4);
-	MR(mat4_mult_mat);
-	MR(mat4_inv);
-	MR(mat4_transpose);
-	MR(mat4_transpose3);
-	MR(mat4_get_loc);
-	MR(mat4_get_scale);
-	MR(mat4_mult);
-	MR(mat4_to_rot);
-	MR(mat4_right);
-	MR(mat4_look);
-	MR(mat4_up);
-	MR(mat4_to_f32_array);
-	MR(mat4_determinant);
-	MR(mat4_nan);
-	MR(mat4_isnan);
-	MR(transform_set_matrix);
-	MR(transform_rotate);
-	MR(transform_move);
-	MR(transform_look);
-	MR(transform_right);
-	MR(transform_up);
-#undef MR
 
 	// object
 	R(object_create, "p(i)");
@@ -1642,19 +1097,15 @@ void minic_register_builtins() {
 	R(sys_title, "p()");
 	R(sys_title_set, "v(p)");
 	R(sys_get_shader, "p(p)");
-	R(data_path, "p()");
 	R(sys_buffer_to_string, "p(p)");
 	R(sys_string_to_buffer, "p(p)");
 
 	// iron_shape
 	R(line_draw_init, "v()");
-	minic_register_native("line_draw_render", mn_line_draw_render);
-	minic_register_native("line_draw_bounds", mn_line_draw_bounds);
 	R(line_draw_lineb, "v(i,i,i,i,i,i)");
 	R(line_draw_line, "v(f,f,f,f,f,f)");
 	R(line_draw_begin, "v()");
 	R(line_draw_end, "v()");
-	minic_register_native("shape_draw_sphere", mn_shape_draw_sphere);
 
 	// iron_draw
 	R(draw_begin, "v(p,i,i)");
@@ -1673,7 +1124,6 @@ void minic_register_builtins() {
 	R(draw_set_color, "v(i)");
 	R(draw_get_color, "i()");
 	R(draw_set_pipeline, "v(p)");
-	minic_register_native("draw_set_transform", mn_draw_set_transform);
 	R(draw_set_font, "b(p,i)");
 	R(draw_sub_string_width, "f(p,i,p,i,i)");
 	R(draw_string_width, "i(p,i,p)");
@@ -1908,7 +1358,6 @@ void minic_register_builtins() {
 	R(plugin_brush_custom_nodes_remove, "v(p)");
 	R(plugin_material_kong_get, "p()");
 	R(parser_material_parse_value_input, "p(p,i)");
-	R(node_shader_write_frag, "v(p,p)");
 	R(context_main_object, "p()");
 	R(export_texture_run, "v(p,i)");
 	R(context_select_tool, "v(i)");
@@ -1966,9 +1415,6 @@ void minic_register_builtins() {
 	R(armpack_size_bool, "i()");
 	R(armpack_map_get_f32, "f(p,p)");
 	R(armpack_map_get_i32, "i(p,p)");
-
-	// raycast
-	minic_register_native("raycast_aabb", mn_raycast_aabb);
 }
 
 #undef R
