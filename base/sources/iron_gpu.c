@@ -13,18 +13,18 @@ static int            buffers_to_destroy_count   = 0;
 static int            pipelines_to_destroy_count = 0;
 
 extern int      draw_vb_index;
-int             constant_buffer_index              = 0;
-int             draw_calls                         = 0;
-int             draw_calls_last                    = 0;
+uint32_t        constant_buffer_index              = 0;
+uint32_t        draw_calls                         = 0;
+uint32_t        draw_calls_last                    = 0;
 bool            gpu_in_use                         = false;
 gpu_texture_t  *current_textures[GPU_MAX_TEXTURES] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 gpu_texture_t  *current_render_targets[8]          = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-int             current_render_targets_count       = 0;
+uint32_t        current_render_targets_count       = 0;
 gpu_texture_t  *current_depth_buffer               = NULL;
 gpu_pipeline_t *current_pipeline                   = NULL;
 gpu_texture_t   framebuffers[GPU_FRAMEBUFFER_COUNT];
 gpu_texture_t   framebuffer_depth;
-int             framebuffer_index = 0;
+uint32_t        framebuffer_index = 0;
 
 void gpu_init(int depth_buffer_bits, bool vsync) {
 	gpu_init_internal(depth_buffer_bits, vsync);
@@ -300,7 +300,7 @@ void gpu_buffer_destroy(gpu_buffer_t *buffer) {
 	}
 }
 
-int gpu_vertex_data_size(gpu_vertex_data_t data) {
+uint32_t gpu_vertex_data_size(gpu_vertex_data_t data) {
 	switch (data) {
 	case GPU_VERTEX_DATA_F32_1X:
 		return 1 * 4;
@@ -317,15 +317,15 @@ int gpu_vertex_data_size(gpu_vertex_data_t data) {
 	}
 }
 
-int gpu_vertex_struct_size(gpu_vertex_structure_t *s) {
-	int size = 0;
+uint32_t gpu_vertex_struct_size(gpu_vertex_structure_t *s) {
+	uint32_t size = 0;
 	for (int i = 0; i < s->size; ++i) {
 		size += gpu_vertex_data_size(s->elements[i].data);
 	}
 	return size;
 }
 
-int gpu_texture_format_size(gpu_texture_format_t format) {
+uint32_t gpu_texture_format_size(gpu_texture_format_t format) {
 	switch (format) {
 	case GPU_TEXTURE_FORMAT_RGBA128:
 		return 16;

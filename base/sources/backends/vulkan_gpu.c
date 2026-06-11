@@ -11,7 +11,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
-extern int constant_buffer_index;
+extern uint32_t constant_buffer_index;
 
 static VkSemaphore                      framebuffer_available_semaphore;
 static VkSemaphore                      rendering_finished_semaphores[GPU_FRAMEBUFFER_COUNT];
@@ -58,7 +58,7 @@ static VkBuffer           readback_buffer;
 static int                readback_buffer_size = 0;
 static VkDeviceMemory     readback_mem;
 static VkBuffer           upload_buffer;
-static int                upload_buffer_size = 0;
+static uint32_t           upload_buffer_size = 0;
 static VkDeviceMemory     upload_mem;
 static bool               is_amd = false;
 #ifdef IRON_ANDROID
@@ -383,7 +383,7 @@ static void gpu_cleanup_internal() {
 	}
 }
 
-void gpu_render_target_init2(gpu_texture_t *target, int width, int height, gpu_texture_format_t format, int framebuffer_index) {
+void gpu_render_target_init2(gpu_texture_t *target, uint32_t width, uint32_t height, gpu_texture_format_t format, int framebuffer_index) {
 	target->width     = width;
 	target->height    = height;
 	target->format    = format;
@@ -1031,7 +1031,7 @@ bool iron_vulkan_get_size(int *width, int *height) {
 	return false;
 }
 
-void gpu_begin_internal(gpu_clear_t flags, unsigned color, float depth) {
+void gpu_begin_internal(gpu_clear_t flags, uint32_t color, float depth) {
 	if (!framebuffer_acquired) {
 		acquire_next_image();
 		framebuffer_acquired = true;
@@ -1374,13 +1374,13 @@ static VkDescriptorSet get_descriptor_set(VkBuffer buffer) {
 	return descriptor_set;
 }
 
-void gpu_set_constant_buffer(gpu_buffer_t *buffer, int offset, size_t size) {
+void gpu_set_constant_buffer(gpu_buffer_t *buffer, uint32_t offset, size_t size) {
 	VkDescriptorSet descriptor_set = get_descriptor_set(buffer->impl.buf);
 	uint32_t        offsets[1]     = {offset};
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, current_pipeline->impl.pipeline_layout, 0, 1, &descriptor_set, 1, offsets);
 }
 
-void gpu_set_texture(int unit, gpu_texture_t *texture) {
+void gpu_set_texture(uint32_t unit, gpu_texture_t *texture) {
 	current_textures[unit] = texture;
 }
 
@@ -1593,7 +1593,7 @@ void gpu_shader_destroy(gpu_shader_t *shader) {
 	shader->impl.source = NULL;
 }
 
-void gpu_texture_init_from_bytes(gpu_texture_t *texture, void *data, int width, int height, gpu_texture_format_t format) {
+void gpu_texture_init_from_bytes(gpu_texture_t *texture, void *data, uint32_t width, uint32_t height, gpu_texture_format_t format) {
 	texture->width  = width;
 	texture->height = height;
 	texture->format = format;
@@ -1605,7 +1605,7 @@ void gpu_texture_init_from_bytes(gpu_texture_t *texture, void *data, int width, 
 		vk_format = VK_FORMAT_R8G8B8A8_UNORM;
 	}
 
-	VkDeviceSize _upload_size  = width * height * gpu_texture_format_size(format);
+	VkDeviceSize _upload_size  = width * height * (VkDeviceSize)gpu_texture_format_size(format);
 	void        *original_data = data;
 
 #ifdef WITH_BC7
@@ -1617,7 +1617,7 @@ void gpu_texture_init_from_bytes(gpu_texture_t *texture, void *data, int width, 
 	}
 #endif
 
-	int new_upload_buffer_size = _upload_size;
+	uint32_t new_upload_buffer_size = _upload_size;
 	if (new_upload_buffer_size < (1024 * 1024 * 4)) {
 		new_upload_buffer_size = (1024 * 1024 * 4);
 	}
@@ -1773,11 +1773,11 @@ void gpu_texture_destroy_internal(gpu_texture_t *target) {
 	}
 }
 
-void gpu_render_target_init(gpu_texture_t *target, int width, int height, gpu_texture_format_t format) {
+void gpu_render_target_init(gpu_texture_t *target, uint32_t width, uint32_t height, gpu_texture_format_t format) {
 	gpu_render_target_init2(target, width, height, format, -1);
 }
 
-void _gpu_buffer_init(VkBuffer *buf, VkDeviceMemory *mem, int size, int usage, int memory_requirements) {
+void _gpu_buffer_init(VkBuffer *buf, VkDeviceMemory *mem, uint32_t size, uint32_t usage, uint32_t memory_requirements) {
 	if (buf != NULL && *buf != NULL) {
 		assert(buffers_to_destroy_count < 512);
 		buffers_to_destroy[buffers_to_destroy_count]         = *buf;
@@ -1848,7 +1848,7 @@ void _gpu_buffer_copy(VkBuffer dest, VkBuffer source, uint32_t size) {
 	}
 }
 
-void gpu_vertex_buffer_init(gpu_buffer_t *buffer, int count, gpu_vertex_structure_t *structure) {
+void gpu_vertex_buffer_init(gpu_buffer_t *buffer, uint32_t count, gpu_vertex_structure_t *structure) {
 	buffer->count  = count;
 	buffer->stride = 0;
 	for (int i = 0; i < structure->size; ++i) {
@@ -1861,7 +1861,6 @@ void gpu_vertex_buffer_init(gpu_buffer_t *buffer, int count, gpu_vertex_structur
 }
 
 void *gpu_vertex_buffer_lock(gpu_buffer_t *buffer) {
-
 	if (unified_memory && buffer->cpu_write) {
 		if (buffer->impl.buf == NULL) {
 			_gpu_buffer_init(&buffer->impl.buf, &buffer->impl.mem, buffer->count * buffer->stride, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -1905,7 +1904,7 @@ void gpu_vertex_buffer_unlock(gpu_buffer_t *buffer) {
 	}
 }
 
-void gpu_index_buffer_init(gpu_buffer_t *buffer, int count) {
+void gpu_index_buffer_init(gpu_buffer_t *buffer, uint32_t count) {
 	buffer->count        = count;
 	buffer->stride       = sizeof(uint32_t);
 	buffer->cpu_write    = false;
@@ -1929,7 +1928,7 @@ void gpu_index_buffer_unlock(gpu_buffer_t *buffer) {
 	_gpu_buffer_copy(buffer->impl.buf, upload_buffer, buffer->count * buffer->stride);
 }
 
-void gpu_constant_buffer_init(gpu_buffer_t *buffer, int size) {
+void gpu_constant_buffer_init(gpu_buffer_t *buffer, uint32_t size) {
 	buffer->count        = size;
 	buffer->data         = NULL;
 	buffer->cpu_write    = false;
@@ -1939,7 +1938,7 @@ void gpu_constant_buffer_init(gpu_buffer_t *buffer, int size) {
 	                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 }
 
-void gpu_constant_buffer_lock(gpu_buffer_t *buffer, int start, int count) {
+void gpu_constant_buffer_lock(gpu_buffer_t *buffer, uint32_t start, uint32_t count) {
 	vkMapMemory(device, buffer->impl.mem, start, count, 0, (void **)&buffer->data);
 }
 
