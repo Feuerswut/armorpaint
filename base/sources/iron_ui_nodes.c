@@ -738,7 +738,7 @@ void ui_node_draw(ui_node_t *node, ui_node_canvas_t *canvas) {
 	// Grid snap preview
 	if (ui_nodes_grid_snap && ui_is_selected(node) && current_nodes->nodes_drag) {
 		draw_set_color(current->ops->theme->BUTTON_COL);
-		ui_draw_rect(false, ui_nodes_snap(node->x) + UI_NODES_PAN_X(), ui_nodes_snap(node->y) + UI_NODES_PAN_Y(), w + 2, h + 2);
+		ui_draw_rect(false, true, ui_nodes_snap(node->x) + UI_NODES_PAN_X(), ui_nodes_snap(node->y) + UI_NODES_PAN_Y(), w + 2, h + 2);
 		// nx = ui_nodes_snap(node->x) + UI_NODES_PAN_X();
 		// ny = ui_nodes_snap(node->y) + UI_NODES_PAN_Y();
 	}
@@ -759,11 +759,11 @@ void ui_node_draw(ui_node_t *node, ui_node_canvas_t *canvas) {
 
 	// Outline
 	draw_set_color(ui_is_selected(node) ? current->ops->theme->HIGHLIGHT_COL : current->ops->theme->PRESSED_COL);
-	ui_draw_rect(true, nx - 1, ny - 1, w + 2, h + 2);
+	ui_draw_rect(true, true, nx - 1, ny - 1, w + 2, h + 2);
 
 	// Body
 	draw_set_color(current->ops->theme->WINDOW_BG_COL);
-	ui_draw_rect(true, nx, ny, w, h);
+	ui_draw_rect(true, true, nx, ny, w, h);
 
 	// Header line
 	draw_set_color(node->color);
@@ -1390,7 +1390,7 @@ void ui_node_canvas(ui_nodes_t *nodes, ui_node_canvas_t *canvas) {
 
 		ui_draw_shadow(current->_x - 5, current->_y - 5, current->_w + 10, ui_popup_h * UI_SCALE() + 10);
 		draw_set_color(current->ops->theme->SEPARATOR_COL);
-		ui_draw_rect(true, current->_x - 5, current->_y - 5, current->_w + 10, ui_popup_h * UI_SCALE() + 10);
+		ui_draw_rect(true, true, current->_x - 5, current->_y - 5, current->_w + 10, ui_popup_h * UI_SCALE() + 10);
 		(*ui_popup_commands)(current, ui_popup_data, ui_popup_data2);
 
 		bool hide = (current->input_started || current->input_started_r) &&

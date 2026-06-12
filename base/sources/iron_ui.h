@@ -57,12 +57,10 @@ typedef struct ui_theme {
 	int          SCROLL_MINI_W;
 	int          TEXT_OFFSET;
 	int          TAB_W; // Indentation
-	/*bool*/ int FILL_WINDOW_BG;
 	/*bool*/ int FILL_BUTTON_BG;
-	int          LINK_STYLE;
 	/*bool*/ int FULL_TABS; // Make tabs take full window width
-	/*bool*/ int ROUND_CORNERS;
 	/*bool*/ int SHADOWS;
+	int          LINK_STYLE;
 	int          VIEWPORT_COL;
 } ui_theme_t;
 
@@ -361,7 +359,7 @@ void  ui_end_frame();
 void  ui_fade_color(float alpha);
 void  ui_draw_string(char *text, float x_offset, float y_offset, int align, bool truncation);
 void  ui_draw_shadow(float x, float y, float w, float h);
-void  ui_draw_rect(bool fill, float x, float y, float w, float h);
+void  ui_draw_rect(bool fill, bool shadows, float x, float y, float w, float h);
 void  ui_draw_round_bottom(float x, float y, float w);
 void  ui_start_text_edit(ui_handle_t *handle, int align);
 void  ui_remove_char_at(char *str, int at);

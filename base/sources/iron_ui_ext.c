@@ -118,14 +118,14 @@ int ui_inline_radio(ui_handle_t *handle, string_array_t *texts, int align) {
 			if (!current->enabled) {
 				ui_fade_color(0.25);
 			}
-			ui_draw_rect(true, current->_x + step * i, current->_y + current->button_offset_y, step, UI_BUTTON_H());
+			ui_draw_rect(true, true, current->_x + step * i, current->_y + current->button_offset_y, step, UI_BUTTON_H());
 		}
 		else if (hovered == i) {
 			draw_set_color(theme->BUTTON_COL);
 			if (!current->enabled) {
 				ui_fade_color(0.25);
 			}
-			ui_draw_rect(false, current->_x + step * i, current->_y + current->button_offset_y, step, UI_BUTTON_H());
+			ui_draw_rect(false, true, current->_x + step * i, current->_y + current->button_offset_y, step, UI_BUTTON_H());
 		}
 		draw_set_color(theme->TEXT_COL); // Text
 		current->_x += step * i;
@@ -585,7 +585,7 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 
 	ui_theme_t *theme = current->ops->theme;
 	draw_set_color(theme->SEPARATOR_COL); // Background
-	ui_draw_rect(true, current->_x + current->button_offset_y, current->_y + current->button_offset_y, current->_w - current->button_offset_y * 2,
+	ui_draw_rect(true, true, current->_x + current->button_offset_y, current->_y + current->button_offset_y, current->_w - current->button_offset_y * 2,
 	             line_count * UI_ELEMENT_H() - current->button_offset_y * 2);
 
 	ui_text_coloring_t *_text_coloring = current->text_coloring;
@@ -931,10 +931,10 @@ bool ui_menubar_button(char *text) {
 	return ui_button(text, UI_ALIGN_CENTER, "");
 }
 
-const char *ui_theme_keys[] = {"WINDOW_BG_COL",  "HOVER_COL",         "BUTTON_COL", "PRESSED_COL",   "TEXT_COL",       "LABEL_COL",   "SEPARATOR_COL",
-                               "HIGHLIGHT_COL",  "FONT_SIZE",         "ELEMENT_W",  "ELEMENT_H",     "ELEMENT_OFFSET", "ARROW_SIZE",  "BUTTON_H",
-                               "CHECK_SIZE",     "CHECK_SELECT_SIZE", "SCROLL_W",   "SCROLL_MINI_W", "TEXT_OFFSET",    "TAB_W",       "FILL_WINDOW_BG",
-                               "FILL_BUTTON_BG", "LINK_STYLE",        "FULL_TABS",  "ROUND_CORNERS", "SHADOWS",        "VIEWPORT_COL"};
+const char *ui_theme_keys[] = {"WINDOW_BG_COL", "HOVER_COL",         "BUTTON_COL", "PRESSED_COL",   "TEXT_COL",       "LABEL_COL",  "SEPARATOR_COL",
+                               "HIGHLIGHT_COL", "FONT_SIZE",         "ELEMENT_W",  "ELEMENT_H",     "ELEMENT_OFFSET", "ARROW_SIZE", "BUTTON_H",
+                               "CHECK_SIZE",    "CHECK_SELECT_SIZE", "SCROLL_W",   "SCROLL_MINI_W", "TEXT_OFFSET",    "TAB_W",      "FILL_BUTTON_BG",
+                               "FULL_TABS",     "SHADOWS",           "LINK_STYLE", "VIEWPORT_COL"};
 
 int ui_theme_keys_count = sizeof(ui_theme_keys) / sizeof(ui_theme_keys[0]);
 
