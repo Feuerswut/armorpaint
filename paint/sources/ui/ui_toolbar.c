@@ -63,7 +63,10 @@ void ui_toolbar_draw_tool(i32 tool, gpu_texture_t *img, i32 icon_accent) {
 		visible     = g_ui->input_y < statusy;
 	}
 
+	g_ui->_x -= 2;
 	ui_state_t image_state = ui_sub_image(img, icon_accent, -1.0, rect->x, rect->y, rect->w, rect->h);
+	g_ui->_x += 2;
+
 	if (image_state == UI_STATE_STARTED && visible) {
 		_ui_toolbar_i = tool;
 		sys_notify_on_next_frame(&ui_toolbar_draw_tool_select_tool, NULL);
