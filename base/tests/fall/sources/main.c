@@ -110,7 +110,7 @@ void ready() {
 	                                                                  .constants = any_array_create_from_raw(
 	                                                                      (void *[]){
 	                                                                          GC_ALLOC_INIT(shader_const_t,
-	                                                                                        {.name = "WVP", .type = "mat4", .link = "_world_view_proj_matrix"}),
+	                                                                                        {.name = "WVP", .type = "float4x4", .link = "_world_view_proj_matrix"}),
 	                                                                      },
 	                                                                      1),
 	                                                                  .texture_units = any_array_create_from_raw(
