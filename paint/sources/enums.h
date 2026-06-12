@@ -439,6 +439,18 @@ typedef enum {
 	ICON_TERMINAL         = 129,
 	ICON_TRANSLATE        = 130,
 	ICON_UPLOAD           = 131,
+	ICON_RESERVED0        = 132,
+	ICON_RESERVED1        = 133,
+	ICON_RESERVED2        = 134,
+	ICON_RESERVED3        = 135,
+	ICON_RESERVED4        = 136,
+	ICON_RESERVED5        = 137,
+	ICON_UVSPHERE         = 138,
+	ICON_PLANE            = 139,
+	ICON_TORUS            = 140,
+	ICON_CYLINDER         = 141,
+	ICON_CONE             = 142,
+	ICON_BOX              = 143,
 } icon_t;
 
 typedef enum {

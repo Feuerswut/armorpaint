@@ -421,9 +421,26 @@ void tab_meshes_append_shape(char *mesh_name) {
 	any_array_push(g_project->_->paint_objects, mo);
 }
 
-void tab_meshes_draw_append_shape() {
+static icon_t tab_meshes_mesh_name_to_icon(char *s) {
+	if (starts_with(s, "box"))
+		return ICON_CUBE;
+	if (starts_with(s, "cone"))
+		return ICON_CONE;
+	if (starts_with(s, "cylinder"))
+		return ICON_CYLINDER;
+	if (starts_with(s, "torus"))
+		return ICON_TORUS;
+	if (starts_with(s, "plane"))
+		return ICON_PLANE;
+	if (starts_with(s, "sphere"))
+		return ICON_UVSPHERE;
+	return ICON_NONE;
+}
+
+void tab_meshes_draw_new() {
+	project_fetch_default_meshes();
 	for (i32 i = 0; i < project_default_mesh_list->length; ++i) {
-		if (ui_menu_button(project_default_mesh_list->buffer[i], "", ICON_NONE)) {
+		if (ui_menu_button(project_default_mesh_list->buffer[i], "", tab_meshes_mesh_name_to_icon(project_default_mesh_list->buffer[i]))) {
 			tab_meshes_append_shape(project_default_mesh_list->buffer[i]);
 		}
 	}
@@ -433,13 +450,8 @@ void tab_meshes_draw_import() {
 	if (ui_menu_button(tr("Replace Existing"), any_map_get(g_keymap, "file_import_assets"), ICON_NONE)) {
 		project_import_mesh(true, NULL);
 	}
-	if (ui_menu_button(tr("Append File"), "", ICON_NONE)) {
+	if (ui_menu_button(tr("Append"), "", ICON_NONE)) {
 		project_append_mesh();
-	}
-
-	if (ui_menu_button(tr("Append Shape"), "", ICON_NONE)) {
-		project_fetch_default_meshes();
-		ui_menu_draw(&tab_meshes_draw_append_shape, -1, -1);
 	}
 }
 
@@ -768,10 +780,14 @@ void tab_meshes_draw(ui_handle_t *htab) {
 		    (f32[]){
 		        -70,
 		        -70,
+		        -70,
 		    },
-		    2);
+		    3);
 		ui_row(row);
 
+		if (ui_icon_button(tr("New"), ICON_PLUS, UI_ALIGN_CENTER)) {
+			ui_menu_draw(&tab_meshes_draw_new, -1, -1);
+		}
 		if (ui_icon_button(tr("Import"), ICON_IMPORT, UI_ALIGN_CENTER)) {
 			ui_menu_draw(&tab_meshes_draw_import, -1, -1);
 		}
