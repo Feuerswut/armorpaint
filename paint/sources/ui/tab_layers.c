@@ -667,7 +667,7 @@ void tab_layers_draw_layer_context_menu_draw() {
 		}
 	}
 
-	if (slot_layer_is_layer(l) && l->fill_material != NULL && l->texpaint_sculpt != NULL && ui_menu_button(tr("Apply"), "", ICON_CHECK)) {
+	if (slot_layer_is_layer(l) && l->texpaint_sculpt != NULL && ui_menu_button(tr("Apply Sculpt"), "", ICON_CHECK)) {
 		sys_notify_on_next_frame(&tab_layers_draw_layer_context_menu_apply_sculpt, NULL);
 	}
 

@@ -609,7 +609,7 @@ void                         import_obj_run(char *path, bool replace_existing);
 void                         import_folder_run(char *path);
 void                         export_obj_run(char *path, mesh_object_t_array_t *paint_objects, bool apply_disp);
 void                         export_obj_run_fast(char *path, mesh_object_t_array_t *paint_objects);
-void                         export_obj_sculpt_run(char *path, mesh_object_t_array_t *paint_objects);
+void                         export_obj_run_sculpt(char *path, mesh_object_t_array_t *paint_objects);
 void                         make_blur_run(node_shader_t *kong);
 void                         import_font_run(char *path);
 buffer_t                    *export_exr_run(i32 width, i32 height, buffer_t *src, i32 bits, i32 type, i32 off);

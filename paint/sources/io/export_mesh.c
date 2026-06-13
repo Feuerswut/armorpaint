@@ -10,7 +10,10 @@ void export_mesh_run(char *path, mesh_object_t_array_t *paint_objects, bool appl
 		paint_objects = g_project->_->paint_objects;
 	}
 	if (g_context->export_mesh_format == MESH_FORMAT_OBJ) {
-		if (merge_vertices) {
+		if (g_config->workflow == WORKFLOW_SCULPT) {
+			export_obj_run_sculpt(path, paint_objects);
+		}
+		else if (merge_vertices) {
 			export_obj_run(path, paint_objects, apply_disp);
 		}
 		else {
