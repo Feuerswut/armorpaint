@@ -916,6 +916,15 @@ void base_update_workspace() {
 		render_path_resize();
 	}
 
+	if (g_config->touch_ui) {
+		g_config->layout->buffer[LAYOUT_SIZE_HEADER] = 0;
+		if (g_config->workspace == WORKSPACE_PAINT_2D || g_config->workspace == WORKSPACE_PAINT_3D) {
+			ui_sidebar_show(true);
+			g_config->layout->buffer[LAYOUT_SIZE_SIDEBAR_W] = ui_sidebar_default_w_mini;
+			g_config->layout->buffer[LAYOUT_SIZE_SIDEBAR_W] = math_floor(g_config->layout->buffer[LAYOUT_SIZE_SIDEBAR_W] * UI_SCALE());
+		}
+	}
+
 	base_resize();
 }
 

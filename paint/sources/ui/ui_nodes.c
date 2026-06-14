@@ -89,9 +89,11 @@ void ui_nodes_node_search_menu() {
 	}
 	bool enter              = keyboard_down("enter");
 	i32  count              = 0;
-	i32  BUTTON_COL         = g_theme->BUTTON_COL;
-	bool FILL_BUTTON_BG     = g_theme->FILL_BUTTON_BG;
+	i32  _BUTTON_COL        = g_theme->BUTTON_COL;
+	bool _FILL_BUTTON_BG    = g_theme->FILL_BUTTON_BG;
 	g_theme->FILL_BUTTON_BG = true;
+	bool _SHADOWS           = g_theme->SHADOWS;
+	g_theme->SHADOWS        = false;
 
 	node_list_t_array_t *node_list = ui_nodes_canvas_type == CANVAS_TYPE_MATERIAL ? nodes_material_list : nodes_brush_list;
 
@@ -101,6 +103,7 @@ void ui_nodes_node_search_menu() {
 			ui_node_t *n = list->buffer[i];
 			if (string_index_of(to_lower_case(tr(n->name)), search) >= 0) {
 				g_theme->BUTTON_COL = count == ui_nodes_node_search_offset ? g_theme->HIGHLIGHT_COL : g_theme->SEPARATOR_COL;
+
 				if (ui_button(tr(n->name), UI_ALIGN_LEFT, "") || (enter && count == ui_nodes_node_search_offset)) {
 					ui_nodes_push_undo(NULL);
 					ui_nodes_t       *nodes  = ui_nodes_get_nodes();
@@ -138,8 +141,9 @@ void ui_nodes_node_search_menu() {
 		g_ui->changed       = true;
 		search_handle->text = "";
 	}
-	g_theme->BUTTON_COL     = BUTTON_COL;
-	g_theme->FILL_BUTTON_BG = FILL_BUTTON_BG;
+	g_theme->BUTTON_COL     = _BUTTON_COL;
+	g_theme->FILL_BUTTON_BG = _FILL_BUTTON_BG;
+	g_theme->SHADOWS        = _SHADOWS;
 }
 
 void ui_nodes_node_search(i32 x, i32 y, void (*done)(void)) {
@@ -562,9 +566,21 @@ void ui_nodes_draw_menubar() {
 	i32 start_y = top_y + UI_ELEMENT_OFFSET();
 	g_ui->_x    = 0;
 	g_ui->_y    = 2 + start_y;
-	g_ui->_w    = ew;
+
+	if (g_config->touch_ui && !base_view3d_show && !ui_view2d_show) {
+		g_ui->_w = math_floor(ew + 3);
+		if (ui_icon_button("Back", ICON_ARROW_LEFT, UI_ALIGN_CENTER)) {
+			g_ui->input_released = false;
+			g_config->workspace  = WORKSPACE_PAINT_3D;
+			config_save();
+			base_update_workspace();
+		}
+		g_ui->_x += ew + 3;
+		g_ui->_y = 2 + start_y;
+	}
 
 	// Editable canvas name
+	g_ui->_w       = ew;
 	ui_handle_t *h = ui_handle(__ID__);
 	h->text        = string_copy(c->name);
 	g_ui->_w       = math_floor(math_min(draw_string_width(g_font, g_ui->font_size, h->text) + 15 * UI_SCALE(), 100 * UI_SCALE()));

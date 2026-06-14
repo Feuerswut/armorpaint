@@ -120,10 +120,8 @@ i32 ui_toolbar_x() {
 }
 
 void ui_toolbar_draw_show_3d_view() {
-	if (context_is_floating_toolbar()) {
+	if (g_config->touch_ui) {
 		i32 toolbar_w      = ui_toolbar_default_w * UI_SCALE() + 14 * UI_SCALE();
-		i32 _WINDOW_BG_COL = g_theme->WINDOW_BG_COL;
-		// ui.ops.theme.WINDOW_BG_COL = ui.ops.theme.SEPARATOR_COL;
 		i32 y = ui_header_h + 8 * UI_SCALE();
 
 		if ((ui_view2d_show || ui_nodes_show) && !g_config->touch_ui) {
@@ -151,7 +149,6 @@ void ui_toolbar_draw_show_3d_view() {
 			g_theme->BUTTON_COL = _BUTTON_COL;
 			g_ui->font_offset_y = _fontOffsetY;
 		}
-		g_theme->WINDOW_BG_COL = _WINDOW_BG_COL;
 	}
 }
 
