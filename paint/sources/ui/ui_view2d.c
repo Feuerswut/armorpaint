@@ -634,7 +634,7 @@ void ui_view2d_update(void *_) {
 		}
 
 		// Zoom slider
-		if (tex != NULL) {
+		if (full && tex != NULL) {
 			ui_handle_t *h_zoom        = ui_handle(__ID__);
 			i32          scale_percent = math_round((tw / (float)tex->width) * 100);
 			h_zoom->f                  = scale_percent;

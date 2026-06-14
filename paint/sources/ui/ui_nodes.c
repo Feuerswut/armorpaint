@@ -642,6 +642,11 @@ void ui_nodes_draw_menubar() {
 	g_theme->SHADOWS     = false;
 	string_array_t *cats = ui_nodes_canvas_type == CANVAS_TYPE_MATERIAL ? nodes_material_categories : nodes_brush_categories;
 	for (i32 i = 0; i < cats->length; ++i) {
+
+		if (!full && i == 4) { // MATERIAL_NODE_CATEGORY_GROUP
+			break;
+		}
+
 		if ((ui_menubar_button(tr(cats->buffer[i]))) || (g_ui->is_hovered && ui_nodes_show_menu)) {
 			ui_nodes_show_menu     = true;
 			ui_nodes_menu_category = i;
