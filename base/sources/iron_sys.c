@@ -397,7 +397,9 @@ f32 sys_real_delta(void) {
 static void _sys_run_callbacks(any_array_t *cbs, i32 len) {
 	for (i32 i = 0; i < len; ++i) {
 		callback_t *cb = cbs->buffer[i];
-		cb->f(cb->data);
+		if (cb != NULL) { // Callback may have been removed
+			cb->f(cb->data);
+		}
 	}
 }
 
@@ -457,10 +459,6 @@ static void _sys_remove_callback(any_array_t *ar, void (*f)(void *data)) {
 
 void sys_remove_update(void (*f)(void *data)) {
 	_sys_remove_callback(_sys_on_updates, f);
-}
-
-void sys_remove_end_frame(void (*f)(void *data)) {
-	_sys_remove_callback(_sys_on_end_frames, f);
 }
 
 void video_unload(video_t *self) {}

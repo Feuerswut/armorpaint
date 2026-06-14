@@ -65,7 +65,6 @@ void sys_notify_on_update(void (*f)(void *data), void *data);
 void sys_notify_on_next_frame(void (*f)(void *data), void *data);
 void sys_notify_on_end_frame(void (*f)(void *data), void *data);
 void sys_remove_update(void (*f)(void *data));
-void sys_remove_end_frame(void (*f)(void *data));
 
 void sys_render(void);
 void sys_foreground(void);
