@@ -190,14 +190,22 @@ if (flags.export_version_info) {
 }
 
 if (flags.export_data_list) {
-	let root      = "../" + flags.name.substr(5).toLowerCase();
+	let      root = "../" + flags.name.substr(5).toLowerCase();
+	function list_files(dir) {
+		return fs_readdir(dir)
+		    .filter(function(f) {
+			    return !fs_isdir(dir + "/" + f);
+		    })
+		    .sort()
+		    .join(",");
+	}
 	let data_list = {
-		"/data/plugins" : fs_readdir(root + "/assets/plugins").join(","),
-		"/data/export_presets" : fs_readdir(root + "/assets/export_presets").join(","),
-		"/data/keymap_presets" : fs_readdir(root + "/assets/keymap_presets").join(","),
-		"/data/locale" : fs_readdir(root + "/assets/locale").join(","),
-		"/data/meshes" : fs_readdir(root + "/assets/meshes").join(","),
-		"/data/themes" : fs_readdir("../base/assets/themes").join(","),
+		"/data/plugins" : list_files(root + "/assets/plugins"),
+		"/data/export_presets" : list_files(root + "/assets/export_presets"),
+		"/data/keymap_presets" : list_files(root + "/assets/keymap_presets"),
+		"/data/locale" : list_files(root + "/assets/locale"),
+		"/data/meshes" : list_files(root + "/assets/meshes"),
+		"/data/themes" : list_files("../base/assets/themes"),
 	};
 	let dir = "../" + flags.name.substr(5).toLowerCase() + "/build";
 	fs_ensuredir(dir);
