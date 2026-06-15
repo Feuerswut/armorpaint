@@ -140,12 +140,23 @@ void project_new(bool reset_layers) {
 	char        *mesh_name = project_default_mesh_list == NULL ? "box_bevel" : project_default_mesh_list->buffer[g_context->project_type];
 
 	if (string_equals(mesh_name, "sphere")) {
-		raw_mesh_t *mesh = geom_make_uv_sphere(1, 512, 256, true, 1.0);
+		raw_mesh_t *mesh = geom_make_uv_sphere(1, 128, 64, true, 1.0);
+		mesh->name       = "Tessellated";
+		raw              = import_mesh_raw_mesh(mesh);
+	}
+	else if (string_equals(mesh_name, "sphere_1024")) {
+		raw_mesh_t *mesh = geom_make_uv_sphere(1, 1024, 512, true, 1.0);
 		mesh->name       = "Tessellated";
 		raw              = import_mesh_raw_mesh(mesh);
 	}
 	else if (string_equals(mesh_name, "plane")) {
-		raw_mesh_t *mesh = geom_make_plane(1, 1, 512, 512, 1.0);
+		raw_mesh_t *mesh = geom_make_plane(1, 1, 2, 2, 1.0);
+		mesh->name       = "Tessellated";
+		raw              = import_mesh_raw_mesh(mesh);
+		// viewport_set_view(0, 0, 0.75, 0, 0, 0); // Top
+	}
+	else if (string_equals(mesh_name, "plane_1024")) {
+		raw_mesh_t *mesh = geom_make_plane(1, 1, 1024, 1024, 1.0);
 		mesh->name       = "Tessellated";
 		raw              = import_mesh_raw_mesh(mesh);
 		// viewport_set_view(0, 0, 0.75, 0, 0, 0); // Top
