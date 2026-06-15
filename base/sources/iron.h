@@ -33,6 +33,9 @@
 #ifdef IRON_AUDIO
 #include "iron_audio.h"
 #endif
+#ifdef WITH_BC7
+#include "libs/bc7enc.h"
+#endif
 #ifdef WITH_EMBED
 #include EMBED_H_PATH
 #endif
@@ -924,6 +927,7 @@ buffer_t *gpu_get_texture_pixels(gpu_texture_t *image) {
 		image->buffer         = malloc(sizeof(buffer_t));
 		image->buffer->buffer = NULL;
 	}
+
 	image->buffer->length = gpu_texture_format_size(image->format) * image->width * image->height;
 
 	if (image->buffer->buffer == NULL) {
@@ -931,6 +935,17 @@ buffer_t *gpu_get_texture_pixels(gpu_texture_t *image) {
 	}
 
 	gpu_get_render_target_pixels(image, image->buffer->buffer);
+
+#ifdef WITH_BC7
+	if (image->format == GPU_TEXTURE_FORMAT_RGBA32_BC7) {
+		uint8_t *compressed   = image->buffer->buffer;
+		image->format         = GPU_TEXTURE_FORMAT_RGBA32;
+		image->buffer->buffer = malloc((size_t)image->width * image->height * 4);
+		bc7enc_decompress(image->buffer->buffer, compressed, image->width, image->height);
+		free(compressed);
+	}
+#endif
+
 	return image->buffer;
 }
 
