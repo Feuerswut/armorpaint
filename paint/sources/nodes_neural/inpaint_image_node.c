@@ -11,11 +11,6 @@ void inpaint_image_node_button_on_next_frame(ui_node_t *node) {
 		char        *node_name = parser_material_node_name(node, NULL);
 		ui_handle_t *h         = ui_handle(node_name);
 		i32          model     = ui_nest(h, 0)->i;
-		char        *prompt    = ui_nest(h, 1)->text;
-
-		if (string_equals(prompt, "")) {
-			prompt = ".";
-		}
 
 		char *dir = neural_node_dir();
 		if (model == 0) {
@@ -28,26 +23,26 @@ void inpaint_image_node_button_on_next_frame(ui_node_t *node) {
 
 			buffer_t *mask_buf = gpu_get_texture_pixels(mask);
 			for (uint32_t i = 0; i < mask_buf->length / 4; ++i) {
-				if (mask_buf->buffer[i * 4] + mask_buf->buffer[i * 4 + 1] + mask_buf->buffer[i * 4 + 2] > 200) {
-					mask_buf->buffer[i * 4]     = 0;
-					mask_buf->buffer[i * 4 + 1] = 0;
-					mask_buf->buffer[i * 4 + 2] = 0;
-				}
-				else {
+				if (mask_buf->buffer[i * 4] < 200 || mask_buf->buffer[i * 4 + 1] < 200 || mask_buf->buffer[i * 4 + 2] < 200) {
 					mask_buf->buffer[i * 4]     = 255;
 					mask_buf->buffer[i * 4 + 1] = 255;
 					mask_buf->buffer[i * 4 + 2] = 255;
+				}
+				else {
+					mask_buf->buffer[i * 4]     = 0;
+					mask_buf->buffer[i * 4 + 1] = 0;
+					mask_buf->buffer[i * 4 + 2] = 0;
 				}
 			}
 			iron_write_png(string("%s%smask.png", dir, PATH_SEP), mask_buf, mask->width, mask->height, 0);
 		}
 		else {
-			gpu_texture_t *masked = gpu_create_render_target(512, 512, GPU_TEXTURE_FORMAT_RGBA32);
+			gpu_texture_t *masked = gpu_create_render_target(g_config->neural_res, g_config->neural_res, GPU_TEXTURE_FORMAT_RGBA32);
 			draw_begin(masked, false, 0);
-			draw_scaled_image(input, 0, 0, 512, 512);
+			draw_scaled_image(input, 0, 0, g_config->neural_res, g_config->neural_res);
 			draw_set_pipeline(ui_view2d_pipe);
 			gpu_set_int(ui_view2d_channel_loc, 6);
-			draw_scaled_image(mask, 0, 0, 512, 512);
+			draw_scaled_image(mask, 0, 0, g_config->neural_res, g_config->neural_res);
 			draw_set_pipeline(NULL);
 			draw_end();
 			iron_write_png(string("%s%sinput.png", dir, PATH_SEP), gpu_get_texture_pixels(masked), masked->width, masked->height, 0);
@@ -58,22 +53,30 @@ void inpaint_image_node_button_on_next_frame(ui_node_t *node) {
 			argv = any_array_create_from_raw(
 			    (void *[]){
 			        string("%s/%s", dir, neural_node_sd_bin()),
-			        "-m",
-			        string("%s/v1-5-pruned-emaonly.safetensors", dir),
+			        "--diffusion-model",
+			        string("%s/flux-2-klein-4b-Q8_0.gguf", dir),
+			        "--taesd",
+			        string("%s/taef2.safetensors", dir),
+			        "--llm",
+			        string("%s/Qwen3-4B-Q8_0.gguf", dir),
+			        "--cfg-scale",
+			        "0.0",
+			        "--sampling-method",
+			        "euler",
+			        "--diffusion-fa",
+			        "--offload-to-cpu",
 			        "--steps",
-			        "30",
+			        "4",
 			        "-s",
 			        "-1",
-			        "--cfg-scale",
-			        "0",
 			        "--strength",
 			        "1",
 			        "-W",
-			        "512",
+			        string("%d", g_config->neural_res),
 			        "-H",
-			        "512",
+			        string("%d", g_config->neural_res),
 			        "-p",
-			        prompt,
+			        "",
 			        "-i",
 			        string("%s/input.png", dir),
 			        "--mask",
@@ -82,7 +85,7 @@ void inpaint_image_node_button_on_next_frame(ui_node_t *node) {
 			        string("%s/output.png", dir),
 			        NULL,
 			    },
-			    24);
+			    32);
 		}
 		else {
 			argv = any_array_create_from_raw(
@@ -104,11 +107,11 @@ void inpaint_image_node_button_on_next_frame(ui_node_t *node) {
 			        "-s",
 			        "-1",
 			        "-W",
-			        "512",
+			        string("%d", g_config->neural_res),
 			        "-H",
-			        "512",
+			        string("%d", g_config->neural_res),
 			        "-p",
-			        "inpaint red area",
+			        "remove red area",
 			        "-r",
 			        string("%s/input.png", dir),
 			        "-o",
@@ -130,13 +133,11 @@ void inpaint_image_node_button(i32 node_id) {
 	ui_handle_t      *h         = ui_handle(node_name);
 	string_array_t   *models    = any_array_create_from_raw(
         (void *[]){
-            "Stable Diffusion",
+            "FLUX 2 klein",
             "Qwen Image Edit",
         },
         2);
-	i32   model                      = ui_combo(ui_nest(h, 0), models, tr("Model"), false, UI_ALIGN_LEFT, true);
-	char *prompt                     = ui_text_area(ui_nest(h, 1), UI_ALIGN_LEFT, true, tr("prompt"), true);
-	node->buttons->buffer[0]->height = string_split(prompt, "\n")->length + 2;
+	i32 model = ui_combo(ui_nest(h, 0), models, tr("Model"), false, UI_ALIGN_LEFT, true);
 
 	if (neural_node_button(node, models->buffer[model])) {
 		sys_notify_on_next_frame(&inpaint_image_node_button_on_next_frame, node);

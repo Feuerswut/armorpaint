@@ -94,7 +94,6 @@ void nodes_material_init() {
 	image_to_normal_map_node_init();
 	image_to_pbr_node_init();
 	inpaint_image_node_init();
-	outpaint_image_node_init();
 	repeat_node_init();
 	save_image_node_init();
 	text_to_image_node_init();
@@ -103,7 +102,6 @@ void nodes_material_init() {
 	}
 	tile_image_node_init();
 	upscale_image_node_init();
-	vary_image_node_init();
 
 #endif
 

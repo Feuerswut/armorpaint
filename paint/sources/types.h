@@ -133,6 +133,7 @@ typedef struct config {
 	bool                 grid_snap;
 	bool                 experimental;
 	i32                  neural_backend;
+	i32                  neural_res;
 	render_mode_t        render_mode;
 	workspace_t          workspace;
 	workflow_t           workflow;

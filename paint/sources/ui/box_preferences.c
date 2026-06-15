@@ -882,6 +882,18 @@ void box_preferences_neural_tab() {
 		ui_tooltip(tr("Backend for neural node processing"));
 	}
 
+	ui_handle_t *h_neural_res        = ui_handle(__ID__);
+	h_neural_res->i                  = g_config->neural_res == 2048 ? 2 : (g_config->neural_res == 1024 ? 1 : 0);
+	string_array_t *neural_res_combo = any_array_create_from_raw(
+	    (void *[]){
+	        "512",
+	        "1024",
+	        "2048",
+	    },
+	    3);
+	i32 neural_res_sel   = ui_combo(h_neural_res, neural_res_combo, tr("Resolution"), true, UI_ALIGN_LEFT, true);
+	g_config->neural_res = neural_res_sel == 2 ? 2048 : (neural_res_sel == 1 ? 1024 : 512);
+
 	ui_text(tr("Models"), UI_ALIGN_LEFT, 0x00000000);
 
 	if (neural_node_models == NULL) {
@@ -1002,7 +1014,7 @@ void box_preferences_plugins_tab_plugin_menu() {
 		file_start(path);
 	}
 	if (ui_menu_button(tr("Edit in Script Tab"), "", ICON_NONE)) {
-		buffer_t *blob            = data_get_blob(string("plugins/%s", _box_preferences_f));
+		buffer_t *blob = data_get_blob(string("plugins/%s", _box_preferences_f));
 		tab_scripts_set(sys_buffer_to_string(blob));
 		data_delete_blob(string("plugins/%s", _box_preferences_f));
 		console_info(tr("Script opened"));

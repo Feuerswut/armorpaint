@@ -1,6 +1,42 @@
 
 #include "../global.h"
 
+static string_array_t *edit_image_node_flux_klein_args(char *dir, char *prompt) {
+	string_array_t *argv = any_array_create_from_raw(
+	    (void *[]){
+	        string("%s/%s", dir, neural_node_sd_bin()),
+	        "--diffusion-model",
+	        string("%s/flux-2-klein-4b-Q8_0.gguf", dir),
+	        "--taesd",
+	        string("%s/taef2.safetensors", dir),
+	        "--llm",
+	        string("%s/Qwen3-4B-Q8_0.gguf", dir),
+	        "--cfg-scale",
+	        "1.0",
+	        "--sampling-method",
+	        "euler",
+	        "--diffusion-fa",
+	        "--offload-to-cpu",
+	        "--steps",
+	        "4",
+	        "-s",
+	        "-1",
+	        "-W",
+	        string("%d", g_config->neural_res),
+	        "-H",
+	        string("%d", g_config->neural_res),
+	        "-r",
+	        string("%s/input.png", dir),
+	        "-p",
+	        prompt,
+	        "-o",
+	        string("%s/output.png", dir),
+	        NULL,
+	    },
+	    28);
+	return argv;
+}
+
 static string_array_t *edit_image_node_qwen_args(char *dir, char *prompt) {
 	string_array_t *argv = any_array_create_from_raw(
 	    (void *[]){
@@ -25,9 +61,9 @@ static string_array_t *edit_image_node_qwen_args(char *dir, char *prompt) {
 	        "3",
 	        "--qwen-image-zero-cond-t",
 	        "-W",
-	        "512",
+	        string("%d", g_config->neural_res),
 	        "-H",
-	        "512",
+	        string("%d", g_config->neural_res),
 	        "-p",
 	        prompt,
 	        "-r",
@@ -37,43 +73,6 @@ static string_array_t *edit_image_node_qwen_args(char *dir, char *prompt) {
 	        NULL,
 	    },
 	    31);
-	return argv;
-}
-
-static string_array_t *edit_image_node_flux_klein_args(char *dir, char *prompt) {
-	string_array_t *argv = any_array_create_from_raw(
-	    (void *[]){
-	        string("%s/%s", dir, neural_node_sd_bin()),
-	        "--diffusion-model",
-	        string("%s/flux-2-klein-4b-Q8_0.gguf", dir),
-	        "--vae",
-	        // string("%s/full_encoder_small_decoder.safetensors", dir),
-	        string("%s/flux_ae.safetensors", dir),
-	        "--llm",
-	        string("%s/Qwen3-4B-Q8_0.gguf", dir),
-	        "--cfg-scale",
-	        "1.0",
-	        "--sampling-method",
-	        "euler",
-	        "--diffusion-fa",
-	        "--offload-to-cpu",
-	        "--steps",
-	        "4",
-	        "-s",
-	        "-1",
-	        "-W",
-	        "512",
-	        "-H",
-	        "512",
-	        "-r",
-	        string("%s/input.png", dir),
-	        "-p",
-	        prompt,
-	        "-o",
-	        string("%s/output.png", dir),
-	        NULL,
-	    },
-	    28);
 	return argv;
 }
 
@@ -107,10 +106,10 @@ void edit_image_node_button(i32 node_id) {
 
 			string_array_t *argv;
 			if (model == 0) {
-				argv = edit_image_node_qwen_args(dir, prompt);
+				argv = edit_image_node_flux_klein_args(dir, prompt);
 			}
 			else {
-				argv = edit_image_node_flux_klein_args(dir, prompt);
+				argv = edit_image_node_qwen_args(dir, prompt);
 			}
 
 			iron_exec_async(argv->buffer[0], argv->buffer);

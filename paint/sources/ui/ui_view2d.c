@@ -546,11 +546,11 @@ void ui_view2d_update(void *_) {
 		}
 
 		bool full = true;
-		#ifdef IRON_IOS
+#ifdef IRON_IOS
 		if (config_is_iphone()) {
 			full = false;
 		}
-		#endif
+#endif
 
 		// Editable layer name
 		if (full) {

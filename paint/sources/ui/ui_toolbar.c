@@ -121,8 +121,8 @@ i32 ui_toolbar_x() {
 
 void ui_toolbar_draw_show_3d_view() {
 	if (g_config->touch_ui) {
-		i32 toolbar_w      = ui_toolbar_default_w * UI_SCALE() + 14 * UI_SCALE();
-		i32 y = ui_header_h + 8 * UI_SCALE();
+		i32 toolbar_w = ui_toolbar_default_w * UI_SCALE() + 14 * UI_SCALE();
+		i32 y         = ui_header_h + 8 * UI_SCALE();
 
 		if ((ui_view2d_show || ui_nodes_show) && !g_config->touch_ui) {
 			y += toolbar_w;

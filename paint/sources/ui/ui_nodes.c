@@ -581,11 +581,11 @@ void ui_nodes_draw_menubar() {
 	}
 
 	bool full = true;
-	#ifdef IRON_IOS
+#ifdef IRON_IOS
 	if (config_is_iphone()) {
 		full = false;
 	}
-	#endif
+#endif
 
 	// Editable canvas name
 	if (full) {

@@ -98,15 +98,32 @@ void image_to_pbr_node_run_sd(char *model, char *prompt, void (*done)(gpu_textur
 }
 
 void image_to_pbr_node_all_done(void *_) {
-	render_target_t *occmap;
 	{
 		render_target_t *t = render_target_create();
 		t->name            = "occmap";
-		t->width           = 2048;
-		t->height          = 2048;
+		t->width           = 768;
+		t->height          = 768;
 		t->format          = "RGBA32";
 		render_path_create_render_target(t);
-		occmap = t;
+	}
+	// Ping-pong targets for the blur
+	{
+		render_target_t *t = render_target_create();
+		t->name            = "occmap_blur";
+		t->width           = 768;
+		t->height          = 768;
+		t->format          = "R8";
+		render_path_create_render_target(t);
+	}
+	render_target_t *occmap_blurred;
+	{
+		render_target_t *t = render_target_create();
+		t->name            = "occmap_blurred";
+		t->width           = 768;
+		t->height          = 768;
+		t->format          = "R8";
+		render_path_create_render_target(t);
+		occmap_blurred = t;
 	}
 	{
 		render_target_t *t = render_target_create();
@@ -128,14 +145,39 @@ void image_to_pbr_node_all_done(void *_) {
 	}
 
 	render_path_load_shader("Scene/depth_to_ao_pass/depth_to_ao_pass");
+	render_path_load_shader("Scene/ssao_blur_pass/ssao_blur_pass_x");
+	render_path_load_shader("Scene/ssao_blur_pass/ssao_blur_pass_y");
+
 	render_path_set_target("occmap", NULL, NULL, GPU_CLEAR_NONE, 0, 0.0);
 	render_path_bind_target("_height_map", "height_map");
 	render_path_bind_target("_normal_map", "normal_map");
 	render_path_draw_shader("Scene/depth_to_ao_pass/depth_to_ao_pass");
+
+	// Blur
+	render_path_set_target("occmap_blur", NULL, NULL, GPU_CLEAR_NONE, 0, 0.0);
+	render_path_bind_target("occmap", "tex");
+	render_path_bind_target("_normal_map", "gbuffer0");
+	render_path_draw_shader("Scene/ssao_blur_pass/ssao_blur_pass_x");
+
+	render_path_set_target("occmap_blurred", NULL, NULL, GPU_CLEAR_NONE, 0, 0.0);
+	render_path_bind_target("occmap_blur", "tex");
+	render_path_bind_target("_normal_map", "gbuffer0");
+	render_path_draw_shader("Scene/ssao_blur_pass/ssao_blur_pass_y");
+
+	// Second blur
+	render_path_set_target("occmap_blur", NULL, NULL, GPU_CLEAR_NONE, 0, 0.0);
+	render_path_bind_target("occmap_blurred", "tex");
+	render_path_bind_target("_normal_map", "gbuffer0");
+	render_path_draw_shader("Scene/ssao_blur_pass/ssao_blur_pass_x");
+
+	render_path_set_target("occmap_blurred", NULL, NULL, GPU_CLEAR_NONE, 0, 0.0);
+	render_path_bind_target("occmap_blur", "tex");
+	render_path_bind_target("_normal_map", "gbuffer0");
+	render_path_draw_shader("Scene/ssao_blur_pass/ssao_blur_pass_y");
+
 	gc_unroot(image_to_pbr_node_result_occlusion);
-	image_to_pbr_node_result_occlusion = occmap->_image;
+	image_to_pbr_node_result_occlusion = occmap_blurred->_image;
 	gc_root(image_to_pbr_node_result_occlusion);
-	// blur
 }
 
 void image_to_pbr_node_roughness_done(gpu_texture_t *tex) {
@@ -147,8 +189,19 @@ void image_to_pbr_node_roughness_done(gpu_texture_t *tex) {
 }
 
 void image_to_pbr_node_base_done(gpu_texture_t *tex) {
+	//
+	buffer_t *pixels = gpu_get_texture_pixels(tex);
+	for (uint32_t i = 0; i < pixels->length; i += 4) {
+		for (uint32_t c = 0; c < 3; ++c) {
+			int v                 = (int)(pixels->buffer[i + c] * 2.5f);
+			pixels->buffer[i + c] = v > 255 ? 255 : v;
+		}
+	}
+	gpu_texture_t *bright = gpu_create_texture_from_bytes(pixels, tex->width, tex->height, GPU_TEXTURE_FORMAT_RGBA32);
+	//
+
 	gc_unroot(image_to_pbr_node_result_base);
-	image_to_pbr_node_result_base = tex;
+	image_to_pbr_node_result_base = bright;
 	gc_root(image_to_pbr_node_result_base);
 	image_to_pbr_node_run_sd("marigold-iid-appearance-v1-1.q8_0.gguf", "_roughness", &image_to_pbr_node_roughness_done);
 }

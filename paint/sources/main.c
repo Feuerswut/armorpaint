@@ -110,7 +110,6 @@
 #include "nodes_neural/inpaint_image_node.c"
 #include "nodes_neural/neural_node.c"
 #include "nodes_neural/neural_node_models.c"
-#include "nodes_neural/outpaint_image_node.c"
 #include "nodes_neural/repeat_node.c"
 #include "nodes_neural/save_image_node.c"
 #include "nodes_neural/text_to_image_node.c"
@@ -118,7 +117,6 @@
 #include "nodes_neural/texture_mesh_node.c"
 #include "nodes_neural/tile_image_node.c"
 #include "nodes_neural/upscale_image_node.c"
-#include "nodes_neural/vary_image_node.c"
 
 #include "render/make_bake.c"
 #include "render/make_blur.c"
