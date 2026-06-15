@@ -621,6 +621,7 @@ void sculpt_make_mesh_run(node_shader_t *kong, slot_layer_t_array_t *sculpt_laye
 	i32 idx0 = sculpt_indices->buffer[0];
 
 	node_shader_add_constant(kong, "WVP: float4x4", "_world_view_proj_matrix");
+	node_shader_add_constant(kong, "W: float4x4", "_world_matrix");
 	node_shader_add_constant(kong, "N: float3x3", "_normal_matrix");
 	// Per-object start index into the shared sculpt grid
 	node_shader_add_constant(kong, "sculpt_vertex_offset: int", "_sculpt_vertex_offset");
@@ -665,6 +666,7 @@ void sculpt_make_mesh_run(node_shader_t *kong, slot_layer_t_array_t *sculpt_laye
 		}
 	}
 	node_shader_write_vert(kong, "output.pos = constants.WVP * float4(sculpt_pos, 1.0);");
+	node_shader_write_vert(kong, "output.wposition = (constants.W * float4(sculpt_pos, 1.0)).xyz;");
 
 	// Normal
 	node_shader_write_attrib_vert(kong, "var sculpt_nvid: uint = uint(vertex_id()) + uint(constants.sculpt_vertex_offset);");
@@ -679,38 +681,19 @@ void sculpt_make_mesh_run(node_shader_t *kong, slot_layer_t_array_t *sculpt_laye
 	node_shader_write_attrib_vert(kong, string("var meshpos0: float4 = texpaint_sculpt%d[uv0];", idx0));
 	node_shader_write_attrib_vert(kong, string("var meshpos1: float4 = texpaint_sculpt%d[uv1];", idx0));
 	node_shader_write_attrib_vert(kong, string("var meshpos2: float4 = texpaint_sculpt%d[uv2];", idx0));
-	// Mask the normal-reconstruction positions
-	if (sculpt_mask_value(kong, sculpt_layers->buffer[0], "sculpt_nmask0", true, NULL)) {
-		node_shader_write_attrib_vert(kong, "var nbase0: float4 = texpaint_sculpt_base[uv0];");
-		node_shader_write_attrib_vert(kong, "var nbase1: float4 = texpaint_sculpt_base[uv1];");
-		node_shader_write_attrib_vert(kong, "var nbase2: float4 = texpaint_sculpt_base[uv2];");
-		node_shader_write_attrib_vert(kong, "meshpos0 = nbase0 + (meshpos0 - nbase0) * sculpt_nmask0;");
-		node_shader_write_attrib_vert(kong, "meshpos1 = nbase1 + (meshpos1 - nbase1) * sculpt_nmask0;");
-		node_shader_write_attrib_vert(kong, "meshpos2 = nbase2 + (meshpos2 - nbase2) * sculpt_nmask0;");
-	}
 	for (i32 i = 1; i < count; ++i) {
 		i32 idx = sculpt_indices->buffer[i];
-		if (sculpt_mask_value(kong, sculpt_layers->buffer[i], string("sculpt_nmask_%d", idx), true, NULL)) {
-			node_shader_write_attrib_vert(kong, string("var nsamp0_%d: float4 = texpaint_sculpt%d[uv0];", idx, idx));
-			node_shader_write_attrib_vert(kong, string("var nsamp1_%d: float4 = texpaint_sculpt%d[uv1];", idx, idx));
-			node_shader_write_attrib_vert(kong, string("var nsamp2_%d: float4 = texpaint_sculpt%d[uv2];", idx, idx));
-			node_shader_write_attrib_vert(kong, string("var nbasel0_%d: float4 = texpaint_sculpt_base[uv0];", idx));
-			node_shader_write_attrib_vert(kong, string("var nbasel1_%d: float4 = texpaint_sculpt_base[uv1];", idx));
-			node_shader_write_attrib_vert(kong, string("var nbasel2_%d: float4 = texpaint_sculpt_base[uv2];", idx));
-			node_shader_write_attrib_vert(kong, string("meshpos0 = meshpos0 + (nsamp0_%d - nbasel0_%d) * sculpt_nmask_%d;", idx, idx, idx));
-			node_shader_write_attrib_vert(kong, string("meshpos1 = meshpos1 + (nsamp1_%d - nbasel1_%d) * sculpt_nmask_%d;", idx, idx, idx));
-			node_shader_write_attrib_vert(kong, string("meshpos2 = meshpos2 + (nsamp2_%d - nbasel2_%d) * sculpt_nmask_%d;", idx, idx, idx));
-		}
-		else {
-			node_shader_write_attrib_vert(kong, string("meshpos0 = meshpos0 + texpaint_sculpt%d[uv0] - texpaint_sculpt_base[uv0];", idx));
-			node_shader_write_attrib_vert(kong, string("meshpos1 = meshpos1 + texpaint_sculpt%d[uv1] - texpaint_sculpt_base[uv1];", idx));
-			node_shader_write_attrib_vert(kong, string("meshpos2 = meshpos2 + texpaint_sculpt%d[uv2] - texpaint_sculpt_base[uv2];", idx));
-		}
+		node_shader_write_attrib_vert(kong, string("meshpos0 = meshpos0 + texpaint_sculpt%d[uv0] - texpaint_sculpt_base[uv0];", idx));
+		node_shader_write_attrib_vert(kong, string("meshpos1 = meshpos1 + texpaint_sculpt%d[uv1] - texpaint_sculpt_base[uv1];", idx));
+		node_shader_write_attrib_vert(kong, string("meshpos2 = meshpos2 + texpaint_sculpt%d[uv2] - texpaint_sculpt_base[uv2];", idx));
 	}
 
+	// Unmasked sculpt face normal
 	node_shader_write_attrib_vert(kong, "var meshnor: float3 = normalize(cross(meshpos2.xyz - meshpos1.xyz, meshpos0.xyz - meshpos1.xyz));");
 	node_shader_write_attrib_vert(kong, "output.wnormal = constants.N * meshnor;");
-	node_shader_write_attrib_frag(kong, "var n: float3 = normalize(input.wnormal);");
+	// Reconstruct the face normal from the masked world position
+	node_shader_write_attrib_frag(kong, "var n: float3 = normalize(cross(ddx3(input.wposition), ddy3(input.wposition)));");
+	node_shader_write_attrib_frag(kong, "if (dot(n, normalize(input.wnormal)) < 0.0) { n = -n; }");
 }
 
 void sculpt_make_paint_run(node_shader_t *kong) {
