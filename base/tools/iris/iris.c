@@ -9,7 +9,11 @@
 #include "iris_kernels.h"
 #include "iris_qwen3.h"
 #include "iris_safetensors.h"
+#ifdef _WIN32
+#include "iris_compat.h"
+#else
 #include <dirent.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -10,6 +10,9 @@
 
 #include "iris.h"
 #include "jpeg.h"
+#ifdef _WIN32
+#include "iris_compat.h"
+#endif
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

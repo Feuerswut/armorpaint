@@ -13,7 +13,11 @@
 #include "iris_gguf.h"
 #include "iris_kernels.h"
 #include "iris_safetensors.h"
+#ifdef _WIN32
+#include "iris_compat.h"
+#else
 #include <dirent.h>
+#endif
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

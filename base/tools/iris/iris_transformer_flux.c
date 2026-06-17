@@ -17,12 +17,16 @@
 #include "iris_gguf.h"
 #include "iris_kernels.h"
 #include "iris_safetensors.h"
+#ifdef _WIN32
+#include "iris_compat.h"
+#else
 #include <dirent.h>
+#include <sys/time.h>
+#endif
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
 #include <time.h>
 
 /* External timing counters from iris_sample.c */

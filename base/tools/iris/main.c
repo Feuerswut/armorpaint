@@ -24,13 +24,18 @@
 #include "iris_depth.h"
 #include "iris_kernels.h"
 #include "iris_upscale.h"
+#ifdef _WIN32
+#define IRIS_NEED_GETOPT
+#include "iris_compat.h"
+#else
 #include <getopt.h>
+#include <sys/time.h>
+#include <unistd.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
 #include <time.h>
-#include <unistd.h>
 
 #ifdef USE_METAL
 #include "iris_metal.h"

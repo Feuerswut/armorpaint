@@ -3,13 +3,17 @@
  */
 
 #include "iris_safetensors.h"
+#ifdef _WIN32
+#include "iris_compat.h"
+#else
+#include <sys/mman.h>
+#include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 /* Minimal JSON parser for safetensors header */
 
