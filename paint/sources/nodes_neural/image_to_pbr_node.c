@@ -121,6 +121,16 @@ void image_to_pbr_node_all_done(void *_) {
 		render_path_create_render_target(t);
 		occmap_blurred = t;
 	}
+	render_target_t *normmap;
+	{
+		render_target_t *t = render_target_create();
+		t->name            = "normmap";
+		t->width           = 768;
+		t->height          = 768;
+		t->format          = "RGBA32";
+		render_path_create_render_target(t);
+		normmap = t;
+	}
 	{
 		render_target_t *t = render_target_create();
 		t->name            = "_height_map";
@@ -130,6 +140,7 @@ void image_to_pbr_node_all_done(void *_) {
 		t->_image          = image_to_pbr_node_result_height;
 		any_map_set(render_path_render_targets, t->name, t);
 	}
+	render_target_t *normal_map_rt;
 	{
 		render_target_t *t = render_target_create();
 		t->name            = "_normal_map";
@@ -138,11 +149,22 @@ void image_to_pbr_node_all_done(void *_) {
 		t->format          = "RGBA32";
 		t->_image          = image_to_pbr_node_result_normal;
 		any_map_set(render_path_render_targets, t->name, t);
+		normal_map_rt = t;
 	}
 
+	render_path_load_shader("Scene/depth_to_normal_pass/depth_to_normal_pass");
 	render_path_load_shader("Scene/depth_to_ao_pass/depth_to_ao_pass");
 	render_path_load_shader("Scene/ssao_blur_pass/ssao_blur_pass_x");
 	render_path_load_shader("Scene/ssao_blur_pass/ssao_blur_pass_y");
+
+	render_path_set_target("normmap", NULL, NULL, GPU_CLEAR_NONE, 0, 0.0);
+	render_path_bind_target("_height_map", "height_map");
+	render_path_draw_shader("Scene/depth_to_normal_pass/depth_to_normal_pass");
+
+	gc_unroot(image_to_pbr_node_result_normal);
+	image_to_pbr_node_result_normal = normmap->_image;
+	gc_root(image_to_pbr_node_result_normal);
+	normal_map_rt->_image = normmap->_image;
 
 	render_path_set_target("occmap", NULL, NULL, GPU_CLEAR_NONE, 0, 0.0);
 	render_path_bind_target("_height_map", "height_map");

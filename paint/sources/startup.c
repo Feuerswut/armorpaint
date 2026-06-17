@@ -2848,7 +2848,7 @@ scene_t *startup_get_scene(void) {
 	}
 
 	// shader_datas
-	scene->shader_datas = any_array_create(17);
+	scene->shader_datas = any_array_create(18);
 	{
 		shader_data_t *sd = (shader_data_t *)gc_alloc(sizeof(shader_data_t));
 		sd->name          = "armdefault_data";
@@ -4209,6 +4209,39 @@ scene_t *startup_get_scene(void) {
 			sd->contexts->buffer[0] = sc;
 		}
 		scene->shader_datas->buffer[16] = sd;
+	}
+	{
+		shader_data_t *sd = (shader_data_t *)gc_alloc(sizeof(shader_data_t));
+		sd->name          = "depth_to_normal_pass";
+		sd->contexts      = any_array_create(1);
+		{
+			shader_context_t *sc             = (shader_context_t *)gc_alloc(sizeof(shader_context_t));
+			sc->name                         = "depth_to_normal_pass";
+			sc->depth_write                  = false;
+			sc->compare_mode                 = "always";
+			sc->cull_mode                    = "none";
+			sc->vertex_shader                = "depth_to_normal_pass.vert";
+			sc->fragment_shader              = "depth_to_normal_pass.frag";
+			sc->shader_from_source           = false;
+			sc->color_attachments            = string_array_create(1);
+			sc->color_attachments->buffer[0] = "RGBA32";
+			sc->vertex_elements              = (vertex_element_t_array_t *)any_array_create(1);
+			{
+				vertex_element_t *ve           = (vertex_element_t *)gc_alloc(sizeof(vertex_element_t));
+				ve->name                       = "pos";
+				ve->data                       = "float2";
+				sc->vertex_elements->buffer[0] = ve;
+			}
+			sc->constants     = (shader_const_t_array_t *)any_array_create(0);
+			sc->texture_units = (tex_unit_t_array_t *)any_array_create(1);
+			{
+				tex_unit_t *tu               = (tex_unit_t *)gc_alloc(sizeof(tex_unit_t));
+				tu->name                     = "height_map";
+				sc->texture_units->buffer[0] = tu;
+			}
+			sd->contexts->buffer[0] = sc;
+		}
+		scene->shader_datas->buffer[17] = sd;
 	}
 
 	// objects
