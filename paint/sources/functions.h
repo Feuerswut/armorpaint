@@ -779,7 +779,6 @@ void              neural_node_load_result(ui_node_t *node);
 void              text_to_image_node_run(ui_node_t *node, void (*callback)(ui_node_t *));
 void              upscale_image_node_init();
 void              image_to_pbr_node_init();
-void              inpaint_image_node_init();
 void              text_to_image_node_init();
 void              texture_mesh_node_init();
 void              text_to_text_node_clear();

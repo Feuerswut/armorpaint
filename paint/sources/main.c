@@ -105,7 +105,6 @@
 #include "nodes_neural/edit_image_node.c"
 #include "nodes_neural/image_to_3d_mesh_node.c"
 #include "nodes_neural/image_to_pbr_node.c"
-#include "nodes_neural/inpaint_image_node.c"
 #include "nodes_neural/neural_node.c"
 #include "nodes_neural/neural_node_models.c"
 #include "nodes_neural/repeat_node.c"

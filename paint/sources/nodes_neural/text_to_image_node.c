@@ -38,7 +38,7 @@ void text_to_image_node_run(ui_node_t *node, void (*callback)(ui_node_t *)) {
 	string_array_push(argv, "-p");
 	string_array_push(argv, string("'%s'", prompt));
 	if (node->buttons->buffer[1]->default_value->buffer[0] > 0.0) {
-		string_array_push(argv, "--tileable");
+		string_array_push(argv, "--tile");
 	}
 	string_array_push(argv, NULL);
 
@@ -112,7 +112,7 @@ void text_to_image_node_init() {
 	                                                                       .max           = 1.0,
 	                                                                       .precision     = 100,
 	                                                                       .height        = 1}),
-	                                      GC_ALLOC_INIT(ui_node_button_t, {.name          = _tr("Tiled"),
+	                                      GC_ALLOC_INIT(ui_node_button_t, {.name          = _tr("Tile"),
 	                                                                       .type          = "BOOL",
 	                                                                       .output        = 0,
 	                                                                       .default_value = f32_array_create_x(0),

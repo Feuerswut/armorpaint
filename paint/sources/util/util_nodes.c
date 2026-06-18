@@ -100,7 +100,7 @@ gpu_texture_t *ui_nodes_get_node_preview_image(ui_node_t *n) {
 			img = rt->_image;
 		}
 	}
-	else if (starts_with(n->type, "NEURAL_")) {
+	else if (starts_with(n->type, "NEURAL_") && n->outputs->length > 0) {
 		i32 socket = i32_imap_get(g_context->node_preview_socket_map, n->id);
 		if (socket < 0 || socket >= n->outputs->length) {
 			socket = 0;

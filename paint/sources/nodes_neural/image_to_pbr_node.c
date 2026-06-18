@@ -63,7 +63,7 @@ void image_to_pbr_node_check_result(void (*done)(gpu_texture_t *)) {
 	}
 }
 
-void image_to_pbr_node_run_da3(bool tileable, int width, int height, void (*done)(gpu_texture_t *)) {
+void image_to_pbr_node_run_da3(bool tile, int width, int height, void (*done)(gpu_texture_t *)) {
 	char           *dir  = neural_node_dir();
 	string_array_t *argv = any_array_create_from_raw(
 	    (void *[]){
@@ -81,8 +81,8 @@ void image_to_pbr_node_run_da3(bool tileable, int width, int height, void (*done
 	        string("%s/output.png", dir),
 	    },
 	    12);
-	if (tileable) {
-		string_array_push(argv, "--tileable");
+	if (tile) {
+		string_array_push(argv, "--tile");
 	}
 	string_array_push(argv, NULL);
 
@@ -288,9 +288,9 @@ void image_to_pbr_node_button(i32 node_id) {
 #endif
 			iron_write_png(string("%s%sinput.png", dir, PATH_SEP), input_buf, input->width, input->height, 0);
 
-			bool tileable             = node->buttons->buffer[1]->default_value->buffer[0] > 0.0;
+			bool tile                 = node->buttons->buffer[1]->default_value->buffer[0] > 0.0;
 			image_to_pbr_node_node_id = node_id;
-			image_to_pbr_node_run_da3(tileable, input->width, input->height, &image_to_pbr_node_depth_done);
+			image_to_pbr_node_run_da3(tile, input->width, input->height, &image_to_pbr_node_depth_done);
 		}
 	}
 }
@@ -383,7 +383,7 @@ void image_to_pbr_node_init() {
 	                                                                       .max           = 1.0,
 	                                                                       .precision     = 100,
 	                                                                       .height        = 2}),
-	                                      GC_ALLOC_INIT(ui_node_button_t, {.name          = _tr("Tiled"),
+	                                      GC_ALLOC_INIT(ui_node_button_t, {.name          = _tr("Tile"),
 	                                                                       .type          = "BOOL",
 	                                                                       .output        = 0,
 	                                                                       .default_value = f32_array_create_x(0),
