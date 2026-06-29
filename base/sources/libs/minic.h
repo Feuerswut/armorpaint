@@ -91,6 +91,12 @@ void minic_int_typedef_add(const char *name);
 void minic_register_global(const char *name, const void *ptr, minic_type_t type);
 void minic_register_builtins(void);
 
+// Registry enumeration (used for editor autocomplete)
+int         minic_ext_func_count_get(void);
+const char *minic_ext_func_name_at(int i);
+int         minic_global_count_get(void);
+const char *minic_global_name_at(int i);
+
 // Registry lookups (used by the interpreter)
 minic_ext_func_t *minic_ext_func_get(const char *name);
 minic_val_t       minic_dispatch(minic_ext_func_t *ef, minic_val_t *args, int argc);
