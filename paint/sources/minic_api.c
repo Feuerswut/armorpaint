@@ -170,7 +170,7 @@ static void minic_set_mat4(minic_val_t *o, mat4_t m) { minic_box(o, m.m, 16); }
 #define AF(i) (_a[i].f)
 #define AP(i) (_a[i].p)
 
-vec4_t raycast_aabb(object_t *object);
+vec4_t raycast_aabb(object_t *object, f32 mouse_x, f32 mouse_y);
 
 // One X(return-kind, name, call) line per math function; expanded twice:
 // once to define the mn_* wrappers, once to register them
@@ -257,7 +257,7 @@ vec4_t raycast_aabb(object_t *object);
 	X(V4, transform_look, transform_look(AP(0)))                             \
 	X(V4, transform_right, transform_right(AP(0)))                           \
 	X(V4, transform_up, transform_up(AP(0)))                                 \
-	X(V4, raycast_aabb, raycast_aabb((object_t *)AP(0)))                     \
+	X(V4, raycast_aabb, raycast_aabb((object_t *)AP(0), AF(1), AF(2)))       \
 	X(VOID, line_draw_render, line_draw_render(M4(0)))                       \
 	X(VOID, line_draw_bounds, line_draw_bounds(M4(0), V4(1)))                \
 	X(VOID, shape_draw_sphere, shape_draw_sphere(M4(0)))                     \
@@ -1310,6 +1310,8 @@ void minic_register_builtins() {
 	R(half_to_u8_fast, "i(i)");
 
 	// iron_input
+	minic_register_global("mouse_x", &mouse_x, MINIC_T_FLOAT);
+	minic_register_global("mouse_y", &mouse_y, MINIC_T_FLOAT);
 	R(mouse_down, "b(p)");
 	R(mouse_down_any, "b()");
 	R(mouse_started, "b(p)");
