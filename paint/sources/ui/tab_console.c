@@ -61,7 +61,7 @@ bool tab_console_run_button(ui_handle_t *h_input, bool press_run) {
 			tab_console_prompt_entered = true;
 			text_to_text_node_clear();
 
-			buffer_t *api_blob = data_get_blob("api.h");
+			buffer_t *api_blob = data_get_blob("api.h"); // TODO: Generate dynamically
 			char     *api      = sys_buffer_to_string(api_blob);
 			char     *guide    = "Write C code only. Do not chain statements - declare intermediary variables. Place the code inside 'void main()' function.";
 			prompt             = string("%s\n%s\n%s", api, guide, prompt);
