@@ -29,6 +29,7 @@
 void   console_log(char *s);
 bool   point_in_aabb(object_t *object, vec4_t point);
 vec4_t raycast_aabb_mouse(object_t *object);
+void   script_tween_to(object_t *o, vec4_t to, f32 speed);
 
 static const char *minic_read_str(minic_val_t v) {
 	if (v.type == MINIC_T_PTR && v.p != NULL) {
@@ -275,6 +276,7 @@ static void minic_set_mat4(minic_val_t *o, mat4_t m) { minic_box(o, m.m, 16); }
 	X(V4, transform_up, transform_up(AP(0)))                                 \
 	X(V4, raycast_aabb_mouse, raycast_aabb_mouse((object_t *)AP(0)))         \
 	X(I, point_in_aabb, point_in_aabb((object_t *)AP(0), V4(1)))             \
+	X(VOID, script_tween_to, script_tween_to((object_t *)AP(0), V4(1), AF(2)))      \
 	X(VOID, line_draw_render, line_draw_render(M4(0)))                       \
 	X(VOID, line_draw_bounds, line_draw_bounds(M4(0), V4(1)))                \
 	X(VOID, shape_draw_sphere, shape_draw_sphere(M4(0)))                     \
@@ -383,6 +385,8 @@ project_t *script_get_project() {
 }
 
 void script_set_stage(char *name);
+void script_fade_to_stage(char *stage);
+char *script_get_stage();
 void script_set_tilesheet_anim(object_t *o, char *anim);
 
 object_t *script_get_object(char *s) {
@@ -1363,6 +1367,8 @@ void minic_register_builtins() {
 	R(script_get_project, "p()");
 	R(script_get_object, "p(p)");
 	R(script_set_stage, "v(p)");
+	R(script_fade_to_stage, "v(p)");
+	R(script_get_stage, "p()");
 	R(script_set_tilesheet_anim, "v(p,p)");
 	R(context_set_viewport_shader, "v(p)");
 	R(context_set_viewport_mode, "v(i)");

@@ -413,6 +413,7 @@ void                      tab_stages_apply(stage_t *stage);
 void                      tab_stages_rename_object(char *old_name, char *new_name);
 void                      tab_stages_rename_layer(char *old_name, char *new_name);
 void                      script_set_stage(char *name);
+void                      script_fade_to_stage(char *stage);
 void                      tab_stages_prune();
 void                      project_open();
 void                      project_save(bool save_and_quit);

@@ -15,6 +15,11 @@ void script_set_stage(char *name) {
 	}
 }
 
+char *script_get_stage() {
+	stage_t *s = tab_stages_get_stage();
+	return s != NULL ? s->name : NULL;
+}
+
 void script_set_tilesheet_anim(object_t *o, char *anim) {
 	mesh_object_t *mo = (mesh_object_t *)o->ext;
 
@@ -59,4 +64,64 @@ void script_set_tilesheet_anim(object_t *o, char *anim) {
 			return;
 		}
 	}
+}
+
+static transform_t *_script_tween_transform = NULL;
+
+static void script_tween_done(void) {
+	_script_tween_transform = NULL;
+}
+
+static void script_tween_tick(void) {
+	_script_tween_transform->dirty = true;
+}
+
+void script_tween_to(object_t *o, vec4_t to, f32 speed) {
+	if (_script_tween_transform != NULL) {
+		return;
+	}
+
+	transform_t *t          = o->transform;
+	_script_tween_transform = t;
+	f32    duration         = vec4_dist(t->loc, to) / speed;
+	ease_t ease             = EASE_LINEAR;
+	tween_to(GC_ALLOC_INIT(tween_anim_t,
+	                       {.target = &t->loc.x, .to = to.x, .duration = duration, .ease = ease, .tick = script_tween_tick, .done = script_tween_done}));
+	tween_to(GC_ALLOC_INIT(tween_anim_t, {.target = &t->loc.y, .to = to.y, .duration = duration, .ease = ease}));
+	tween_to(GC_ALLOC_INIT(tween_anim_t, {.target = &t->loc.z, .to = to.z, .duration = duration, .ease = ease}));
+}
+
+static f32   _script_fade_opacity = 0.0f;
+static char *_script_fade_stage   = NULL;
+
+static void script_fade_draw(void *_) {
+	draw_begin(NULL, false, 0);
+	draw_set_color((u32)(_script_fade_opacity * 255.0f) << 24);
+	draw_filled_rect(0, 0, iron_window_width(), iron_window_height());
+	draw_end();
+}
+
+static void script_fade_out_done(void *_) {
+	sys_remove_update(script_fade_draw);
+	gc_unroot(_script_fade_stage);
+	_script_fade_stage = NULL;
+}
+
+static void script_fade_in_done(void *_) {
+	script_set_stage(_script_fade_stage);
+	tween_to(GC_ALLOC_INIT(tween_anim_t, {.target = &_script_fade_opacity, .to = 0.0f, .duration = 1.0f, .ease = EASE_LINEAR, .done = script_fade_out_done}));
+}
+
+void script_fade_to_stage(char *stage) {
+	if (_script_fade_stage != NULL) {
+		return; // Fade in progress
+	}
+	_script_fade_stage = string_copy(stage);
+	gc_root(_script_fade_stage);
+
+	_script_fade_opacity = 0.0f;
+	sys_notify_on_update(script_fade_draw, NULL);
+
+	// Fade to black, set the stage, then fade back in
+	tween_to(GC_ALLOC_INIT(tween_anim_t, {.target = &_script_fade_opacity, .to = 1.0f, .duration = 1.0f, .ease = EASE_LINEAR, .done = script_fade_in_done}));
 }
