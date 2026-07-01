@@ -552,6 +552,14 @@ void ui_header_draw_tool_properties() {
 			}
 		}
 	}
+	else if (g_context->tool == TOOL_TYPE_SELECT) {
+		g_ui->enabled = g_context->select_active;
+		if (ui_icon_button(tr("Clear"), ICON_ERASE, UI_ALIGN_CENTER)) {
+			g_context->select_active = false;
+			make_material_parse_paint_material(false);
+		}
+		g_ui->enabled = true;
+	}
 
 	if (g_context->tool == TOOL_TYPE_CURSOR) {
 		// if (!sim_running && ui_button("Play")) {
