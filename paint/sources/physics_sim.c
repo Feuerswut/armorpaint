@@ -21,15 +21,6 @@ void sim_update() {
 		// return;
 		// }
 
-		object_t_array_t *objects = map_keys(sim_object_script_map);
-		for (i32 i = 0; i < objects->length; ++i) {
-			object_t *o    = objects->buffer[i];
-			char     *s    = any_map_get(sim_object_script_map, o);
-			char     *addr = i64_to_string((i64)(o->transform));
-			s              = string("{let transform=%s;%s}", addr, s);
-			// minic_eval(s);
-		}
-
 		physics_world_t *world = physics_world_active;
 		physics_world_update(world);
 

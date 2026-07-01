@@ -395,9 +395,6 @@ void _kickstart() {
 	ui_view2d_htab = ui_handle_create();
 	gc_root(ui_view2d_htab);
 
-	sim_object_script_map = any_map_create();
-	gc_root(sim_object_script_map);
-
 	parser_material_node_values = any_map_create();
 	gc_root(parser_material_node_values);
 

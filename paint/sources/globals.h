@@ -197,7 +197,6 @@ bool                      ui_view2d_tiled_show  = false;
 bool                      ui_view2d_grid_redraw = true;
 ui_handle_t              *ui_view2d_htab;
 bool                      sim_running = false;
-any_map_t                *sim_object_script_map;
 bool                      sim_record                 = false;
 bool                      viewport_recording         = false;
 bool                      node_shader_dump_to_script = false;

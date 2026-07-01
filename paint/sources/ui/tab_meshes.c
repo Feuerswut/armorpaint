@@ -355,33 +355,6 @@ void tab_meshes_draw_context_menu() {
 	// 	}
 	// }
 
-	// ui_text("Script", UI_ALIGN_LEFT, g_theme->SEPARATOR_COL);
-
-	// char *script = any_map_get(sim_object_script_map, g_context->selected_object);
-	// if (script == NULL) {
-	// 	script = "";
-	// }
-
-	// ui_handle_t *hscript = ui_handle(__ID__);
-	// hscript->text        = string_copy(script);
-
-	// draw_font_t *_font      = g_font;
-	// i32          _font_size = g_ui->font_size;
-	// draw_font_t *fmono      = data_get_font("font_mono.ttf");
-	// ui_set_font(g_ui, fmono);
-	// g_ui->font_size = math_floor(15 * UI_SCALE());
-	// gc_unroot(ui_text_area_coloring);
-	// ui_text_area_coloring = tab_scripts_get_text_coloring();
-	// gc_root(ui_text_area_coloring);
-	// ui_text_area(hscript, UI_ALIGN_LEFT, true, "", false);
-	// gc_unroot(ui_text_area_coloring);
-	// ui_text_area_coloring = NULL;
-	// ui_set_font(g_ui, _font);
-	// g_ui->font_size = _font_size;
-
-	// script = string_copy(hscript->text);
-	// any_map_set(sim_object_script_map, g_context->selected_object, script);
-
 	// Material override
 	string_array_t *mat_combo = string_array_create(0);
 	string_array_push(mat_combo, ""); // Empty = use painted layers
