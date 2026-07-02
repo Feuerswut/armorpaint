@@ -149,12 +149,12 @@ void tab_meshes_duplicate_next_frame(void *_) {
 	sim_duplicate();
 }
 
-void tab_meshes_draw_transform_loc(mesh_object_t *o) {
+void tab_meshes_draw_transform_loc(mesh_object_t *o, char *ns) {
 	transform_t *t       = o->base->transform;
 	bool         changed = false;
 	f32          f       = 0.0;
 
-	ui_handle_t *h = ui_handle(__ID__);
+	ui_handle_t *h = ui_handle(string("%s%s", __ID__, ns));
 	h->text        = string_copy(f32_to_string2(t->loc.x));
 	f              = parse_float(ui_text_input(h, "X", UI_ALIGN_LEFT, true, false));
 	if (h->changed) {
@@ -162,7 +162,7 @@ void tab_meshes_draw_transform_loc(mesh_object_t *o) {
 		t->loc.x = f;
 	}
 
-	h       = ui_handle(__ID__);
+	h       = ui_handle(string("%s%s", __ID__, ns));
 	h->text = string_copy(f32_to_string2(t->loc.y));
 	f       = parse_float(ui_text_input(h, "Y", UI_ALIGN_LEFT, true, false));
 	if (h->changed) {
@@ -170,7 +170,7 @@ void tab_meshes_draw_transform_loc(mesh_object_t *o) {
 		t->loc.y = f;
 	}
 
-	h       = ui_handle(__ID__);
+	h       = ui_handle(string("%s%s", __ID__, ns));
 	h->text = string_copy(f32_to_string2(t->loc.z));
 	f       = parse_float(ui_text_input(h, "Z", UI_ALIGN_LEFT, true, false));
 	if (h->changed) {
@@ -184,14 +184,14 @@ void tab_meshes_draw_transform_loc(mesh_object_t *o) {
 	}
 }
 
-void tab_meshes_draw_transform_rot(mesh_object_t *o) {
+void tab_meshes_draw_transform_rot(mesh_object_t *o, char *ns) {
 	transform_t *t   = o->base->transform;
 	vec4_t       rot = quat_get_euler(t->rot);
 	rot              = vec4_mult(rot, 180 / 3.141592);
 	bool changed     = false;
 	f32  f           = 0.0;
 
-	ui_handle_t *h = ui_handle(__ID__);
+	ui_handle_t *h = ui_handle(string("%s%s", __ID__, ns));
 	h->text        = string_copy(f32_to_string2(rot.x));
 	f              = parse_float(ui_text_input(h, "X", UI_ALIGN_LEFT, true, false));
 	if (h->changed) {
@@ -199,7 +199,7 @@ void tab_meshes_draw_transform_rot(mesh_object_t *o) {
 		rot.x   = f;
 	}
 
-	h       = ui_handle(__ID__);
+	h       = ui_handle(string("%s%s", __ID__, ns));
 	h->text = string_copy(f32_to_string2(rot.y));
 	f       = parse_float(ui_text_input(h, "Y", UI_ALIGN_LEFT, true, false));
 	if (h->changed) {
@@ -207,7 +207,7 @@ void tab_meshes_draw_transform_rot(mesh_object_t *o) {
 		rot.y   = f;
 	}
 
-	h       = ui_handle(__ID__);
+	h       = ui_handle(string("%s%s", __ID__, ns));
 	h->text = string_copy(f32_to_string2(rot.z));
 	f       = parse_float(ui_text_input(h, "Z", UI_ALIGN_LEFT, true, false));
 	if (h->changed) {
@@ -223,12 +223,12 @@ void tab_meshes_draw_transform_rot(mesh_object_t *o) {
 	}
 }
 
-void tab_meshes_draw_transform_scale(mesh_object_t *o) {
+void tab_meshes_draw_transform_scale(mesh_object_t *o, char *ns) {
 	transform_t *t       = o->base->transform;
 	bool         changed = false;
 	f32          f       = 0.0;
 
-	ui_handle_t *h = ui_handle(__ID__);
+	ui_handle_t *h = ui_handle(string("%s%s", __ID__, ns));
 	h->text        = string_copy(f32_to_string2(t->scale.x));
 	f              = parse_float(ui_text_input(h, "X", UI_ALIGN_LEFT, true, false));
 	if (h->changed) {
@@ -236,7 +236,7 @@ void tab_meshes_draw_transform_scale(mesh_object_t *o) {
 		t->scale.x = f;
 	}
 
-	h       = ui_handle(__ID__);
+	h       = ui_handle(string("%s%s", __ID__, ns));
 	h->text = string_copy(f32_to_string2(t->scale.y));
 	f       = parse_float(ui_text_input(h, "Y", UI_ALIGN_LEFT, true, false));
 	if (h->changed) {
@@ -244,7 +244,7 @@ void tab_meshes_draw_transform_scale(mesh_object_t *o) {
 		t->scale.y = f;
 	}
 
-	h       = ui_handle(__ID__);
+	h       = ui_handle(string("%s%s", __ID__, ns));
 	h->text = string_copy(f32_to_string2(t->scale.z));
 	f       = parse_float(ui_text_input(h, "Z", UI_ALIGN_LEFT, true, false));
 	if (h->changed) {
@@ -287,15 +287,15 @@ void tab_meshes_draw_context_menu() {
 
 	ui_row4();
 	ui_text("Loc", UI_ALIGN_LEFT, 0x00000000);
-	tab_meshes_draw_transform_loc(o);
+	tab_meshes_draw_transform_loc(o, "menu");
 
 	ui_row4();
 	ui_text("Rot", UI_ALIGN_LEFT, 0x00000000);
-	tab_meshes_draw_transform_rot(o);
+	tab_meshes_draw_transform_rot(o, "menu");
 
 	ui_row4();
 	ui_text("Scale", UI_ALIGN_LEFT, 0x00000000);
-	tab_meshes_draw_transform_scale(o);
+	tab_meshes_draw_transform_scale(o, "menu");
 
 	ui_row4();
 	ui_text("Dim", UI_ALIGN_LEFT, 0x00000000);
@@ -772,7 +772,7 @@ void tab_meshes_draw_mesh_slot(mesh_object_t *o, i32 i) {
 	g_ui->_x             = uix + 4;
 	g_ui->_y             = uiy + 3 + center;
 	i32 col              = g_theme->HOVER_COL + 0x00282828;
-	if (ui_sub_image(icons, col, r->h, r->x, r->y, r->w, r->h) == UI_STATE_RELEASED) {
+	if (ui_sub_image(icons, col, 18 * UI_SCALE(), r->x, r->y, r->w, r->h) == UI_STATE_RELEASED) {
 		o->base->visible = !o->base->visible;
 		tab_meshes_apply_visible(o);
 	}
@@ -874,7 +874,7 @@ void tab_meshes_draw_mesh_slot(mesh_object_t *o, i32 i) {
 
 		bool in_focus = g_ui->input_x > g_ui->_window_x && g_ui->input_x < g_ui->_window_x + g_ui->_window_w && g_ui->input_y > g_ui->_window_y &&
 		                g_ui->input_y < g_ui->_window_y + g_ui->_window_h;
-		if (in_focus && g_ui->is_delete_down && g_project->_->paint_objects->length > 1) {
+		if (in_focus && !g_ui->is_typing && g_ui->is_delete_down && g_project->_->paint_objects->length > 1) {
 			g_ui->is_delete_down = false;
 			sys_notify_on_next_frame(&tab_meshes_draw_context_menu_delete, g_context->paint_object);
 		}

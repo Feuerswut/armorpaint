@@ -373,7 +373,7 @@ void tab_layers_draw_layer_slot_full(slot_layer_t *l, i32 i) {
 	if (parent_hidden) {
 		col -= 0x99000000;
 	}
-	if (ui_sub_image(icons, col, r->h, r->x, r->y, r->w, r->h) == UI_STATE_RELEASED) {
+	if (ui_sub_image(icons, col, 18 * UI_SCALE(), r->x, r->y, r->w, r->h) == UI_STATE_RELEASED) {
 		tab_layers_layer_toggle_visible(l);
 	}
 
@@ -436,7 +436,7 @@ void tab_layers_draw_layer_slot_full(slot_layer_t *l, i32 i) {
 
 		bool in_focus = g_ui->input_x > g_ui->_window_x && g_ui->input_x < g_ui->_window_x + g_ui->_window_w && g_ui->input_y > g_ui->_window_y &&
 		                g_ui->input_y < g_ui->_window_y + g_ui->_window_h;
-		if (in_focus && g_ui->is_delete_down && tab_layers_can_delete(g_context->layer)) {
+		if (in_focus && !g_ui->is_typing && g_ui->is_delete_down && tab_layers_can_delete(g_context->layer)) {
 			g_ui->is_delete_down = false;
 			sys_notify_on_next_frame(&tab_layers_draw_layer_slot_full_delete_layer, NULL);
 		}

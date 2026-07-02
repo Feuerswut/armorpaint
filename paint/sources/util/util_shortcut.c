@@ -97,7 +97,7 @@ void util_shortcut_global() {
 	}
 
 #ifdef IRON_LINUX
-	if (operator_shortcut("alt+enter", SHORTCUT_TYPE_STARTED)) {
+	if (g_ui->is_alt_down && g_ui->is_key_pressed && g_ui->key_code == KEY_CODE_RETURN) {
 		base_toggle_fullscreen();
 	}
 #endif

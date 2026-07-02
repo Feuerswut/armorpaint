@@ -579,17 +579,17 @@ void ui_header_draw_tool_properties() {
 			g_ui->_w = math_floor(34 * sc);
 			ui_text("Loc", UI_ALIGN_LEFT, 0x00000000);
 			g_ui->_w = math_floor(48 * sc);
-			tab_meshes_draw_transform_loc(o);
+			tab_meshes_draw_transform_loc(o, "header");
 
 			g_ui->_w = math_floor(34 * sc);
 			ui_text("Rot", UI_ALIGN_LEFT, 0x00000000);
 			g_ui->_w = math_floor(48 * sc);
-			tab_meshes_draw_transform_rot(o);
+			tab_meshes_draw_transform_rot(o, "header");
 
 			g_ui->_w = math_floor(40 * sc);
 			ui_text("Scale", UI_ALIGN_LEFT, 0x00000000);
 			g_ui->_w = math_floor(48 * sc);
-			tab_meshes_draw_transform_scale(o);
+			tab_meshes_draw_transform_scale(o, "header");
 
 			g_ui->_w = _w;
 		}
