@@ -2400,6 +2400,7 @@ minic_val_t minic_dispatch(minic_ext_func_t *ef, minic_val_t *args, int argc) {
 	D6(VOID, i, i, i, i, i, i);
 	D6(VOID, p, p, p, i, i, f);
 	D7(VOID, p, f, f, f, f, f, f);
+	D7(VOID, p, f, f, f, f, i, i);
 	D9(VOID, p, f, f, f, f, f, f, f, f);
 	D10(VOID, p, p, p, p, p, p, p, p, p, p);
 
