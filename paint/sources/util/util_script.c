@@ -314,7 +314,7 @@ typedef struct particle {
 	int   flag;
 } particle_t;
 
-#define NUM_PARTICLES 512
+#define NUM_PARTICLES 128
 static particle_t particles[NUM_PARTICLES];
 
 void script_draw_particles(gpu_texture_t *texture, float x, float y, float w, float h, int atlas_x, int atlas_frames) {
@@ -344,6 +344,7 @@ void script_draw_particles(gpu_texture_t *texture, float x, float y, float w, fl
 
 		int col = ((int)(255 * p->sca) << 24) | (255 << 16) | (255 << 8) | 255;
 		draw_set_color(col);
-		draw_sub_image(texture, frame_x * cell_w, frame_y * cell_w, cell_w, cell_w, p->x, p->y);
+		// draw_sub_image(texture, frame_x * cell_w, frame_y * cell_w, cell_w, cell_w, p->x, p->y);
+		draw_scaled_sub_image(texture, frame_x * cell_w, frame_y * cell_w, cell_w, cell_w, p->x, p->y, cell_w * 2, cell_w * 2);
 	}
 }
