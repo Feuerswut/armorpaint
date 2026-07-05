@@ -87,6 +87,7 @@ void       script_timer(f32 delay, void *fn);
 char      *script_get_stage();
 void       script_set_tilesheet_anim(object_t *o, char *anim);
 object_t  *script_get_object(char *s);
+void       script_draw_particles(gpu_texture_t *texture, float x, float y, float w, float h, int atlas_x, int atlas_frames);
 
 static const char *minic_read_str(minic_val_t v) {
 	if (v.type == MINIC_T_PTR && v.p != NULL) {
@@ -1213,6 +1214,7 @@ void minic_register_builtins() {
 	R(script_timer, "v(f,p)");
 	R(script_get_stage, "p()");
 	R(script_set_tilesheet_anim, "v(p,p)");
+	R(script_draw_particles, "v(p,f,f,f,f,i,i)");
 	R(context_set_viewport_shader, "v(p)");
 	R(context_set_viewport_mode, "v(i)");
 	R(context_set_camera_controls, "v(i)");

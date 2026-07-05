@@ -277,15 +277,16 @@ static void script_fade_draw(void *_) {
 	draw_end();
 }
 
-static void script_fade_out_done(void *_) {
+static void script_fade_in_done(void *_) {
 	sys_remove_update(script_fade_draw);
 	gc_unroot(_script_fade_stage);
 	_script_fade_stage = NULL;
 }
 
-static void script_fade_in_done(void *_) {
+static void script_fade_out_done(void *_) {
 	script_set_stage(_script_fade_stage);
-	tween_to(GC_ALLOC_INIT(tween_anim_t, {.target = &_script_fade_opacity, .to = 0.0f, .duration = 1.0f, .ease = EASE_LINEAR, .done = script_fade_out_done}));
+	tween_reset();
+	tween_to(GC_ALLOC_INIT(tween_anim_t, {.target = &_script_fade_opacity, .to = 0.0f, .duration = 1.0f, .ease = EASE_LINEAR, .done = script_fade_in_done}));
 }
 
 void script_fade_to_stage(char *stage) {
@@ -299,5 +300,50 @@ void script_fade_to_stage(char *stage) {
 	sys_notify_on_update(script_fade_draw, NULL);
 
 	// Fade to black, set the stage, then fade back in
-	tween_to(GC_ALLOC_INIT(tween_anim_t, {.target = &_script_fade_opacity, .to = 1.0f, .duration = 1.0f, .ease = EASE_LINEAR, .done = script_fade_in_done}));
+	tween_to(GC_ALLOC_INIT(tween_anim_t, {.target = &_script_fade_opacity, .to = 1.0f, .duration = 1.0f, .ease = EASE_LINEAR, .done = script_fade_out_done}));
+}
+
+typedef struct particle {
+	float frame;
+	float x;
+	float y;
+	float vx;
+	float vy;
+	float sc;
+	float sca;
+	int   flag;
+} particle_t;
+
+#define NUM_PARTICLES 512
+static particle_t particles[NUM_PARTICLES];
+
+void script_draw_particles(gpu_texture_t *texture, float x, float y, float w, float h, int atlas_x, int atlas_frames) {
+	float screen_w = iron_window_width();
+	float screen_h = iron_window_height();
+	float cell_w   = texture->width / atlas_x;
+
+	for (int i = 0; i < NUM_PARTICLES; ++i) {
+		particle_t *p = &particles[i];
+		if ((p->vx == 0 && p->vy == 0) || (p->x > screen_w || p->y > screen_h)) {
+			p->x     = iron_random_get_in(-screen_w / 3.0, screen_w);
+			p->y     = iron_random_get_in(-screen_w / 3.0, -cell_w);
+			p->vx    = iron_random_get_in(0, 200) / 100.0;
+			p->vy    = iron_random_get_in(0, 200) / 100.0;
+			p->frame = iron_random_get_in(0, atlas_frames - 1);
+			p->sc    = iron_random_get_in(0, 100) / 100.0;
+			p->sca   = iron_random_get_in(0, 100) / 100.0;
+		}
+
+		p->frame += 0.5 * p->vy;
+		if (p->frame >= atlas_frames)
+			p->frame = 0;
+		int frame_x = (int)p->frame % atlas_x;
+		int frame_y = (int)p->frame / atlas_x;
+		p->x += p->vx;
+		p->y += p->vy;
+
+		int col = ((int)(255 * p->sca) << 24) | (255 << 16) | (255 << 8) | 255;
+		draw_set_color(col);
+		draw_sub_image(texture, frame_x * cell_w, frame_y * cell_w, cell_w, cell_w, p->x, p->y);
+	}
 }
