@@ -133,6 +133,9 @@ void ui_files_show2(char *filters, bool is_save, bool open_multiple, void *files
 char *project_filepath_get() {
 	return g_project->_->filepath;
 }
+char *project_basepath_get() {
+	return substring(g_project->_->filepath, 0, string_last_index_of(g_project->_->filepath, PATH_SEP));
+}
 void project_filepath_set(char *s) {
 	g_project->_->filepath = string_copy(s);
 }

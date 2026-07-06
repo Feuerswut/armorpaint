@@ -42,6 +42,7 @@ void           ui_box_show_message(char *title, char *text, bool copyable);
 void           ui_files_show2(char *filters, bool is_save, bool open_multiple, void *files_done);
 void           project_save(bool save_and_quit);
 char          *project_filepath_get();
+char          *project_basepath_get();
 void           project_filepath_set(char *s);
 void           project_reimport_mesh_skinned(i32 frame);
 void           context_set_viewport_shader(void *viewport_shader);
@@ -1210,6 +1211,7 @@ void minic_register_builtins() {
 	R(ui_files_show2, "v(p,i,i,p)");
 	R(project_save, "v(i)");
 	R(project_filepath_get, "p()");
+	R(project_basepath_get, "p()");
 	R(project_filepath_set, "v(p)");
 	R(script_get_context, "p()");
 	R(script_get_config, "p()");
