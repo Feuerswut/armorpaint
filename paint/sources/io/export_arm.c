@@ -42,7 +42,7 @@ string_array_t *export_arm_assets_to_files(char *project_path, asset_t_array_t *
 #ifdef IRON_IOS
 		bool same_drive = false;
 #else
-		bool same_drive = char_at(project_path, 0) == char_at(a->file, 0);
+		bool same_drive = char_at(project_path, 0)[0] == char_at(a->file, 0)[0];
 #endif
 		// Convert image path from absolute to relative
 		if (same_drive) {
@@ -62,7 +62,7 @@ string_array_t *export_arm_meshes_to_files(char *project_path) {
 #ifdef IRON_IOS
 		bool same_drive = false;
 #else
-		bool same_drive = char_at(project_path, 0) == char_at(file, 0);
+		bool same_drive = char_at(project_path, 0)[0] == char_at(file, 0)[0];
 #endif
 		// Convert mesh path from absolute to relative
 		if (same_drive) {
@@ -82,7 +82,7 @@ string_array_t *export_arm_fonts_to_files(char *project_path, slot_font_t_array_
 #ifdef IRON_IOS
 		bool same_drive = false;
 #else
-		bool same_drive = char_at(project_path, 0) == char_at(f->file, 0);
+		bool same_drive = char_at(project_path, 0)[0] == char_at(f->file, 0)[0];
 #endif
 		// Convert font path from absolute to relative
 		if (same_drive) {
@@ -102,7 +102,7 @@ string_array_t *export_arm_sounds_to_files(char *project_path, slot_sound_t_arra
 #ifdef IRON_IOS
 		bool same_drive = false;
 #else
-		bool same_drive = char_at(project_path, 0) == char_at(f->file, 0);
+		bool same_drive = char_at(project_path, 0)[0] == char_at(f->file, 0)[0];
 #endif
 		// Convert sound path from absolute to relative
 		if (same_drive) {
@@ -246,7 +246,7 @@ void export_arm_run_project() {
 #ifdef IRON_IOS
 	bool same_drive = false;
 #else
-	bool same_drive = g_project->envmap != NULL ? char_at(g_project->_->filepath, 0) == char_at(g_project->envmap, 0) : true;
+	bool same_drive = g_project->envmap != NULL ? char_at(g_project->_->filepath, 0)[0] == char_at(g_project->envmap, 0)[0] : true;
 #endif
 
 	g_project->version         = string_copy(manifest_version_project);
@@ -373,7 +373,7 @@ packed_asset_t_array_t *export_arm_get_packed_assets(char *project_path, string_
 #ifdef IRON_IOS
 			bool same_drive = false;
 #else
-			bool same_drive = char_at(project_path, 0) == char_at(pa->name, 0);
+			bool same_drive = char_at(project_path, 0)[0] == char_at(pa->name, 0)[0];
 #endif
 			// Convert path from absolute to relative
 			pa->name = same_drive ? path_to_relative(project_path, pa->name) : pa->name;
