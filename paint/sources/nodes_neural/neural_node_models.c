@@ -8,7 +8,7 @@ void neural_node_models_init() {
 	        GC_ALLOC_INIT(neural_node_model_t, {.name   = "FLUX 2 klein",
 	                                            .memory = "4GB",
 	                                            .size   = "8.7GB",
-	                                            .nodes  = "Text to Image, Edit Image, Inpaint Image",
+	                                            .nodes  = "Text to Image, Edit Image",
 	                                            .urls   = any_array_create_from_raw(
                                                     (void *[]){
                                                         "https://huggingface.co/armory3d/FLUX.2-klein-4B-GGUF/resolve/main/flux-2-klein-4b-Q8_0.gguf",
