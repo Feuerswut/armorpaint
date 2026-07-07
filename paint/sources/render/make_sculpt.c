@@ -162,7 +162,10 @@ node_shader_context_t *sculpt_make_sculpt_run(material_t *data, material_context
 	bool           particle = g_context->tool == TOOL_TYPE_PARTICLE;
 	// Decal fill layer: displacement must be confined to the decal box projection
 	bool decal_layer      = g_context->layer->fill_material != NULL && g_context->layer->uv_type == UV_TYPE_PROJECT && g_context->tool == TOOL_TYPE_FILL;
-	bool sculpt_triplanar = !decal && !decal_layer && g_context->tool != TOOL_TYPE_BLUR;
+
+	bool has_wposition = g_context->tool == TOOL_TYPE_BRUSH || g_context->tool == TOOL_TYPE_ERASER || g_context->tool == TOOL_TYPE_CLONE ||
+	                     g_context->tool == TOOL_TYPE_BLUR || g_context->tool == TOOL_TYPE_PARTICLE || g_context->tool == TOOL_TYPE_FILL || decal;
+	bool sculpt_triplanar = has_wposition && !decal && !decal_layer && g_context->tool != TOOL_TYPE_BLUR;
 	node_shader_add_out(kong, "tex_coord: float2");
 	node_shader_write_vert(kong, "var madd: float2 = float2(0.5, 0.5);");
 	node_shader_write_vert(kong, "output.tex_coord = input.pos.xy * madd + madd;");
@@ -502,9 +505,6 @@ node_shader_context_t *sculpt_make_sculpt_run(material_t *data, material_context
 			node_shader_write_frag(kong, "opacity *= mask_sample.r * mask_sample.a;");
 		}
 	}
-
-	bool has_wposition = g_context->tool == TOOL_TYPE_BRUSH || g_context->tool == TOOL_TYPE_ERASER || g_context->tool == TOOL_TYPE_CLONE ||
-	                     g_context->tool == TOOL_TYPE_BLUR || g_context->tool == TOOL_TYPE_PARTICLE || g_context->tool == TOOL_TYPE_FILL || decal;
 
 	if (g_context->select_active && has_wposition) {
 		node_shader_add_constant(kong, "VP: float4x4", "_view_proj_matrix");

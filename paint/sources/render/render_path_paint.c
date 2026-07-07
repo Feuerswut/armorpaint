@@ -1127,7 +1127,7 @@ void render_path_paint_bind_layers() {
 		}
 	}
 
-	if (g_context->colorid_picked && g_context->colorid_viewport_mask) {
+	if (g_context->colorid_viewport_mask) {
 		render_path_bind_target("texpaint_colorid", "texpaint_colorid");
 	}
 }
