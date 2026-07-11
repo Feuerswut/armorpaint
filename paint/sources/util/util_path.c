@@ -467,6 +467,50 @@ static void path_point_move(slot_layer_t *l, i32 idx, f32 new_x, f32 new_y) {
 	}
 }
 
+void util_layer_check_path_grab() {
+	// Check if mouse ray hits any point sphere
+	if (g_config->workspace == WORKSPACE_PLAYER || g_context->paint2d) {
+		return;
+	}
+
+	slot_layer_t *l = g_context->layer;
+	if (!slot_layer_is_path(l)) {
+		return;
+	}
+
+	i32 vis_points = l->path_points->length / 2;
+	if (!mouse_started("left") || g_ui->is_hovered || base_is_dragging || vis_points == 0) {
+		return;
+	}
+
+	f32_array_t *points_world = l->path_points_world;
+	f32          min_dist     = 1e10f;
+	i32          closest      = -1;
+
+	for (i32 i = 0; i < vis_points; i++) {
+		f32    wx         = points_world->buffer[i * 3];
+		f32    wy         = points_world->buffer[i * 3 + 1];
+		f32    wz         = points_world->buffer[i * 3 + 2];
+		f32    dist       = vec4_dist(scene_camera->base->transform->loc, (vec4_t){wx, wy, wz, 1.0});
+		f32    fov        = scene_camera->data->fov;
+		f32    hit_radius = dist / 8.0f * fov * 0.25f;
+		ray_t *ray        = raycast_get_ray(mouse_view_x(), mouse_view_y(), scene_camera);
+		if (ray_intersects_sphere(ray, (vec4_t){wx, wy, wz, 1.0}, hit_radius) && dist < min_dist) {
+			min_dist = dist;
+			closest  = i;
+		}
+	}
+
+	if (closest >= 0) {
+		path_point_dragging = closest;
+		for (i32 j = 0; j < path_point_sphere_count; j++) {
+			if (path_point_spheres[j] != NULL) {
+				path_point_spheres[j]->visible = false;
+			}
+		}
+	}
+}
+
 void util_layer_update_path() {
 	if (g_config->workspace == WORKSPACE_PLAYER || g_context->paint2d) {
 		return;
@@ -495,7 +539,6 @@ void util_layer_update_path() {
 	f32_array_t *points       = l->path_points;
 	f32_array_t *points_world = l->path_points_world;
 	i32          num_points   = points->length / 2;
-	i32          num_world    = points_world->length / 3;
 	i32          vis_points   = num_points;
 
 	// Sync sphere count with number of visible path points
@@ -571,34 +614,5 @@ void util_layer_update_path() {
 			}
 		}
 		return;
-	}
-
-	// Check if mouse ray hits any point sphere
-	if (mouse_started("left") && !g_ui->is_hovered && !base_is_dragging && vis_points > 0) {
-		f32 min_dist = 1e10f;
-		i32 closest  = -1;
-
-		for (i32 i = 0; i < vis_points; i++) {
-			f32    wx         = points_world->buffer[i * 3];
-			f32    wy         = points_world->buffer[i * 3 + 1];
-			f32    wz         = points_world->buffer[i * 3 + 2];
-			f32    dist       = vec4_dist(scene_camera->base->transform->loc, (vec4_t){wx, wy, wz, 1.0});
-			f32    fov        = scene_camera->data->fov;
-			f32    hit_radius = dist / 8.0f * fov * 0.25f;
-			ray_t *ray        = raycast_get_ray(mouse_view_x(), mouse_view_y(), scene_camera);
-			if (ray_intersects_sphere(ray, (vec4_t){wx, wy, wz, 1.0}, hit_radius) && dist < min_dist) {
-				min_dist = dist;
-				closest  = i;
-			}
-		}
-
-		if (closest >= 0) {
-			path_point_dragging = closest;
-			for (i32 j = 0; j < path_point_sphere_count; j++) {
-				if (path_point_spheres[j] != NULL) {
-					path_point_spheres[j]->visible = false;
-				}
-			}
-		}
 	}
 }

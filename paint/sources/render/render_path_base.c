@@ -160,6 +160,7 @@ void render_path_base_commands(void (*draw_commands)(void)) {
 	}
 
 	if (base_ui_enabled) {
+		util_layer_check_path_grab();
 		util_brush_update();
 	}
 
@@ -173,6 +174,8 @@ void render_path_base_commands(void (*draw_commands)(void)) {
 	if (g_context->viewport_mode == VIEWPORT_MODE_PATH_TRACE) {
 		bool use_live_layer = g_context->tool == TOOL_TYPE_MATERIAL;
 		render_path_raytrace_draw(use_live_layer);
+		g_context->last_paint_vec_x = g_context->paint_vec.x;
+		g_context->last_paint_vec_y = g_context->paint_vec.y;
 		g_context->foreground_event = false;
 		render_path_base_end();
 		return;

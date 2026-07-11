@@ -219,6 +219,7 @@ void                      ui_base_set_viewport_col(i32 col);
 void                      render_gizmo_update();
 void                      util_layer_update_preview();
 void                      util_layer_update_path();
+void                      util_layer_check_path_grab();
 bool                      util_layer_is_path_point_dragging();
 void                      util_layer_add_path_point(slot_layer_t *l, f32 screen_x, f32 screen_y);
 void                      util_layer_repaint_path(slot_layer_t *l);

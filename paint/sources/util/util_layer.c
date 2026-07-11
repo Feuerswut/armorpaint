@@ -395,7 +395,8 @@ void layers_update_fill_layers() {
 		g_context->pdirty               = 0;
 		g_context->ddirty               = 2;
 		g_context->rdirty               = 2;
-		g_context->layers_preview_dirty = true; // Repaint all layer previews as multiple layers might have changed.
+		g_context->rtdirty              = 1;
+		g_context->layers_preview_dirty = true;
 		if (in_use)
 			draw_begin(current, false, 0);
 		g_context->layer = _layer;
@@ -1208,11 +1209,13 @@ void layers_on_resized_on_next_frame(void *_) {
 		if (l->fill_material != NULL) {
 			g_context->layer    = l;
 			g_context->material = l->fill_material;
+			layers_set_object_mask();
 			layers_update_fill_layer(true);
 		}
 	}
 	g_context->layer    = _layer;
 	g_context->material = _material;
+	layers_set_object_mask();
 	make_material_parse_paint_material(true);
 }
 
