@@ -35,13 +35,21 @@ void make_discard_uv_island(node_shader_t *kong) {
 	node_shader_write_frag(kong, "if (sample_lod(texuvislandmap, sampler_linear, input.tex_coord_pick, 0.0).r == 0.0) { discard; }");
 }
 
-void make_discard_material_id(node_shader_t *kong) {
-	kong->frag_wvpposition = true;
-	node_shader_write_frag(
-	    kong, "var picker_sample_tc: float2 = float2(input.wvpposition.x / input.wvpposition.w, input.wvpposition.y / input.wvpposition.w) * 0.5 + 0.5;");
-	node_shader_write_frag(kong, "picker_sample_tc.y = 1.0 - picker_sample_tc.y;");
+void make_discard_material_id(node_shader_t *kong, char *tex_coord) {
+	char *tc;
+	if (tex_coord == NULL) {
+		kong->frag_wvpposition = true;
+		node_shader_write_frag(
+		    kong, "var picker_sample_tc: float2 = float2(input.wvpposition.x / input.wvpposition.w, input.wvpposition.y / input.wvpposition.w) * 0.5 + 0.5;");
+		node_shader_write_frag(kong, "picker_sample_tc.y = 1.0 - picker_sample_tc.y;");
+		tc = "picker_sample_tc";
+	}
+	else {
+		tc = string("input.%s", tex_coord);
+	}
 	node_shader_add_texture(kong, "texpaint_nor_undo", "_texpaint_nor_undo");
-	i32 matid = g_context->materialid_picked / 255.0;
-	node_shader_write_frag(kong,
-	                       string("if (%s != sample_lod(texpaint_nor_undo, sampler_linear, picker_sample_tc, 0.0).a) { discard; }", i32_to_string(matid)));
+	node_shader_write_frag(kong, string("var picker_sample_a: float = sample_lod(texpaint_nor_undo, sampler_linear, %s, 0.0).a;", tc));
+	// material_id * 3 + (0 - normal, 1 - emission, 2 - subsurface)
+	node_shader_write_frag(kong, "var picker_sample_id: float = floor(floor(picker_sample_a * 255.0 + 0.5) / 3.0);");
+	node_shader_write_frag(kong, string("if (abs(picker_sample_id - %s) > 0.5) { discard; }", f32_to_string_with_zeros((f32)g_context->materialid_picked)));
 }

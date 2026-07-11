@@ -70,7 +70,8 @@ void context_init() {
 	g_context->uvx_picked                   = 0.0;
 	g_context->uvy_picked                   = 0.0;
 	g_context->picker_select_material       = false;
-	g_context->picker_mask                  = 0;
+	g_context->picker_paint_mask            = false;
+	g_context->picker_viewport_mask         = false;
 	g_context->pick_pos_nor_tex             = false;
 	g_context->pick_object_id               = false;
 	g_context->posx_picked                  = 0.0;

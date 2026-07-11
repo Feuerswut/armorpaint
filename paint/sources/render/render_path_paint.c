@@ -296,14 +296,16 @@ void render_path_paint_commands_paint(bool dilation) {
 				g_context->picked_color->height       = buffer_get_u8(c, i3) / 255.0;
 
 				// Pick material
-				if (g_context->picker_select_material && g_context->color_picker_callback == NULL) {
+				if (g_context->color_picker_callback == NULL) {
 					// matid % 3 == 0 - normal, 1 - emission, 2 - subsurface
 					i32 id    = buffer_get_u8(b, 3);
 					i32 matid = math_floor((id - (id % 3)) / 3.0);
 					for (i32 i = 0; i < g_project->_->materials->length; ++i) {
 						slot_material_t *m = g_project->_->materials->buffer[i];
 						if (m->id == matid) {
-							context_set_material(m);
+							if (g_context->picker_select_material) {
+								context_set_material(m);
+							}
 							g_context->materialid_picked = matid;
 							break;
 						}

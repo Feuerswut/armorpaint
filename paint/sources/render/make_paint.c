@@ -295,8 +295,8 @@ node_shader_context_t *make_paint_run(material_t *data, material_context_t *matc
 		}
 	}
 
-	if (g_context->picker_mask == PICKER_MASK_MATERIAL) {
-		make_discard_material_id(kong);
+	if (g_context->picker_paint_mask) {
+		make_discard_material_id(kong, NULL);
 	}
 
 	make_texcoord_run(kong);
@@ -484,7 +484,7 @@ node_shader_context_t *make_paint_run(material_t *data, material_context_t *matc
 	node_shader_write_frag(kong, "var sample_undo: float4 = sample_lod(texpaint_undo, sampler_linear, sample_tc, 0.0);");
 
 	f32 matid = g_context->material->id / 255.0;
-	if (g_context->picker_mask == PICKER_MASK_MATERIAL) {
+	if (g_context->picker_paint_mask) {
 		matid = g_context->materialid_picked / 255.0; // Keep existing material id in place when mask is set
 	}
 	char *matid_string = parser_material_vec1(matid * 3.0);

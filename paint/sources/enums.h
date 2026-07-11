@@ -131,11 +131,6 @@ typedef enum {
 } sculpt_type_t;
 
 typedef enum {
-	PICKER_MASK_NONE     = 0,
-	PICKER_MASK_MATERIAL = 1,
-} picker_mask_t;
-
-typedef enum {
 	BLEND_TYPE_MIX          = 0,
 	BLEND_TYPE_DARKEN       = 1,
 	BLEND_TYPE_MULTIPLY     = 2,

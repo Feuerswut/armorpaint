@@ -162,8 +162,9 @@ void ui_header_draw_tool_properties() {
 		}
 		g_ui->enabled = g_context->colorid_picked;
 		if (ui_icon_button(tr("Clear"), ICON_ERASE, UI_ALIGN_CENTER)) {
-			g_context->colorid_picked  = false;
-			ui_toolbar_handle->redraws = 1;
+			g_context->colorid_picked        = false;
+			g_context->colorid_viewport_mask = false;
+			ui_toolbar_handle->redraws       = 1;
 		}
 		g_ui->enabled = true;
 		ui_text(tr("Color ID Map"), UI_ALIGN_LEFT, 0x00000000);
@@ -199,6 +200,7 @@ void ui_header_draw_tool_properties() {
 		g_ui->enabled = true;
 
 		ui_handle_t *h_viewport_mask     = ui_handle(__ID__);
+		h_viewport_mask->b               = g_context->colorid_viewport_mask;
 		g_context->colorid_viewport_mask = ui_check(h_viewport_mask, tr("Viewport Mask"), "");
 		if (h_viewport_mask->changed) {
 			make_material_parse_mesh_material();
@@ -220,7 +222,7 @@ void ui_header_draw_tool_properties() {
 		if (g_ui->is_hovered) {
 			ui_tooltip(tr("Drag and drop picked color to swatches, materials, layers or to the node editor"));
 		}
-		if (g_ui->is_hovered && g_ui->input_released) {
+		if (g_ui->is_hovered && g_ui->input_released && g_ui->combo_selected_handle == NULL) {
 			gc_unroot(_ui_header_draw_tool_properties_h);
 			_ui_header_draw_tool_properties_h = h_color;
 			gc_root(_ui_header_draw_tool_properties_h);
@@ -244,7 +246,7 @@ void ui_header_draw_tool_properties() {
 			ui_handle_t *h_normal = ui_handle(__ID__);
 			h_normal->color       = g_context->picked_color->normal;
 			ui_text("", 0, h_normal->color);
-			if (g_ui->is_hovered && g_ui->input_released) {
+			if (g_ui->is_hovered && g_ui->input_released && g_ui->combo_selected_handle == NULL) {
 				gc_unroot(_ui_header_draw_tool_properties_h);
 				_ui_header_draw_tool_properties_h = h_normal;
 				gc_root(_ui_header_draw_tool_properties_h);
@@ -278,18 +280,25 @@ void ui_header_draw_tool_properties() {
 		h_select_mat->b                   = g_context->picker_select_material;
 		g_context->picker_select_material = ui_check(h_select_mat, tr("Select Material"), "");
 
-		string_array_t *picker_mask_combo = any_array_create_from_raw(
-		    (void *[]){
-		        tr("None"),
-		        tr("Material"),
-		    },
-		    2);
+		ui_handle_t *picker_paint_mask_handle = ui_handle(__ID__);
+		picker_paint_mask_handle->i           = g_context->picker_paint_mask;
+		g_context->picker_paint_mask          = ui_check(picker_paint_mask_handle, tr("Paint Mask"), "");
+		if (picker_paint_mask_handle->changed) {
+			make_material_parse_paint_material(false);
+		}
 
-		ui_handle_t *picker_mask_handle = ui_handle(__ID__);
-		picker_mask_handle->i           = g_context->picker_mask;
-		g_context->picker_mask          = ui_combo(picker_mask_handle, picker_mask_combo, tr("Mask"), true, UI_ALIGN_LEFT, true);
-		if (picker_mask_handle->changed) {
-			make_material_parse_paint_material(true);
+		ui_handle_t *picker_viewport_mask_handle = ui_handle(__ID__);
+		picker_viewport_mask_handle->b           = g_context->picker_viewport_mask;
+		g_context->picker_viewport_mask          = ui_check(picker_viewport_mask_handle, tr("Viewport Mask"), "");
+		if (picker_viewport_mask_handle->changed) {
+			make_material_parse_mesh_material();
+		}
+
+		if (ui_icon_button(tr("Clear"), ICON_ERASE, UI_ALIGN_CENTER)) {
+			g_context->picker_viewport_mask = false;
+			g_context->picker_paint_mask    = false;
+			make_material_parse_mesh_material();
+			make_material_parse_paint_material(false);
 		}
 	}
 	else if (g_context->tool == TOOL_TYPE_BRUSH || g_context->tool == TOOL_TYPE_ERASER || g_context->tool == TOOL_TYPE_FILL ||
@@ -431,13 +440,13 @@ void ui_header_draw_tool_properties() {
 		}
 
 		if (g_context->tool == TOOL_TYPE_BRUSH && g_config->workflow == WORKFLOW_SCULPT) {
-			ui_handle_t    *sculpt_handle   = ui_handle(__ID__);
-			string_array_t *mode_combo = any_array_create_from_raw(
-			    (void *[]){
-			        tr("Draw"),
-			        tr("Grab"),
-			    },
-			    2);
+			ui_handle_t    *sculpt_handle = ui_handle(__ID__);
+			string_array_t *mode_combo    = any_array_create_from_raw(
+                (void *[]){
+                    tr("Draw"),
+                    tr("Grab"),
+                },
+                2);
 			g_context->brush_sculpt = ui_combo(sculpt_handle, mode_combo, tr("Mode"), false, UI_ALIGN_LEFT, true);
 			if (sculpt_handle->changed) {
 				make_material_parse_paint_material(true);

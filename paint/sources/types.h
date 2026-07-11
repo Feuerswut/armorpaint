@@ -281,7 +281,8 @@ typedef struct context {
 	f32                         uvx_picked;
 	f32                         uvy_picked;
 	bool                        picker_select_material;
-	i32                         picker_mask;
+	bool                        picker_paint_mask;
+	bool                        picker_viewport_mask;
 	bool                        pick_pos_nor_tex;
 	bool                        pick_object_id;
 	f32                         posx_picked;
