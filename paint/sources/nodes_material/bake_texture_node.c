@@ -13,7 +13,7 @@ static void bake_texture_node_clear(gpu_texture_t *t) {
 static void bake_texture_node_check_result(ui_node_t *node) {
 	ui_nodes_hwnd->redraws = 2;
 
-	if (g_context->pdirty > 0) {
+	if (g_context->pdirty > 0 || render_path_paint_baking) {
 		return;
 	}
 

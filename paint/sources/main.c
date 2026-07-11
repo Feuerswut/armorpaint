@@ -326,9 +326,11 @@ void _kickstart() {
 	        _tr("Material"),
 	        _tr("Cursor"),
 	        _tr("Select"),
+	        _tr("Bake"), // Hidden, used by Bake Texture node
 	    },
-	    13);
+	    14);
 	gc_root(ui_toolbar_tool_names);
+	ui_toolbar_tool_names->length--; // Hide Bake tool
 
 	ui_toolbar_tooltip_extras = any_array_create_from_raw(
 	    (void *[]){
