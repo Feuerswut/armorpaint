@@ -5,6 +5,8 @@ const constants: {
 	grain_strength: float;
 	tonemap_strength: float; // 0.0 or 1.0
 	lut_size: float;
+	contrast_strength: float;
+	gamma_strength: float;
 };
 
 #[set(everything)]
@@ -83,6 +85,13 @@ fun compositor_pass_frag(input: vert_out): float4 {
 		// Tonemap with gamma
 		color.rgb = lerp3(color.rgb, tonemap_filmic(color.rgb), constants.tonemap_strength);
 	}
+
+	// Contrast
+	color.rgb = (color.rgb - float3(0.5, 0.5, 0.5)) * constants.contrast_strength + float3(0.5, 0.5, 0.5);
+
+	// Gamma
+	var inv_gamma: float = 1.0 / max(constants.gamma_strength, 0.01);
+	color.rgb = pow3(max3(color.rgb, float3(0.0, 0.0, 0.0)), float3(inv_gamma, inv_gamma, inv_gamma));
 
 	return color;
 }

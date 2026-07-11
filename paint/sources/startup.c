@@ -3082,7 +3082,7 @@ scene_t *startup_get_scene(void) {
 				ve->data                       = "float2";
 				sc->vertex_elements->buffer[0] = ve;
 			}
-			sc->constants = (shader_const_t_array_t *)any_array_create(4);
+			sc->constants = (shader_const_t_array_t *)any_array_create(6);
 			{
 				shader_const_t *c        = (shader_const_t *)gc_alloc(sizeof(shader_const_t));
 				c->name                  = "vignette_strength";
@@ -3110,6 +3110,20 @@ scene_t *startup_get_scene(void) {
 				c->type                  = "float";
 				c->link                  = "_lut_size";
 				sc->constants->buffer[3] = c;
+			}
+			{
+				shader_const_t *c        = (shader_const_t *)gc_alloc(sizeof(shader_const_t));
+				c->name                  = "contrast_strength";
+				c->type                  = "float";
+				c->link                  = "_contrast_strength";
+				sc->constants->buffer[4] = c;
+			}
+			{
+				shader_const_t *c        = (shader_const_t *)gc_alloc(sizeof(shader_const_t));
+				c->name                  = "gamma_strength";
+				c->type                  = "float";
+				c->link                  = "_gamma_strength";
+				sc->constants->buffer[5] = c;
 			}
 			sc->texture_units = (tex_unit_t_array_t *)any_array_create(2);
 			{

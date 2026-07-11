@@ -670,6 +670,20 @@ void box_preferences_viewport_tab() {
 		}
 	}
 
+	ui_handle_t *h_contrast = ui_handle(__ID__);
+	h_contrast->f           = g_config->rp_contrast;
+	g_config->rp_contrast   = ui_slider(h_contrast, tr("Contrast"), 0.0, 2.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
+	if (h_contrast->changed) {
+		g_context->ddirty = 2;
+	}
+
+	ui_handle_t *h_gamma = ui_handle(__ID__);
+	h_gamma->f           = g_config->rp_gamma;
+	g_config->rp_gamma   = ui_slider(h_gamma, tr("Gamma"), 0.0, 2.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
+	if (h_gamma->changed) {
+		g_context->ddirty = 2;
+	}
+
 	ui_handle_t *h_vignette = ui_handle(__ID__);
 	h_vignette->f           = g_config->rp_vignette;
 	g_config->rp_vignette   = ui_slider(h_vignette, tr("Vignette"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);

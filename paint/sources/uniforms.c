@@ -42,6 +42,12 @@ f32 uniforms_ext_f32_link(object_t *object, material_data_t *mat, char *link) {
 	else if (string_equals(link, "_grain_strength")) {
 		return g_config->rp_grain;
 	}
+	else if (string_equals(link, "_contrast_strength")) {
+		return g_config->rp_contrast;
+	}
+	else if (string_equals(link, "_gamma_strength")) {
+		return g_config->rp_gamma;
+	}
 	else if (string_equals(link, "_tonemap_strength")) {
 		bool tonemap = g_context->viewport_mode == VIEWPORT_MODE_LIT || g_context->viewport_mode == VIEWPORT_MODE_PATH_TRACE;
 		return tonemap ? 1.0 : 0.0;

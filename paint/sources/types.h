@@ -96,6 +96,8 @@ typedef struct config {
 	f32   rp_bloom;
 	f32   rp_vignette;
 	f32   rp_grain;
+	f32   rp_contrast;
+	f32   rp_gamma;
 	char *lut_path; // .cube
 	bool  texture_filter;
 	// Application
