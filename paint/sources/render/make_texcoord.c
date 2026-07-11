@@ -42,7 +42,7 @@ void make_texcoord_run(node_shader_t *kong) {
 			node_shader_add_constant(kong, "VP: float4x4", "_view_proj_matrix");
 			node_shader_add_constant(kong, "camera_right: float3", "_camera_right");
 			node_shader_add_constant(kong, "camera_up: float3", "_camera_up");
-			node_shader_add_constant(kong, "camera_align: float", "_decal_camera_align");
+			node_shader_add_constant(kong, "camera_align: float", "_brush_camera_align");
 
 			node_shader_write_attrib_frag(kong, "if (constants.camera_align > 0.0) {");
 			node_shader_write_attrib_frag(kong, "var ca_depth: float = sample_lod(gbufferD, sampler_linear, constants.decal_mask.xy, 0.0).r;");

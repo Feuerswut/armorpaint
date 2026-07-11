@@ -354,7 +354,7 @@ node_shader_context_t *sculpt_make_sculpt_run(material_t *data, material_context
 		node_shader_add_constant(kong, "aspect_ratio: float", "_aspect_ratio_window");
 		node_shader_add_constant(kong, "camera_right: float3", "_camera_right");
 		node_shader_add_constant(kong, "camera_up: float3", "_camera_up");
-		node_shader_add_constant(kong, "camera_align: float", "_decal_camera_align");
+		node_shader_add_constant(kong, "camera_align: float", "_brush_camera_align");
 
 		node_shader_write_attrib_frag(kong, "var uvsp: float2 = float2(0.0, 0.0);");
 

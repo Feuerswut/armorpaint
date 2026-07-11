@@ -421,6 +421,9 @@ node_shader_context_t *make_paint_run(material_t *data, material_context_t *matc
 		node_shader_add_function(kong, str_octahedron_wrap);
 		node_shader_add_texture(kong, "gbuffer0", NULL);
 		node_shader_add_constant(kong, "camera_right: float3", "_camera_right");
+		node_shader_add_constant(kong, "camera_up: float3", "_camera_up");
+		node_shader_add_constant(kong, "camera_align: float", "_brush_camera_align");
+		node_shader_add_constant(kong, "VP: float4x4", "_view_proj_matrix");
 		node_shader_write_frag(kong, "var mn0: float2 = sample_lod(gbuffer0, sampler_linear, constants.inp.xy, 0.0).rg;");
 		node_shader_write_frag(kong, "var mn: float3;");
 		node_shader_write_frag(kong, "mn.z = 1.0 - abs(mn0.x) - abs(mn0.y);");
@@ -432,7 +435,16 @@ node_shader_context_t *make_paint_run(material_t *data, material_context_t *matc
 		node_shader_write_frag(kong, "var mt: float3 = normalize(mr - mn * dot(mr, mn));");
 		node_shader_write_frag(kong, "var mb: float3 = cross(mt, mn);");
 		node_shader_write_frag(kong, "var pa_mask_3d: float3 = input.wposition - winp.xyz;");
-		node_shader_write_frag(kong, "var pa_mask: float2 = float2(dot(pa_mask_3d, mt), dot(pa_mask_3d, mb));");
+		node_shader_write_frag(kong, "var pa_mask: float2;");
+		node_shader_write_frag(kong, "if (constants.camera_align > 0.0) {");
+		node_shader_write_frag(kong, "var mvp_up_y: float = (constants.VP * float4(constants.camera_up, 0.0)).y;");
+		node_shader_write_frag(kong, "var msa: float2 = sp.xy - constants.inp.xy;");
+		node_shader_write_frag(kong, "msa.x *= constants.aspect_ratio;");
+		node_shader_write_frag(kong, "pa_mask = msa * (2.0 / (mvp_up_y * winp.w));");
+		node_shader_write_frag(kong, "}");
+		node_shader_write_frag(kong, "else {");
+		node_shader_write_frag(kong, "pa_mask = float2(dot(pa_mask_3d, mt), dot(pa_mask_3d, mb));");
+		node_shader_write_frag(kong, "}");
 		if (g_context->brush_directional) {
 			node_shader_add_constant(kong, "brush_direction: float3", "_brush_direction");
 			node_shader_write_frag(kong, "if (constants.brush_direction.z == 0.0) { discard; }");

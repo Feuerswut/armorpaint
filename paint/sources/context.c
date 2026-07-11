@@ -426,8 +426,10 @@ bool context_is_decal_mask() {
 	return context_is_decal() && operator_shortcut(any_map_get(g_keymap, "decal_mask"), SHORTCUT_TYPE_DOWN);
 }
 
-bool context_is_decal_camera_align() {
-	return context_is_decal() && (g_context->decal_camera_align || operator_shortcut(any_map_get(g_keymap, "decal_camera_align"), SHORTCUT_TYPE_DOWN));
+bool context_is_brush_camera_align() {
+	bool brush = g_context->tool == TOOL_TYPE_BRUSH || g_context->tool == TOOL_TYPE_ERASER;
+	return (context_is_decal() || brush) &&
+	       (g_context->brush_camera_align || operator_shortcut(any_map_get(g_keymap, "brush_camera_align"), SHORTCUT_TYPE_DOWN));
 }
 
 bool context_is_decal_mask_paint() {

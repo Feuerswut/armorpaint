@@ -251,7 +251,7 @@ static void texture_mesh_node_project(ui_node_t *node) {
 
 	// Project a camera-aligned decal
 	g_context->tool               = TOOL_TYPE_DECAL;
-	g_context->decal_camera_align = true;
+	g_context->brush_camera_align = true;
 	g_context->brush_opacity      = 1.0;
 	g_context->brush_angle        = 0.0;
 	g_context->brush_scale        = 1.0;
@@ -302,7 +302,7 @@ static void texture_mesh_node_project(ui_node_t *node) {
 
 	g_context->pdirty             = 0;
 	g_context->tool               = _tool;
-	g_context->decal_camera_align = false;
+	g_context->brush_camera_align = false;
 	g_context->brush_radius       = _brush_radius;
 	g_context->brush_opacity      = _brush_opacity;
 	g_context->brush_angle        = _brush_angle;

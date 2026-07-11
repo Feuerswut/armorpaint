@@ -83,6 +83,8 @@ i32              pipes_cursor_tex_step;
 i32              pipes_cursor_radius;
 i32              pipes_cursor_camera_right;
 i32              pipes_cursor_tint;
+i32              pipes_cursor_camera_up;
+i32              pipes_cursor_camera_align;
 i32              pipes_cursor_gbufferd;
 gpu_pipeline_t  *pipes_cursor_decal;
 i32              pipes_cursor_decal_vp;

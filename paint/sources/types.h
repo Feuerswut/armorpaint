@@ -300,7 +300,7 @@ typedef struct context {
 	bool                        decal_preview;
 	f32                         decal_x;
 	f32                         decal_y;
-	bool                        decal_camera_align;
+	bool                        brush_camera_align;
 	bool                        select_active; // Select tool
 	bool                        select_dragging;
 	f32                         select_start_x;

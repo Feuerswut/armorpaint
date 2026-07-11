@@ -214,6 +214,8 @@ void pipes_init() {
 		pipes_cursor_radius       = pipes_get_constant_location("float");
 		pipes_cursor_camera_right = pipes_get_constant_location("float3");
 		pipes_cursor_tint         = pipes_get_constant_location("float3");
+		pipes_cursor_camera_up    = pipes_get_constant_location("float3");
+		pipes_cursor_camera_align = pipes_get_constant_location("float");
 		pipes_cursor_gbufferd     = 0;
 	}
 

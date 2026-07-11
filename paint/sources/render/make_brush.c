@@ -56,15 +56,30 @@ void make_brush_run(node_shader_t *kong) {
 	}
 	node_shader_write_frag(kong, "var ba: float3 = winplast.xyz - winp.xyz;");
 
-	if (g_context->brush_lazy_radius > 0 && g_context->brush_lazy_step > 0) {
-		// Sphere
-		node_shader_write_frag(kong, "dist = distance(input.wposition, winp.xyz);");
-	}
-	else {
-		// Capsule
-		node_shader_write_frag(kong, "var h: float = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);");
-		node_shader_write_frag(kong, "dist = length(pa - ba * h);");
-	}
+	node_shader_add_constant(kong, "VP: float4x4", "_view_proj_matrix");
+	node_shader_add_constant(kong, "camera_up: float3", "_camera_up");
+	node_shader_add_constant(kong, "aspect_ratio: float", "_aspect_ratio_window");
+	node_shader_add_constant(kong, "camera_align: float", "_brush_camera_align");
+
+	node_shader_write_frag(kong, "if (constants.camera_align > 0.0) {");
+	node_shader_write_frag(kong, "var vp_up_y: float = (constants.VP * float4(constants.camera_up, 0.0)).y;");
+	node_shader_write_frag(kong, "var ca_scale: float = (1.0 / winp.w) / (vp_up_y * constants.brush_radius);");
+	node_shader_write_frag(kong, "var sa: float2 = sp.xy - constants.inp.xy;");
+	node_shader_write_frag(kong, "sa.x *= constants.aspect_ratio;");
+	node_shader_write_frag(kong, "sa = sa * ca_scale;");
+	// Capsule
+	node_shader_write_frag(kong, "var sb: float2 = constants.inplast.xy - constants.inp.xy;");
+	node_shader_write_frag(kong, "sb.x *= constants.aspect_ratio;");
+	node_shader_write_frag(kong, "sb = sb * ca_scale;");
+	node_shader_write_frag(kong, "var sh: float = clamp(dot(sa, sb) / dot(sb, sb), 0.0, 1.0);");
+	node_shader_write_frag(kong, "dist = length(sa - sb * sh) * 2.0 * constants.brush_radius;");
+	node_shader_write_frag(kong, "}");
+
+	node_shader_write_frag(kong, "else {");
+	// Capsule
+	node_shader_write_frag(kong, "var h: float = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);");
+	node_shader_write_frag(kong, "dist = length(pa - ba * h);");
+	node_shader_write_frag(kong, "}");
 
 	node_shader_write_frag(kong, "if (dist > constants.brush_radius) { discard; }");
 

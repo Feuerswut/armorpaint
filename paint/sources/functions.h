@@ -257,7 +257,7 @@ bool                      context_in_browser();
 bool                      context_is_decal();
 bool                      context_is_decal_mask();
 bool                      context_is_decal_mask_paint();
-bool                      context_is_decal_camera_align();
+bool                      context_is_brush_camera_align();
 bool                      context_is_floating_toolbar();
 void                      context_set_viewport_mode(viewport_mode_t mode);
 void                      context_load_envmap();

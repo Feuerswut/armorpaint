@@ -83,7 +83,7 @@ any_map_t *keymap_get_default() {
 	any_map_set(keymap, "node_search", "space");
 	any_map_set(keymap, "operator_search", "space");
 	any_map_set(keymap, "decal_mask", "ctrl");
-	any_map_set(keymap, "decal_camera_align", "z");
+	any_map_set(keymap, "brush_camera_align", "z");
 	any_map_set(keymap, "grid_snap", "x");
 	any_map_set(keymap, "select_material", "shift+number");
 	any_map_set(keymap, "select_layer", "alt+number");
