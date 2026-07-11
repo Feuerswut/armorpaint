@@ -663,10 +663,10 @@ void box_preferences_viewport_tab() {
 		}
 
 		ui_handle_t *h_bloom = ui_handle(__ID__);
-		h_bloom->b           = g_config->rp_bloom;
-		g_config->rp_bloom   = ui_check(h_bloom, tr("Bloom"), "");
+		h_bloom->f           = g_config->rp_bloom;
+		g_config->rp_bloom   = ui_slider(h_bloom, tr("Bloom"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 		if (h_bloom->changed) {
-			config_apply();
+			g_context->ddirty = 2;
 		}
 	}
 

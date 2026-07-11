@@ -93,7 +93,7 @@ typedef struct config {
 	// Render path
 	f32   rp_supersample;
 	bool  rp_ssao;
-	bool  rp_bloom;
+	f32   rp_bloom;
 	f32   rp_vignette;
 	f32   rp_grain;
 	char *lut_path; // .cube

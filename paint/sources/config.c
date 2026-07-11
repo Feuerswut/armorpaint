@@ -72,7 +72,7 @@ void config_save() {
 	json_encode_f32("window_scale", g_config->window_scale);
 	json_encode_f32("rp_supersample", g_config->rp_supersample);
 	json_encode_bool("rp_ssao", g_config->rp_ssao);
-	json_encode_bool("rp_bloom", g_config->rp_bloom);
+	json_encode_f32("rp_bloom", g_config->rp_bloom);
 	json_encode_f32("rp_vignette", g_config->rp_vignette);
 	json_encode_f32("rp_grain", g_config->rp_grain);
 	json_encode_string("lut_path", g_config->lut_path);
@@ -178,7 +178,7 @@ void config_init() {
 #endif
 		g_config->window_vsync     = true;
 		g_config->window_frequency = sys_display_frequency();
-		g_config->rp_bloom         = false;
+		g_config->rp_bloom         = 0.0;
 		g_config->rp_vignette      = 0.2;
 		g_config->rp_grain         = 0.09;
 		g_config->lut_path         = "";

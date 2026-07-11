@@ -185,7 +185,7 @@ void render_path_base_commands(void (*draw_commands)(void)) {
 }
 
 void render_path_base_draw_bloom(char *source, char *target) {
-	if (g_config->rp_bloom == false) {
+	if (g_config->rp_bloom == 0.0) {
 		return;
 	}
 

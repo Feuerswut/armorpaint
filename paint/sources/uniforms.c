@@ -53,7 +53,8 @@ f32 uniforms_ext_f32_link(object_t *object, material_data_t *mat, char *link) {
 		return render_path_base_bloom_sample_scale;
 	}
 	else if (string_equals(link, "_bloom_strength")) {
-		return g_context->viewport_mode == VIEWPORT_MODE_PATH_TRACE ? 0.2 : 0.02;
+		f32 base = g_context->viewport_mode == VIEWPORT_MODE_PATH_TRACE ? 0.2 : 0.02;
+		return base * g_config->rp_bloom;
 	}
 	else if (string_equals(link, "_brush_scale_x")) {
 		return 1 / (float)g_context->brush_scale_x;
