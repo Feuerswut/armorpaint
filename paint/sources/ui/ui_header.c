@@ -384,7 +384,7 @@ void ui_header_draw_tool_properties() {
 			g_context->brush_hardness = ui_slider(h, tr("Hardness"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 		}
 
-		if (g_context->tool != TOOL_TYPE_ERASER) {
+		if (g_context->tool != TOOL_TYPE_ERASER && g_config->workflow != WORKFLOW_SCULPT) {
 			ui_handle_t *brush_blending_handle   = ui_handle(__ID__);
 			brush_blending_handle->i             = g_context->brush_blending;
 			string_array_t *brush_blending_combo = any_array_create_from_raw(
@@ -415,7 +415,7 @@ void ui_header_draw_tool_properties() {
 			}
 		}
 
-		if (g_context->tool == TOOL_TYPE_BRUSH || g_context->tool == TOOL_TYPE_FILL) {
+		if ((g_context->tool == TOOL_TYPE_BRUSH || g_context->tool == TOOL_TYPE_FILL) && g_config->workflow != WORKFLOW_SCULPT) {
 			ui_handle_t    *paint_handle   = ui_handle(__ID__);
 			string_array_t *texcoord_combo = any_array_create_from_raw(
 			    (void *[]){
@@ -426,6 +426,20 @@ void ui_header_draw_tool_properties() {
 			    3);
 			g_context->brush_paint = ui_combo(paint_handle, texcoord_combo, tr("TexCoord"), false, UI_ALIGN_LEFT, true);
 			if (paint_handle->changed) {
+				make_material_parse_paint_material(true);
+			}
+		}
+
+		if (g_context->tool == TOOL_TYPE_BRUSH && g_config->workflow == WORKFLOW_SCULPT) {
+			ui_handle_t    *sculpt_handle   = ui_handle(__ID__);
+			string_array_t *mode_combo = any_array_create_from_raw(
+			    (void *[]){
+			        tr("Draw"),
+			        tr("Grab"),
+			    },
+			    2);
+			g_context->brush_sculpt = ui_combo(sculpt_handle, mode_combo, tr("Mode"), false, UI_ALIGN_LEFT, true);
+			if (sculpt_handle->changed) {
 				make_material_parse_paint_material(true);
 			}
 		}

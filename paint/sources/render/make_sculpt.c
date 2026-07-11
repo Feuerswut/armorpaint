@@ -113,16 +113,16 @@ node_shader_context_t *sculpt_make_sculpt_run(material_t *data, material_context
 	                                                                     .compare_mode    = "always",
 	                                                                     .cull_mode       = "none",
 	                                                                     .vertex_elements = any_array_create_from_raw(
-	                                                                         (void *[]){
-	                                                                             GC_ALLOC_INIT(vertex_element_t, {.name = "pos", .data = "float2"}),
-	                                                                         },
-	                                                                         1),
+                                                                   (void *[]){
+                                                                       GC_ALLOC_INIT(vertex_element_t, {.name = "pos", .data = "float2"}),
+                                                                   },
+                                                                   1),
 	                                                                     .color_attachments = any_array_create_from_raw(
-	                                                                         (void *[]){
-	                                                                             "RGBA128",
-	                                                                             "R8",
-	                                                                         },
-	                                                                         2)});
+                                                                   (void *[]){
+                                                                       "RGBA128",
+                                                                       "R8",
+                                                                   },
+                                                                   2)});
 	node_shader_context_t *con_paint  = node_shader_context_create(data, props);
 	con_paint->data->color_writes_red = u8_array_create_from_raw(
 	    (u8[]){
@@ -160,8 +160,10 @@ node_shader_context_t *sculpt_make_sculpt_run(material_t *data, material_context
 	node_shader_t *kong     = node_shader_context_make_kong(con_paint);
 	bool           decal    = context_is_decal();
 	bool           particle = g_context->tool == TOOL_TYPE_PARTICLE;
+	// Grab drags the vertices along with the cursor instead of displacing along the normal
+	bool grab = g_context->tool == TOOL_TYPE_BRUSH && g_context->brush_sculpt == SCULPT_TYPE_GRAB;
 	// Decal fill layer: displacement must be confined to the decal box projection
-	bool decal_layer      = g_context->layer->fill_material != NULL && g_context->layer->uv_type == UV_TYPE_PROJECT && g_context->tool == TOOL_TYPE_FILL;
+	bool decal_layer = g_context->layer->fill_material != NULL && g_context->layer->uv_type == UV_TYPE_PROJECT && g_context->tool == TOOL_TYPE_FILL;
 
 	bool has_wposition = g_context->tool == TOOL_TYPE_BRUSH || g_context->tool == TOOL_TYPE_ERASER || g_context->tool == TOOL_TYPE_CLONE ||
 	                     g_context->tool == TOOL_TYPE_BLUR || g_context->tool == TOOL_TYPE_PARTICLE || g_context->tool == TOOL_TYPE_FILL || decal;
@@ -197,20 +199,51 @@ node_shader_context_t *sculpt_make_sculpt_run(material_t *data, material_context
 
 	if (g_context->tool == TOOL_TYPE_BRUSH || g_context->tool == TOOL_TYPE_ERASER || g_context->tool == TOOL_TYPE_CLONE || g_context->tool == TOOL_TYPE_BLUR ||
 	    g_context->tool == TOOL_TYPE_PARTICLE || decal) {
-		node_shader_write_frag(kong, "var depth: float = sample_lod(gbufferD, sampler_linear, constants.inp.xy, 0.0).r;");
 		node_shader_add_constant(kong, "invVP: float4x4", "_inv_view_proj_matrix");
-		// node_shader_write_frag(kong, "var winp: float4 = float4(float2(constants.inp.x, 1.0 - constants.inp.y) * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);");
-		node_shader_write_frag(kong, "var winp: float4 = float4(float2(constants.inp.x, 1.0 - constants.inp.y) * 2.0 - 1.0, depth, 1.0);");
-		node_shader_write_frag(kong, "winp = constants.invVP * winp;");
-		node_shader_write_frag(kong, "winp.xyz = winp.xyz / winp.w;");
+		if (grab) {
+			// Anchor a camera-facing plane at the grab_start surface point
+			node_shader_add_constant(kong, "grab_start: float2", "_grab_start");
+			node_shader_write_frag(kong, "var grab_ndc: float2 = float2(constants.grab_start.x, 1.0 - constants.grab_start.y) * 2.0 - 1.0;");
+			node_shader_write_frag(kong, "var grab_adepth: float = sample_lod(gbufferD, sampler_linear, constants.grab_start, 0.0).r;");
+			node_shader_write_frag(kong, "var grab_anchor4: float4 = constants.invVP * float4(grab_ndc, grab_adepth, 1.0);");
+			node_shader_write_frag(kong, "var grab_anchor: float3 = grab_anchor4.xyz / grab_anchor4.w;");
+			node_shader_write_frag(kong, "var grab_near4: float4 = constants.invVP * float4(grab_ndc, 0.0, 1.0);");
+			node_shader_write_frag(kong, "var grab_far4: float4 = constants.invVP * float4(grab_ndc, 1.0, 1.0);");
+			node_shader_write_frag(kong, "var grab_plane_n: float3 = normalize(grab_far4.xyz / grab_far4.w - grab_near4.xyz / grab_near4.w);");
+			// Intersect the cursor ray with the grab plane
+			node_shader_write_frag(kong, "var winp_ndc: float2 = float2(constants.inp.x, 1.0 - constants.inp.y) * 2.0 - 1.0;");
+			node_shader_write_frag(kong, "var winp_o4: float4 = constants.invVP * float4(winp_ndc, 0.0, 1.0);");
+			node_shader_write_frag(kong, "var winp_f4: float4 = constants.invVP * float4(winp_ndc, 1.0, 1.0);");
+			node_shader_write_frag(kong, "var winp_o: float3 = winp_o4.xyz / winp_o4.w;");
+			node_shader_write_frag(kong, "var winp_d: float3 = normalize(winp_f4.xyz / winp_f4.w - winp_o);");
+			node_shader_write_frag(kong,
+			                       "var winp: float4 = float4(winp_o + winp_d * (dot(grab_anchor - winp_o, grab_plane_n) / dot(winp_d, grab_plane_n)), 1.0);");
+		}
+		else {
+			node_shader_write_frag(kong, "var depth: float = sample_lod(gbufferD, sampler_linear, constants.inp.xy, 0.0).r;");
+			node_shader_write_frag(kong, "var winp: float4 = float4(float2(constants.inp.x, 1.0 - constants.inp.y) * 2.0 - 1.0, depth, 1.0);");
+			node_shader_write_frag(kong, "winp = constants.invVP * winp;");
+			node_shader_write_frag(kong, "winp.xyz = winp.xyz / winp.w;");
+		}
 		node_shader_add_constant(kong, "W: float4x4", "_world_matrix");
 		node_shader_write_attrib_frag(kong, "var read_undo: float4 = texpaint_sculpt_undo[uint2(uint(tex_coord.x * constants.texpaint_undo_size.x), "
 		                                    "uint(tex_coord.y * constants.texpaint_undo_size.y))];");
 		node_shader_write_attrib_frag(kong, "var wposition: float3 = (constants.W * float4(read_undo.xyz, 1.0)).xyz;");
-		node_shader_write_frag(kong, "var depthlast: float = sample_lod(gbufferD, sampler_linear, constants.inplast.xy, 0.0).r;");
-		node_shader_write_frag(kong, "var winplast: float4 = float4(float2(constants.inplast.x, 1.0 - constants.inplast.y) * 2.0 - 1.0, depthlast, 1.0);");
-		node_shader_write_frag(kong, "winplast = constants.invVP * winplast;");
-		node_shader_write_frag(kong, "winplast.xyz = winplast.xyz / winplast.w;");
+		if (grab) {
+			node_shader_write_frag(kong, "var winpl_ndc: float2 = float2(constants.inplast.x, 1.0 - constants.inplast.y) * 2.0 - 1.0;");
+			node_shader_write_frag(kong, "var winpl_o4: float4 = constants.invVP * float4(winpl_ndc, 0.0, 1.0);");
+			node_shader_write_frag(kong, "var winpl_f4: float4 = constants.invVP * float4(winpl_ndc, 1.0, 1.0);");
+			node_shader_write_frag(kong, "var winpl_o: float3 = winpl_o4.xyz / winpl_o4.w;");
+			node_shader_write_frag(kong, "var winpl_d: float3 = normalize(winpl_f4.xyz / winpl_f4.w - winpl_o);");
+			node_shader_write_frag(
+			    kong, "var winplast: float4 = float4(winpl_o + winpl_d * (dot(grab_anchor - winpl_o, grab_plane_n) / dot(winpl_d, grab_plane_n)), 1.0);");
+		}
+		else {
+			node_shader_write_frag(kong, "var depthlast: float = sample_lod(gbufferD, sampler_linear, constants.inplast.xy, 0.0).r;");
+			node_shader_write_frag(kong, "var winplast: float4 = float4(float2(constants.inplast.x, 1.0 - constants.inplast.y) * 2.0 - 1.0, depthlast, 1.0);");
+			node_shader_write_frag(kong, "winplast = constants.invVP * winplast;");
+			node_shader_write_frag(kong, "winplast.xyz = winplast.xyz / winplast.w;");
+		}
 
 		if (particle) {
 			node_shader_add_constant(kong, "particle_hit: float3", "_particle_hit");
@@ -615,6 +648,10 @@ node_shader_context_t *sculpt_make_sculpt_run(material_t *data, material_context
 	}
 	else if (g_context->tool == TOOL_TYPE_ERASER) {
 		node_shader_write_frag(kong, "output[0] = float4(sample_undo.rgb - n * disp * str, raw_undo.a);");
+	}
+	else if (grab) {
+		node_shader_write_frag(kong, "var grab_delta: float3 = (winp.xyz - winplast.xyz) * falloff * opacity;");
+		node_shader_write_frag(kong, "output[0] = float4(sample_undo.rgb + grab_delta, raw_undo.a);");
 	}
 	else {
 		node_shader_write_frag(kong, string("var sculpt_disp: float = %s;", sculpt_blend_mode(kong, g_context->brush_blending, "0.0", "disp.x", "str")));
@@ -1043,7 +1080,6 @@ void render_path_sculpt_commands() {
 }
 
 void render_path_sculpt_snapshot_gbuffer() {
-	// Freeze the current surface (depth + packed normal) as the reference the displacement pass reads
 	render_path_set_target("gbuffer0_undo", NULL, NULL, GPU_CLEAR_NONE, 0, 0.0);
 	render_path_bind_target("gbuffer0", "tex");
 	render_path_draw_shader("Scene/copy_pass/copyRGBA64_pass");
@@ -1060,6 +1096,8 @@ void render_path_sculpt_begin() {
 	if (history_push_undo && history_undo_layers != NULL) {
 		history_paint();
 		render_path_sculpt_snapshot_gbuffer();
+		g_context->grab_start_x = g_context->paint_vec.x;
+		g_context->grab_start_y = g_context->paint_vec.y;
 	}
 	sculpt_push_undo = false;
 }

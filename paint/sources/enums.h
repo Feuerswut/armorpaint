@@ -126,6 +126,11 @@ typedef enum {
 } uv_type_t;
 
 typedef enum {
+	SCULPT_TYPE_DRAW = 0,
+	SCULPT_TYPE_GRAB = 1,
+} sculpt_type_t;
+
+typedef enum {
 	PICKER_MASK_NONE     = 0,
 	PICKER_MASK_MATERIAL = 1,
 } picker_mask_t;

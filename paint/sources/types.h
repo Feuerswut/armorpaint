@@ -239,6 +239,8 @@ typedef struct context {
 	f32                         clone_start_y;
 	f32                         clone_delta_x;
 	f32                         clone_delta_y;
+	f32                         grab_start_x;
+	f32                         grab_start_y;
 	bool                        show_compass;
 	i32                         project_type;
 	f32                         last_paint_vec_x;
@@ -362,6 +364,7 @@ typedef struct context {
 	f32                         brush_lazy_x;
 	f32                         brush_lazy_y;
 	uv_type_t                   brush_paint;
+	sculpt_type_t               brush_sculpt;
 	f32                         brush_angle_reject_dot;
 	bake_type_t                 bake_type;
 	bake_axis_t                 bake_axis;
