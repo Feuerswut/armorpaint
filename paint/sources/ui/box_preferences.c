@@ -696,14 +696,6 @@ void box_preferences_viewport_tab() {
 		camera_object_build_proj(cam, -1.0);
 	}
 
-	ui_handle_t *h_disp         = ui_handle(__ID__);
-	h_disp->f                   = g_config->displace_strength;
-	g_config->displace_strength = ui_slider(h_disp, tr("Displacement Strength"), 0.0, 10.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
-	if (h_disp->changed) {
-		g_context->ddirty = 2;
-		make_material_parse_mesh_material();
-	}
-
 	ui_text(tr(".cube LUT"), UI_ALIGN_LEFT, 0x00000000);
 	f32_array_t *lut_ar = f32_array_create_from_raw(
 	    (f32[]){

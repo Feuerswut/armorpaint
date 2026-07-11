@@ -26,38 +26,6 @@ node_shader_context_t *make_depth_run(material_t *data, material_context_t *matc
 
 	node_shader_add_constant(kong, "VP: float4x4", "_view_proj_matrix");
 
-	// f32 displace_strength = make_material_get_displace_strength();
-	// if (make_material_height_used && displace_strength > 0.0) {
-	// 	kong->vert_n = true;
-	// 	node_shader_write_vert(kong, "var height: float = 0.0;");
-	// 	i32 num_layers = 0;
-	// 	for (i32 i = 0; i < g_project->_->layers->length; ++i) {
-	// 		slot_layer_t *l = g_project->_->layers->buffer[i];
-	// 		if (!slot_layer_is_visible(l) || !l->paint_height || !slot_layer_is_layer(l)) {
-	// 			continue;
-	// 		}
-	// 		if (num_layers > 16) {
-	// 			break;
-	// 		}
-	// 		num_layers++;
-	// 		node_shader_add_texture(kong, string("texpaint_pack_vert%s", i32_to_string(l->id)), string("_texpaint_pack_vert%s", i32_to_string(l->id)));
-	// 		node_shader_write_vert(kong, string("height += sample_lod(texpaint_pack_vert%s, sampler_linear, input.tex, 0.0).a;", i32_to_string(l->id)));
-	// 		slot_layer_t_array_t *masks = slot_layer_get_masks(l, true);
-	// 		if (masks != NULL) {
-	// 			for (i32 i = 0; i < masks->length; ++i) {
-	// 				slot_layer_t *m = masks->buffer[i];
-	// 				if (!slot_layer_is_visible(m)) {
-	// 					continue;
-	// 				}
-	// 				node_shader_add_texture(kong, string("texpaint_vert%s", i32_to_string(m->id)), string("_texpaint_vert%s", i32_to_string(m->id)));
-	// 				node_shader_write_vert(kong, string("height *= sample_lod(texpaint_vert%s, sampler_linear, input.tex, 0.0).r;", i32_to_string(m->id)));
-	// 			}
-	// 		}
-	// 	}
-	// 	node_shader_write_vert(kong, string("output.wposition += vert_wnormal * float3(height, height, height) * float3(%s, %s, %s);",
-	// 	                                    f32_to_string(displace_strength), f32_to_string(displace_strength), f32_to_string(displace_strength)));
-	// }
-
 	node_shader_write_vert(kong, "output.pos = constants.VP * float4(output.wposition.xyz, 1.0);");
 
 	// {

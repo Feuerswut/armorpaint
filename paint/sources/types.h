@@ -124,7 +124,6 @@ typedef struct config {
 	i32                  pathtrace_mode;
 	bool                 pressure_radius; // Pen pressure controls
 	f32                  pressure_sensitivity;
-	f32                  displace_strength;
 	i32                  layer_res;
 	bool                 brush_live;
 	bool                 node_previews;

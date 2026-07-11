@@ -112,7 +112,6 @@ void config_save() {
 	json_encode_i32("pathtrace_mode", g_config->pathtrace_mode);
 	json_encode_bool("pressure_radius", g_config->pressure_radius);
 	json_encode_f32("pressure_sensitivity", g_config->pressure_sensitivity);
-	json_encode_f32("displace_strength", g_config->displace_strength);
 	json_encode_i32("layer_res", g_config->layer_res);
 	json_encode_bool("brush_live", g_config->brush_live);
 	json_encode_bool("node_previews", g_config->node_previews);
@@ -224,7 +223,6 @@ void config_init() {
 #endif
 		g_config->camera_upside_down = false;
 		g_config->zoom_direction     = ZOOM_DIRECTION_VERTICAL;
-		g_config->displace_strength  = 0.0;
 		g_config->wrap_mouse         = false;
 		g_config->camera_pivot       = CAMERA_PIVOT_CENTER;
 		g_config->camera_controls    = CAMERA_CONTROLS_ORBIT;
