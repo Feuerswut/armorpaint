@@ -79,7 +79,7 @@ static f32 _tween_ease(ease_t ease, f32 k) {
 	return 0.0f;
 }
 
-void tween_update(void *unused) {
+void tween_update(void *_) {
 	if (_tween_anims == NULL) {
 		return;
 	}

@@ -72,9 +72,13 @@ void config_save() {
 	json_encode_f32("window_scale", g_config->window_scale);
 	json_encode_f32("rp_supersample", g_config->rp_supersample);
 	json_encode_bool("rp_ssao", g_config->rp_ssao);
-	json_encode_bool("rp_bloom", g_config->rp_bloom);
+	json_encode_f32("rp_bloom", g_config->rp_bloom);
 	json_encode_f32("rp_vignette", g_config->rp_vignette);
 	json_encode_f32("rp_grain", g_config->rp_grain);
+	json_encode_f32("rp_contrast", g_config->rp_contrast);
+	json_encode_f32("rp_gamma", g_config->rp_gamma);
+	json_encode_string("lut_path", g_config->lut_path);
+	json_encode_bool("texture_filter", g_config->texture_filter);
 	json_encode_string_array("recent_projects", g_config->recent_projects);
 	json_encode_string_array("bookmarks", g_config->bookmarks);
 	json_encode_string_array("plugins", g_config->plugins);
@@ -110,7 +114,6 @@ void config_save() {
 	json_encode_i32("pathtrace_mode", g_config->pathtrace_mode);
 	json_encode_bool("pressure_radius", g_config->pressure_radius);
 	json_encode_f32("pressure_sensitivity", g_config->pressure_sensitivity);
-	json_encode_f32("displace_strength", g_config->displace_strength);
 	json_encode_i32("layer_res", g_config->layer_res);
 	json_encode_bool("brush_live", g_config->brush_live);
 	json_encode_bool("node_previews", g_config->node_previews);
@@ -126,10 +129,14 @@ void config_save() {
 	json_encode_i32("scene_atlas_res", g_config->scene_atlas_res);
 	json_encode_bool("grid_snap", g_config->grid_snap);
 	json_encode_bool("experimental", g_config->experimental);
-	json_encode_i32("neural_backend", g_config->neural_backend);
+	json_encode_i32("neural_res", g_config->neural_res);
+	json_encode_i32("console_model", g_config->console_model);
 	json_encode_i32("render_mode", g_config->render_mode);
 	json_encode_i32("workspace", g_config->workspace);
 	json_encode_i32("workflow", g_config->workflow);
+	json_encode_bool("view2d_grid_show", g_config->view2d_grid_show);
+	json_encode_i32("view2d_grid_cell", g_config->view2d_grid_cell);
+	json_encode_bool("view2d_grid_snap", g_config->view2d_grid_snap);
 	char *config_json = json_encode_end();
 
 	buffer_t *buffer = sys_string_to_buffer(config_json);
@@ -173,9 +180,13 @@ void config_init() {
 #endif
 		g_config->window_vsync     = true;
 		g_config->window_frequency = sys_display_frequency();
-		g_config->rp_bloom         = false;
+		g_config->rp_bloom         = 0.0;
 		g_config->rp_vignette      = 0.2;
 		g_config->rp_grain         = 0.09;
+		g_config->rp_contrast      = 1.0;
+		g_config->rp_gamma         = 1.0;
+		g_config->lut_path         = "";
+		g_config->texture_filter   = true;
 #if defined(IRON_ANDROID) || defined(IRON_IOS)
 		g_config->rp_ssao = false;
 #else
@@ -196,9 +207,13 @@ void config_init() {
 #else
 		g_config->keymap = "default.json";
 #endif
-		g_config->theme                = "default.json";
-		g_config->server               = "https://cloud.armory3d.com";
-		g_config->undo_steps           = 4;
+		g_config->theme  = "default.json";
+		g_config->server = "https://cloud.armory3d.com";
+#if defined(IRON_ANDROID) || defined(IRON_IOS)
+		g_config->undo_steps = 4;
+#else
+		g_config->undo_steps = 6;
+#endif
 		g_config->pressure_radius      = true;
 		g_config->pressure_sensitivity = 2.0;
 		g_config->camera_fov           = 0.69;
@@ -213,7 +228,6 @@ void config_init() {
 #endif
 		g_config->camera_upside_down = false;
 		g_config->zoom_direction     = ZOOM_DIRECTION_VERTICAL;
-		g_config->displace_strength  = 0.0;
 		g_config->wrap_mouse         = false;
 		g_config->camera_pivot       = CAMERA_PIVOT_CENTER;
 		g_config->camera_controls    = CAMERA_CONTROLS_ORBIT;
@@ -226,10 +240,10 @@ void config_init() {
 		g_config->splash_screen = false;
 #endif
 		g_config->node_previews     = false;
-		g_config->pressure_hardness = true;
+		g_config->pressure_hardness = false;
 		g_config->pressure_angle    = false;
 		g_config->pressure_opacity  = false;
-#if defined(IRON_ANDROID) || defined(IRON_IOS)
+#if defined(IRON_ANDROID) || defined(IRON_IOS) || defined(IRON_MACOS)
 		g_config->material_live = false;
 #else
 		g_config->material_live = true;
@@ -244,8 +258,12 @@ void config_init() {
 		g_config->scene_atlas_res     = TEXTURE_RES_RES8192;
 		g_config->pathtrace_mode      = PATHTRACE_MODE_FAST;
 		g_config->grid_snap           = false;
+		g_config->view2d_grid_show    = false;
+		g_config->view2d_grid_cell    = 64;
+		g_config->view2d_grid_snap    = false;
 		g_config->experimental        = false;
-		g_config->neural_backend      = NEURAL_BACKEND_VULKAN;
+		g_config->neural_res          = 512;
+		g_config->console_model       = CONSOLE_MODEL_QWEN;
 #if defined(IRON_ANDROID) || defined(IRON_IOS)
 		g_config->render_mode = RENDER_MODE_FORWARD;
 #else
@@ -271,6 +289,7 @@ void config_init() {
 	}
 #endif
 	base_res_handle->i = g_config->layer_res;
+	config_set_texture_res(g_config->layer_res);
 	keymap_load();
 }
 
@@ -409,20 +428,7 @@ f32 config_get_super_sample_size(i32 i) {
 }
 
 i32 config_texture_res_size(i32 pos) {
-	return pos == TEXTURE_RES_RES128     ? 128
-	       : pos == TEXTURE_RES_RES256   ? 256
-	       : pos == TEXTURE_RES_RES512   ? 512
-	       : pos == TEXTURE_RES_RES1024  ? 1024
-	       : pos == TEXTURE_RES_RES2048  ? 2048
-	       : pos == TEXTURE_RES_RES4096  ? 4096
-	       : pos == TEXTURE_RES_RES8192  ? 8192
-	       : pos == TEXTURE_RES_RES16384 ? 16384
-	                                     : 0;
-}
-
-i32 config_get_texture_res() {
-	i32 res = base_res_handle->i;
-	return config_texture_res_size(res);
+	return pos == TEXTURE_RES_RES2048 ? 2048 : pos == TEXTURE_RES_RES4096 ? 4096 : pos == TEXTURE_RES_RES8192 ? 8192 : pos == TEXTURE_RES_RES16384 ? 16384 : 0;
 }
 
 i32 config_get_layer_res() {
@@ -435,58 +441,60 @@ i32 config_get_scene_atlas_res() {
 	return config_texture_res_size(res);
 }
 
+void config_set_texture_res(i32 pos) {
+	if (pos != TEXTURE_RES_CUSTOM) {
+		f32 res              = (f32)config_texture_res_size(pos);
+		base_res_x_handle->f = res;
+		base_res_y_handle->f = res;
+	}
+}
+
 i32 config_get_texture_res_x() {
-	return g_context->project_aspect_ratio == 2 ? math_floor(config_get_texture_res() / 2.0) : config_get_texture_res();
+	return (i32)base_res_x_handle->f;
 }
 
 i32 config_get_texture_res_y() {
-	return g_context->project_aspect_ratio == 1 ? math_floor(config_get_texture_res() / 2.0) : config_get_texture_res();
+	return (i32)base_res_y_handle->f;
 }
 
 i32 config_get_texture_res_pos(i32 i) {
-	return i == 128     ? TEXTURE_RES_RES128
-	       : i == 256   ? TEXTURE_RES_RES256
-	       : i == 512   ? TEXTURE_RES_RES512
-	       : i == 1024  ? TEXTURE_RES_RES1024
-	       : i == 2048  ? TEXTURE_RES_RES2048
+	return i == 2048    ? TEXTURE_RES_RES2048
 	       : i == 4096  ? TEXTURE_RES_RES4096
 	       : i == 8192  ? TEXTURE_RES_RES8192
 	       : i == 16384 ? TEXTURE_RES_RES16384
-	                    : 0;
+	                    : TEXTURE_RES_CUSTOM;
 }
 
 void config_load_theme(char *theme, bool tag_redraw) {
-	gc_unroot(base_theme);
-	base_theme = ui_theme_create();
-	gc_root(base_theme);
+	gc_unroot(g_theme);
+	g_theme = ui_theme_create();
+	gc_root(g_theme);
 
 	if (!string_equals(theme, "default.json")) {
 		buffer_t   *b      = data_get_blob(string("themes/%s", theme));
 		ui_theme_t *parsed = json_parse(sys_buffer_to_string(b));
-		gc_unroot(base_theme);
-		base_theme = parsed;
-		gc_root(base_theme);
+		gc_unroot(g_theme);
+		g_theme = parsed;
+		gc_root(g_theme);
 	}
 
-	base_theme->FILL_WINDOW_BG = true;
-
 	if (tag_redraw) {
-		ui->ops->theme = base_theme;
+		g_ui->ops->theme = g_theme;
 		base_redraw_ui();
 	}
 
 	if (g_config->touch_ui) {
 		// Enlarge elements
-		base_theme->FULL_TABS         = true;
-		base_theme->ELEMENT_H         = 24 + 6;
-		base_theme->BUTTON_H          = 22 + 6;
-		base_theme->FONT_SIZE         = 13 + 2;
-		base_theme->ARROW_SIZE        = 5 + 2;
-		base_theme->CHECK_SIZE        = 15 + 4;
-		base_theme->CHECK_SELECT_SIZE = 8 + 2;
+		g_theme->FULL_TABS         = true;
+		g_theme->ELEMENT_H         = 24 + 6;
+		g_theme->BUTTON_H          = 22 + 6;
+		g_theme->FONT_SIZE         = 13 + 2;
+		g_theme->ARROW_SIZE        = 5 + 2;
+		g_theme->CHECK_SIZE        = 15 + 4;
+		g_theme->CHECK_SELECT_SIZE = 8 + 2;
 	}
 	else {
-		base_theme->FULL_TABS = false;
+		g_theme->FULL_TABS = false;
 	}
 }
 

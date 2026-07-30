@@ -1,5 +1,5 @@
 
-#ifdef IRON_A2
+#ifdef IRON_AUDIO
 
 #include <backends/windows_system.h>
 #include <iron_audio.h>
@@ -283,8 +283,6 @@ void iron_a2_init() {
 		CreateThread(0, 65536, audioThread, NULL, 0, 0);
 	}
 }
-
-void iron_a2_update() {}
 
 #define SAFE_RELEASE(punk) \
 	if ((punk) != NULL) {  \

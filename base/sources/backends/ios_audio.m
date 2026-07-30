@@ -1,5 +1,5 @@
 
-#ifdef IRON_A2
+#ifdef IRON_AUDIO
 
 #import <AudioToolbox/AudioToolbox.h>
 #import <Foundation/Foundation.h>
@@ -207,8 +207,6 @@ void iron_a2_init(void) {
 
 	soundPlaying = true;
 }
-
-void iron_a2_update(void) {}
 
 void iron_a2_shutdown(void) {
 	if (!initialized)

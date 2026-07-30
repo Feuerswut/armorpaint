@@ -12,8 +12,12 @@
 #include "iron_string.h"
 #include "iron_sys.h"
 #include "iron_system.h"
+#include "iron_thread.h"
 #include <math.h>
 #include <string.h>
+#ifdef WITH_PHYSICS
+#include "iron_physics.h"
+#endif
 
 typedef struct object object_t;
 
@@ -305,19 +309,27 @@ typedef struct transform {
 	float     radius;
 } transform_t;
 
+typedef struct {
+	int empty;
+#ifdef WITH_PHYSICS
+	asim_body_t *body;
+#endif
+} object_runtime_t;
+
 typedef struct object {
-	i32          uid;
-	float        urandom;
-	obj_t       *raw;
-	char        *name;
-	transform_t *transform;
-	object_t    *parent;
-	any_array_t *children;
-	bool         visible;
-	bool         culled;
-	bool         is_empty;
-	void        *ext;
-	char        *ext_type;
+	i32               uid;
+	float             urandom;
+	obj_t            *raw;
+	char             *name;
+	transform_t      *transform;
+	object_t         *parent;
+	any_array_t      *children;
+	bool              visible;
+	bool              culled;
+	bool              is_empty;
+	void             *ext;
+	char             *ext_type;
+	object_runtime_t *_;
 } object_t;
 
 //  ██████╗ ██████╗      ██╗███████╗ ██████╗████████╗
@@ -535,9 +547,7 @@ void             uniforms_set_material_const(i32 location, shader_const_t *shade
 // ██████╔╝██║  ██║   ██║   ██║  ██║
 // ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
 
-typedef struct sound {
-	void *sound_;
-} sound_t;
+typedef void sound_t;
 
 extern any_map_t *data_cached_scene_raws;
 extern any_map_t *data_cached_meshes;
@@ -546,13 +556,11 @@ extern any_map_t *data_cached_materials;
 extern any_map_t *data_cached_worlds;
 extern any_map_t *data_cached_shaders;
 extern any_map_t *data_cached_blobs;
-extern any_map_t *data_cached_images;
+extern any_map_t *data_cached_textures;
 extern any_map_t *data_cached_videos;
 extern any_map_t *data_cached_fonts;
-#ifdef arm_audio
 extern any_map_t *data_cached_sounds;
-#endif
-extern i32 data_assets_loaded;
+extern i32        data_assets_loaded;
 
 mesh_data_t     *data_get_mesh(char *file, char *name);
 camera_data_t   *data_get_camera(char *file, char *name);
@@ -560,25 +568,21 @@ material_data_t *data_get_material(char *file, char *name);
 world_data_t    *data_get_world(char *file, char *name);
 shader_data_t   *data_get_shader(char *file, char *name);
 scene_t         *data_get_scene_raw(char *file);
-gpu_texture_t   *data_get_image(char *file);
+gpu_texture_t   *data_get_texture(char *file);
 buffer_t        *data_get_blob(char *file);
 video_t         *data_get_video(char *file);
 draw_font_t     *data_get_font(char *file);
-#ifdef arm_audio
-sound_t *data_get_sound(char *file);
-#endif
-void data_delete_mesh(char *handle);
-void data_delete_blob(char *handle);
-void data_delete_image(char *handle);
-void data_delete_video(char *handle);
-void data_delete_font(char *handle);
-#ifdef arm_audio
-void data_delete_sound(char *handle);
-#endif
-bool  data_is_abs(char *file);
-bool  data_is_up(char *file);
-char *data_resolve_path(char *file);
-char *data_path(void);
+sound_t         *data_get_sound(char *file);
+void             data_delete_mesh(char *handle);
+void             data_delete_blob(char *handle);
+void             data_delete_texture(char *handle);
+void             data_delete_video(char *handle);
+void             data_delete_font(char *handle);
+void             data_delete_sound(char *handle);
+bool             data_is_abs(char *file);
+bool             data_is_up(char *file);
+char            *data_resolve_path(char *file);
+char            *data_path(void);
 
 // ███████╗ ██████╗███████╗███╗   ██╗███████╗
 // ██╔════╝██╔════╝██╔════╝████╗  ██║██╔════╝

@@ -27,8 +27,8 @@ char           *ui_clipboard                             = "";
 string_array_t *ui_nodes_exclude_remove                  = NULL; // No removal for listed node types
 bool            ui_nodes_socket_released                 = false;
 string_array_t *(*ui_nodes_enum_texts)(char *)           = NULL; // Retrieve combo items for buttons of type ENUM
-any_array_t *(*ui_nodes_enum_images)(char *)             = NULL;
-gpu_texture_t *(*ui_nodes_preview_image)(ui_node_t *)    = NULL; // Retrieve preview image
+any_array_t *(*ui_nodes_enum_textures)(char *)           = NULL;
+gpu_texture_t *(*ui_nodes_preview_texture)(ui_node_t *)  = NULL; // Retrieve preview image
 void (*ui_nodes_on_custom_button)(int, char *)           = NULL; // Call external function
 ui_canvas_control_t *(*ui_nodes_on_canvas_control)(void) = NULL;
 void (*ui_nodes_on_canvas_released)(void)                = NULL;
@@ -569,8 +569,8 @@ void ui_node_draw_body(ui_node_t *node, ui_node_canvas_t *canvas, float nx, floa
 			strcpy(label, ui_tr(but->name));
 
 			((float *)but->default_value->buffer)[0] = ui_combo(but_handle, ar, label, false, UI_ALIGN_LEFT, true);
-			if (current->combo_selected_handle == but_handle && !has_but_data && ui_nodes_enum_images != NULL) {
-				current->combo_selected_images = (*ui_nodes_enum_images)(node->type);
+			if (current->combo_selected_handle == but_handle && !has_but_data && ui_nodes_enum_textures != NULL) {
+				current->combo_selected_images = (*ui_nodes_enum_textures)(node->type);
 			}
 		}
 		else if (strcmp(but->type, "BOOL") == 0) {
@@ -738,15 +738,15 @@ void ui_node_draw(ui_node_t *node, ui_node_canvas_t *canvas) {
 	// Grid snap preview
 	if (ui_nodes_grid_snap && ui_is_selected(node) && current_nodes->nodes_drag) {
 		draw_set_color(current->ops->theme->BUTTON_COL);
-		ui_draw_rect(false, ui_nodes_snap(node->x) + UI_NODES_PAN_X(), ui_nodes_snap(node->y) + UI_NODES_PAN_Y(), w + 2, h + 2);
+		ui_draw_rect(false, true, ui_nodes_snap(node->x) + UI_NODES_PAN_X(), ui_nodes_snap(node->y) + UI_NODES_PAN_Y(), w + 2, h + 2);
 		// nx = ui_nodes_snap(node->x) + UI_NODES_PAN_X();
 		// ny = ui_nodes_snap(node->y) + UI_NODES_PAN_Y();
 	}
 
 	// Node preview
-	if ((node->flags & UI_NODE_FLAG_PREVIEW) && ui_nodes_preview_image != NULL) {
+	if ((node->flags & UI_NODE_FLAG_PREVIEW) && ui_nodes_preview_texture != NULL) {
 		// ui_draw_shadow(nx, ny - w, w * 0.98, w * 0.98);
-		gpu_texture_t *image = ui_nodes_preview_image(node);
+		gpu_texture_t *image = ui_nodes_preview_texture(node);
 		if (image != NULL) {
 			draw_set_color(0xffffffff);
 			float ph = w * (image->height / (float)image->width);
@@ -758,12 +758,12 @@ void ui_node_draw(ui_node_t *node, ui_node_canvas_t *canvas) {
 	ui_draw_shadow(nx, ny, w, h);
 
 	// Outline
-	draw_set_color(ui_is_selected(node) ? current->ops->theme->LABEL_COL : current->ops->theme->PRESSED_COL);
-	ui_draw_rect(true, nx - 1, ny - 1, w + 2, h + 2);
+	draw_set_color(ui_is_selected(node) ? current->ops->theme->HIGHLIGHT_COL : current->ops->theme->PRESSED_COL);
+	ui_draw_rect(true, true, nx - 1, ny - 1, w + 2, h + 2);
 
 	// Body
 	draw_set_color(current->ops->theme->WINDOW_BG_COL);
-	ui_draw_rect(true, nx, ny, w, h);
+	ui_draw_rect(true, true, nx, ny, w, h);
 
 	// Header line
 	draw_set_color(node->color);
@@ -1390,7 +1390,7 @@ void ui_node_canvas(ui_nodes_t *nodes, ui_node_canvas_t *canvas) {
 
 		ui_draw_shadow(current->_x - 5, current->_y - 5, current->_w + 10, ui_popup_h * UI_SCALE() + 10);
 		draw_set_color(current->ops->theme->SEPARATOR_COL);
-		ui_draw_rect(true, current->_x - 5, current->_y - 5, current->_w + 10, ui_popup_h * UI_SCALE() + 10);
+		ui_draw_rect(true, true, current->_x - 5, current->_y - 5, current->_w + 10, ui_popup_h * UI_SCALE() + 10);
 		(*ui_popup_commands)(current, ui_popup_data, ui_popup_data2);
 
 		bool hide = (current->input_started || current->input_started_r) &&
@@ -1766,7 +1766,7 @@ ui_nodes_t *ui_nodes_create() {
 	        "OUTPUT_MATERIAL_PBR",
 	        "GROUP_OUTPUT",
 	        "GROUP_INPUT",
-	        "BrushOutputNode",
+	        "brush_output_node",
 	    },
 	    4);
 	gc_root(ui_nodes_exclude_remove);

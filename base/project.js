@@ -18,10 +18,6 @@ project.add_assets("assets/*", {destination : "data/{name}"});
 project.add_assets("assets/licenses/**", {destination : "data/licenses/{name}"});
 project.add_assets("assets/themes/*.json", {destination : "data/themes/{name}"});
 project.add_cfiles("sources/*.c");
-if (platform != "wasm") {
-	project.add_cfiles("sources/libs/gc.c");
-}
-
 project.add_cfiles("sources/kong/dir.c");
 project.add_define("EMBED_H_PATH=\"" + os_cwd() + "/build/embed.h" +
                    "\"");
@@ -41,6 +37,7 @@ if (platform == "windows") {
 	project.add_lib("Dwmapi"); // DWMWA_USE_IMMERSIVE_DARK_MODE
 	if (flags.with_audio) {
 		project.add_lib("dsound");
+		project.add_cfiles("sources/backends/windows_audio.*");
 	}
 	if (flags.with_gamepad) {
 		project.add_lib("dinput8");
@@ -67,6 +64,7 @@ else if (platform == "linux") {
 	project.add_lib("vulkan");
 	if (flags.with_audio) {
 		project.add_lib("asound");
+		project.add_cfiles("sources/backends/linux_audio.*");
 	}
 	if (flags.with_gamepad) {
 		project.add_lib("udev");
@@ -108,9 +106,9 @@ else if (platform == "android") {
 		project.add_lib("OpenSLES");
 	}
 	project.target_options.android.package     = flags.package;
-	project.target_options.android.permissions = [ "android.permission.READ_MEDIA_IMAGES", "android.permission.INTERNET" ];
+	project.target_options.android.permissions = [ "android.permission.INTERNET" ];
 	project.target_options.android.versionCode = get_version_code();
-	project.target_options.android.versionName = "1.0 alpha";
+	project.target_options.android.versionName = get_version_code() + "";
 }
 else if (platform == "wasm") {
 	project.add_cfiles("sources/backends/wasm_system.*");
@@ -130,7 +128,18 @@ if (graphics == "metal" || (graphics == "vulkan" && platform != "android")) {
 
 if (flags.with_kong) {
 	project.add_define("WITH_KONG");
-	project.add_cfiles("sources/kong/*.c");
+	project.add_cfiles("sources/kong/dir.c");
+	project.add_cfiles("sources/kong/kong.c");
+	project.add_cfiles("sources/kong/kong_cstyle.c");
+	project.add_cfiles("sources/kong/stb_ds.c");
+	project.add_cfiles("sources/kong/kong_spirv.c");
+	project.add_cfiles("sources/kong/kong_wgsl.c");
+	if (platform == "windows") {
+		project.add_cfiles("sources/kong/kong_hlsl.c");
+	}
+	if (platform == "macos" || platform == "ios") {
+		project.add_cfiles("sources/kong/kong_metal.c");
+	}
 }
 
 if (flags.with_plugins) {
@@ -148,8 +157,7 @@ else {
 }
 
 if (flags.with_physics) {
-	project.add_define("arm_physics");
-	project.add_cfiles("sources/libs/asim.c");
+	project.add_define("WITH_PHYSICS");
 }
 
 if (flags.with_raytrace) {
@@ -177,14 +185,22 @@ if (flags.export_version_info) {
 }
 
 if (flags.export_data_list) {
-	let root      = "../" + flags.name.substr(5).toLowerCase();
+	let      root = "../" + flags.name.substr(5).toLowerCase();
+	function list_files(dir) {
+		return fs_readdir(dir)
+		    .filter(function(f) {
+			    return !fs_isdir(dir + "/" + f);
+		    })
+		    .sort()
+		    .join(",");
+	}
 	let data_list = {
-		"/data/plugins" : fs_readdir(root + "/assets/plugins").join(","),
-		"/data/export_presets" : fs_readdir(root + "/assets/export_presets").join(","),
-		"/data/keymap_presets" : fs_readdir(root + "/assets/keymap_presets").join(","),
-		"/data/locale" : fs_readdir(root + "/assets/locale").join(","),
-		"/data/meshes" : fs_readdir(root + "/assets/meshes").join(","),
-		"/data/themes" : fs_readdir("../base/assets/themes").join(","),
+		"/data/plugins" : list_files(root + "/assets/plugins"),
+		"/data/export_presets" : list_files(root + "/assets/export_presets"),
+		"/data/keymap_presets" : list_files(root + "/assets/keymap_presets"),
+		"/data/locale" : list_files(root + "/assets/locale"),
+		"/data/meshes" : list_files(root + "/assets/meshes"),
+		"/data/themes" : list_files("../base/assets/themes"),
 	};
 	let dir = "../" + flags.name.substr(5).toLowerCase() + "/build";
 	fs_ensuredir(dir);
@@ -193,18 +209,13 @@ if (flags.export_data_list) {
 }
 
 if (flags.with_audio) {
-	project.add_define("IRON_A1");
-	project.add_define("IRON_A2");
-	project.add_define("WITH_AUDIO");
-	project.add_define("arm_audio");
+	project.add_define("IRON_AUDIO");
 	project.add_cfiles("sources/libs/stb_vorbis.c");
 }
 
 if (flags.with_eval) {
 	project.add_define("WITH_EVAL");
 	project.add_cfiles("sources/libs/minic.c");
-	project.add_cfiles("sources/libs/minic_ext.c");
-	project.add_cfiles("sources/libs/minic_api.c");
 	project.add_cfiles("sources/libs/minic_tests.c");
 }
 

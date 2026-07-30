@@ -30,8 +30,11 @@
 #else
 #include <sys/stat.h>
 #endif
-#ifdef WITH_AUDIO
+#ifdef IRON_AUDIO
 #include "iron_audio.h"
+#endif
+#ifdef WITH_BC7
+#include "libs/bc7enc.h"
 #endif
 #ifdef WITH_EMBED
 #include EMBED_H_PATH
@@ -81,11 +84,8 @@ struct HWND__ *iron_windows_window_handle();
 void (*iron_update)(void);
 void (*iron_drop_files)(char *);
 void (*iron_foreground)(void);
-void (*iron_resume)(void);
-void (*iron_pause)(void);
 void (*iron_background)(void);
 void (*iron_shutdown)(void);
-void (*iron_pause)(void);
 void (*iron_key_down)(int);
 void (*iron_key_up)(int);
 void (*iron_mouse_down)(int, int, int);
@@ -150,7 +150,7 @@ int kickstart(int argc, char **argv) {
 	gc_start(&argc);
 	_kickstart();
 
-#ifdef WITH_AUDIO
+#ifdef IRON_AUDIO
 	iron_a2_shutdown();
 #endif
 	gc_stop();
@@ -179,14 +179,10 @@ char *iron_get_arg(i32 index) {
 #include "iron_raycast.h"
 #include "iron_shape.h"
 #include "iron_sys.h"
-#include "iron_tilesheet.h"
 #include "iron_tween.h"
 #include "kong/dir.h"
 #include <lz4x.h>
 #include <stdio.h>
-#ifdef WITH_AUDIO
-#include "iron_audio.h"
-#endif
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #ifdef IRON_DIRECT3D12
@@ -245,10 +241,6 @@ void _update() {
 	}
 #endif
 
-#ifdef WITH_AUDIO
-	iron_a2_update();
-#endif
-
 	iron_net_update();
 	iron_update();
 	if (ui_get_current())
@@ -256,14 +248,12 @@ void _update() {
 	gpu_present();
 }
 
-char *_copy(void *data) {
-	strcpy(temp_string, ui_copy());
-	return temp_string;
+void _copy(void *data) {
+	ui_copy();
 }
 
-char *_cut(void *data) {
-	strcpy(temp_string, ui_cut());
-	return temp_string;
+void _cut(void *data) {
+	ui_cut();
 }
 
 void _paste(char *text, void *data) {
@@ -273,14 +263,7 @@ void _paste(char *text, void *data) {
 void _foreground(void *data) {
 	iron_foreground();
 	in_background = false;
-}
-
-void _resume(void *data) {
-	iron_resume();
-}
-
-void _pause(void *data) {
-	iron_pause();
+	paused_frames = 0;
 }
 
 void _background(void *data) {
@@ -586,10 +569,6 @@ void _iron_init(iron_window_options_t *ops) {
 	iron_set_copy_callback(_copy, NULL);
 	iron_set_paste_callback(_paste, NULL);
 	iron_keyboard_set_key_press_callback(_key_press, NULL);
-#ifdef WITH_AUDIO
-	iron_a1_init();
-	iron_a2_init();
-#endif
 }
 
 void _iron_set_update_callback(void (*callback)(void)) {
@@ -602,16 +581,11 @@ void _iron_set_drop_files_callback(void (*callback)(char *)) {
 	iron_set_drop_files_callback(_drop_files, NULL);
 }
 
-void iron_set_application_state_callback(void (*on_foreground)(void), void (*on_resume)(void), void (*on_pause)(void), void (*on_background)(void),
-                                         void (*on_shutdown)(void)) {
+void iron_set_application_state_callback(void (*on_foreground)(void), void (*on_background)(void), void (*on_shutdown)(void)) {
 	iron_set_foreground_callback(on_foreground != NULL ? _foreground : NULL, NULL);
-	iron_set_resume_callback(on_resume != NULL ? _resume : NULL, NULL);
-	iron_set_pause_callback(on_pause != NULL ? _pause : NULL, NULL);
 	iron_set_background_callback(on_background != NULL ? _background : NULL, NULL);
 	iron_set_shutdown_callback(on_shutdown != NULL ? _shutdown : NULL, NULL);
 	iron_foreground = on_foreground;
-	iron_resume     = on_resume;
-	iron_pause      = on_pause;
 	iron_background = on_background;
 	iron_shutdown   = on_shutdown;
 }
@@ -726,11 +700,15 @@ void *gpu_create_vertex_buffer(i32 count, gpu_vertex_structure_t *structure) {
 	return buffer;
 }
 
-
 gpu_shader_t *gpu_create_shader(buffer_t *data, i32 shader_type) {
 	gpu_shader_t *shader = (gpu_shader_t *)malloc(sizeof(gpu_shader_t));
 	gpu_shader_init(shader, data->buffer, data->length, (gpu_shader_type_t)shader_type);
 	return shader;
+}
+
+void gpu_delete_shader(gpu_shader_t *shader) {
+	gpu_shader_destroy(shader);
+	free(shader);
 }
 
 #ifdef WITH_KONG
@@ -745,8 +723,8 @@ gpu_shader_t *gpu_create_shader_from_source(char *source, int source_size, gpu_s
 
 	strcpy(temp_string_s, source);
 
-	ID3DBlob *error_message;
-	ID3DBlob *shader_buffer;
+	ID3DBlob *error_message = NULL;
+	ID3DBlob *shader_buffer = NULL;
 	UINT      flags = D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_SKIP_VALIDATION;
 	HRESULT hr = D3DCompile(temp_string_s, strlen(source) + 1, NULL, NULL, NULL, "main", shader_type == GPU_SHADER_TYPE_VERTEX ? "vs_5_0" : "ps_5_0", flags, 0,
 	                        &shader_buffer, &error_message);
@@ -805,9 +783,6 @@ gpu_texture_t *gpu_create_texture_from_bytes(buffer_t *data, i32 width, i32 heig
 
 gpu_texture_t *gpu_create_texture_from_encoded_bytes(buffer_t *data, char *format) {
 	if (data == NULL || data->length == 0) {
-		return NULL;
-	}
-	if (ends_with(format, "txt")) { // plugin
 		return NULL;
 	}
 	gpu_texture_t *texture = (gpu_texture_t *)malloc(sizeof(gpu_texture_t));
@@ -892,12 +867,14 @@ gpu_texture_t *iron_load_texture(char *file) {
 	return gpu_create_texture_from_encoded_bytes(&buf, file);
 }
 
-#ifdef WITH_AUDIO
 void *iron_load_sound(char *file) {
+#ifdef IRON_AUDIO
+	iron_a1_init();
 	iron_a1_sound_t *sound = iron_a1_sound_create(file);
 	return sound;
-}
 #endif
+	return NULL;
+}
 
 buffer_t *iron_load_blob(char *file) {
 #ifdef WITH_EMBED
@@ -951,6 +928,7 @@ buffer_t *gpu_get_texture_pixels(gpu_texture_t *image) {
 		image->buffer         = malloc(sizeof(buffer_t));
 		image->buffer->buffer = NULL;
 	}
+
 	image->buffer->length = gpu_texture_format_size(image->format) * image->width * image->height;
 
 	if (image->buffer->buffer == NULL) {
@@ -958,6 +936,16 @@ buffer_t *gpu_get_texture_pixels(gpu_texture_t *image) {
 	}
 
 	gpu_get_render_target_pixels(image, image->buffer->buffer);
+
+#ifdef WITH_BC7
+	if (image->format == GPU_TEXTURE_FORMAT_RGBA32_BC7) {
+		uint8_t *compressed   = image->buffer->buffer;
+		image->buffer->buffer = malloc((size_t)image->width * image->height * 4);
+		bc7enc_decompress(image->buffer->buffer, compressed, image->width, image->height);
+		free(compressed);
+	}
+#endif
+
 	return image->buffer;
 }
 

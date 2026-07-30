@@ -66,8 +66,25 @@ static void store_ptr_abs(void *ptr) {
 	wi += PTR_SIZE;
 }
 
+static uint32_t json_string_len(char *str, uint32_t len) {
+	uint32_t out = 0;
+	for (uint32_t i = 0; i < len; ++i) {
+		// Escaped \" collapses to one byte
+		if (str[i] == '\\' && i + 1 < len && str[i + 1] == '"') {
+			i++;
+		}
+		out++;
+	}
+	return out;
+}
+
 static void store_string_bytes(char *str, uint32_t len) {
 	for (uint32_t i = 0; i < len; ++i) {
+		if (str[i] == '\\' && i + 1 < len && str[i + 1] == '"') {
+			store_u8('"');
+			i++;
+			continue;
+		}
 		store_u8(str[i]);
 	}
 	store_u8('\0');
@@ -212,7 +229,7 @@ static void token_write() {
 			uint32_t strings_length = 0;
 			for (uint32_t i = 0; i < count; ++i) {
 				store_ptr(bottom + count * PTR_SIZE + strings_length);
-				uint32_t length = t.end - t.start; // String length
+				uint32_t length = json_string_len(source + t.start, t.end - t.start);
 				strings_length += length;
 				strings_length += 1; // '\0'
 				ti++;
@@ -337,6 +354,11 @@ void json_encode_key(char *k) {
 	keys++;
 }
 
+void json_encode_null(char *k) {
+	json_encode_key(k);
+	encoded = string("%snull", encoded);
+}
+
 void json_encode_string_value(char *v) {
 	encoded = string("%s\"%s\"", encoded, v);
 }
@@ -347,6 +369,10 @@ void json_encode_string(char *k, char *v) {
 }
 
 void json_encode_string_array(char *k, string_array_t *a) {
+	if (a == NULL) {
+		json_encode_null(k);
+		return;
+	}
 	json_encode_begin_array(k);
 	for (uint32_t i = 0; i < a->length; ++i) {
 		if (i > 0) {
@@ -367,12 +393,11 @@ void json_encode_i32(char *k, int i) {
 	encoded = string("%s%s", encoded, i32_to_string(i));
 }
 
-void json_encode_null(char *k) {
-	json_encode_key(k);
-	encoded = string("%snull", encoded);
-}
-
 void json_encode_f32_array(char *k, f32_array_t *a) {
+	if (a == NULL) {
+		json_encode_null(k);
+		return;
+	}
 	json_encode_begin_array(k);
 	for (uint32_t i = 0; i < a->length; ++i) {
 		if (i > 0) {
@@ -384,6 +409,10 @@ void json_encode_f32_array(char *k, f32_array_t *a) {
 }
 
 void json_encode_i32_array(char *k, i32_array_t *a) {
+	if (a == NULL) {
+		json_encode_null(k);
+		return;
+	}
 	json_encode_begin_array(k);
 	for (uint32_t i = 0; i < a->length; ++i) {
 		if (i > 0) {

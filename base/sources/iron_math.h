@@ -86,6 +86,8 @@ float  vec2_dot(vec2_t a, vec2_t b);
 vec2_t vec2_nan();
 bool   vec2_isnan(vec2_t v);
 
+f32_array_t *vec3_to_f32_array(vec4_t v);
+
 vec4_t vec4_cross(vec4_t a, vec4_t b);
 vec4_t vec4_add(vec4_t a, vec4_t b);
 vec4_t vec4_fadd(vec4_t a, float x, float y, float z, float w);
@@ -120,6 +122,7 @@ quat_t quat_from_euler(float x, float y, float z);
 float  quat_dot(quat_t a, quat_t b);
 quat_t quat_from_to(vec4_t v0, vec4_t v1);
 quat_t quat_inv(quat_t q);
+quat_t quat_slerp(quat_t a, quat_t b, float t);
 
 mat3_t mat3_identity();
 mat3_t mat3_translation(float x, float y);
@@ -143,6 +146,7 @@ mat4_t             mat4_persp(float fov_y, float aspect, float zn, float zf);
 mat4_t             mat4_ortho(float left, float right, float bottom, float top, float znear, float zfar);
 mat4_t             mat4_rot_z(float alpha);
 mat4_t             mat4_compose(vec4_t loc, quat_t rot, vec4_t scl);
+mat4_t             mat4_tween(mat4_t a, mat4_t b, float t);
 mat4_decomposed_t *mat4_decompose(mat4_t m);
 mat4_t             mat4_set_loc(mat4_t m, vec4_t v);
 mat4_t             mat4_from_quat(quat_t q);

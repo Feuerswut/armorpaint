@@ -2,22 +2,22 @@
 #include "global.h"
 
 void operator_register(char *name, void (*call)(void)) {
-	any_map_set(operator_ops, name, call);
+	any_map_set(g_operators, name, call);
 }
 
 void operator_run(char *name) {
-	if (any_map_get(operator_ops, name) != NULL) {
-		void (*cb)(void) = any_map_get(operator_ops, name);
+	if (any_map_get(g_operators, name) != NULL) {
+		void (*cb)(void) = any_map_get(g_operators, name);
 		cb();
 	}
 }
 
 void operator_update() {
 	if (mouse_started_any() || keyboard_started_any()) {
-		string_array_t *keys = map_keys(config_keymap);
+		string_array_t *keys = map_keys(g_keymap);
 		for (i32 i = 0; i < keys->length; ++i) {
 			char *op = keys->buffer[i];
-			if (operator_shortcut(any_map_get(config_keymap, op), SHORTCUT_TYPE_STARTED)) {
+			if (operator_shortcut(any_map_get(g_keymap, op), SHORTCUT_TYPE_STARTED)) {
 				operator_run(op);
 			}
 		}

@@ -1,12 +1,12 @@
 
 // kong wrapper
 
+#include "../../sources/kong/kong.h"
 #include "iron_string.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../sources/kong/kong.h"
 
 #ifdef _WIN32
 #include <D3Dcompiler.h>
@@ -23,8 +23,8 @@ char *hlsl_to_bin(char *source, char *shader_type, char *to) {
 
 	ID3DBlob *error_message;
 	ID3DBlob *shader_buffer;
-	UINT    flags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
-	HRESULT hr    = D3DCompile(source, strlen(source) + 1, NULL, NULL, NULL, "main", type, flags, 0, &shader_buffer, &error_message);
+	UINT      flags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
+	HRESULT   hr    = D3DCompile(source, strlen(source) + 1, NULL, NULL, NULL, "main", type, flags, 0, &shader_buffer, &error_message);
 	if (hr != S_OK) {
 		printf("%s\n", (char *)error_message->lpVtbl->GetBufferPointer(error_message));
 		return NULL;
@@ -48,10 +48,12 @@ extern type_id     next_type_index;
 void               hlsl_export2(char **vs, char **fs, api_kind d3d, bool debug);
 void               spirv_export2(char **vs, char **fs, int *vs_size, int *fs_size, bool debug);
 void               wgsl_export2(char **vs, char **fs);
-extern size_t      vertex_inputs_size;
-extern size_t      fragment_inputs_size;
-extern size_t      vertex_functions_size;
-extern size_t      fragment_functions_size;
+#ifdef IRON_METAL
+extern size_t vertex_inputs_size;
+extern size_t fragment_inputs_size;
+extern size_t vertex_functions_size;
+extern size_t fragment_functions_size;
+#endif
 
 void kong_compile(char *shader_lang, const char *from, const char *to) {
 	FILE *fp = fopen(from, "rb");
@@ -63,17 +65,19 @@ void kong_compile(char *shader_lang, const char *from, const char *to) {
 	fread(data, size, 1, fp);
 	fclose(fp);
 
-	next_variable_id        = 1;
-	allocated_globals_size  = 0;
-	next_function_index     = 0;
-	globals_size            = 0;
-	names_index             = 1;
-	sets_count              = 0;
-	next_type_index         = 0;
+	next_variable_id       = 1;
+	allocated_globals_size = 0;
+	next_function_index    = 0;
+	globals_size           = 0;
+	names_index            = 1;
+	sets_count             = 0;
+	next_type_index        = 0;
+#ifdef IRON_METAL
 	vertex_inputs_size      = 0;
 	fragment_inputs_size    = 0;
 	vertex_functions_size   = 0;
 	fragment_functions_size = 0;
+#endif
 	names_init();
 	types_init();
 	functions_init();
@@ -97,7 +101,7 @@ void kong_compile(char *shader_lang, const char *from, const char *to) {
 		to_[strlen(to_) - 4] = '\0';
 		strcat(to_, "vert.wgsl");
 
-		FILE *fp  = fopen(to_, "wb");
+		FILE *fp = fopen(to_, "wb");
 		fwrite(vs, 1, strlen(vs), fp);
 		fclose(fp);
 
@@ -105,7 +109,7 @@ void kong_compile(char *shader_lang, const char *from, const char *to) {
 		to_[strlen(to_) - 4] = '\0';
 		strcat(to_, "frag.wgsl");
 
-		fp  = fopen(to_, "wb");
+		fp = fopen(to_, "wb");
 		fwrite(fs, 1, strlen(fs), fp);
 		fclose(fp);
 

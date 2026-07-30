@@ -135,6 +135,14 @@ bool vec2_isnan(vec2_t v) {
 //  ╚████╔╝ ███████╗╚██████╗     ██║
 //   ╚═══╝  ╚══════╝ ╚═════╝     ╚═╝
 
+f32_array_t *vec3_to_f32_array(vec4_t v) {
+	f32_array_t *res = f32_array_create(3);
+	res->buffer[0]   = v.x;
+	res->buffer[1]   = v.y;
+	res->buffer[2]   = v.z;
+	return res;
+}
+
 vec4_t vec4_cross(vec4_t a, vec4_t b) {
 	vec4_t v;
 	v.x = a.y * b.z - a.z * b.y;
@@ -353,7 +361,7 @@ quat_t quat_from_rot_mat(mat4_t m) {
 		q.y = (m23 + m32) / s;
 		q.z = 0.25 * s;
 	}
-	return q;
+	return quat_norm(q);
 }
 
 quat_t quat_mult(quat_t a, quat_t b) {
@@ -445,6 +453,28 @@ quat_t quat_inv(quat_t q) {
 	q.z     = q.z * l;
 	q.w     = -q.w * l;
 	return q;
+}
+
+quat_t quat_slerp(quat_t a, quat_t b, float t) {
+	float dot = quat_dot(a, b);
+	if (dot < 0.0f) {
+		b.x = -b.x;
+		b.y = -b.y;
+		b.z = -b.z;
+		b.w = -b.w;
+		dot = -dot;
+	}
+	if (dot > 0.9995f) {
+		quat_t r = {a.x + t * (b.x - a.x), a.y + t * (b.y - a.y), a.z + t * (b.z - a.z), a.w + t * (b.w - a.w)};
+		return quat_norm(r);
+	}
+	float theta_0 = acosf(dot);
+	float theta   = theta_0 * t;
+	float sin_t   = sinf(theta);
+	float sin_t0  = sinf(theta_0);
+	float s0      = cosf(theta) - dot * sin_t / sin_t0;
+	float s1      = sin_t / sin_t0;
+	return (quat_t){s0 * a.x + s1 * b.x, s0 * a.y + s1 * b.y, s0 * a.z + s1 * b.z, s0 * a.w + s1 * b.w};
 }
 
 // ███╗   ███╗ █████╗ ████████╗██████╗
@@ -577,6 +607,15 @@ mat4_t mat4_compose(vec4_t loc, quat_t rot, vec4_t scl) {
 	m        = mat4_scale(m, scl);
 	m        = mat4_set_loc(m, loc);
 	return m;
+}
+
+mat4_t mat4_tween(mat4_t a, mat4_t b, float t) {
+	mat4_decomposed_t *da  = mat4_decompose(a);
+	mat4_decomposed_t *db  = mat4_decompose(b);
+	vec4_t             loc = {da->loc.x + t * (db->loc.x - da->loc.x), da->loc.y + t * (db->loc.y - da->loc.y), da->loc.z + t * (db->loc.z - da->loc.z), 1.0f};
+	vec4_t             scl = {da->scl.x + t * (db->scl.x - da->scl.x), da->scl.y + t * (db->scl.y - da->scl.y), da->scl.z + t * (db->scl.z - da->scl.z), 1.0f};
+	quat_t             rot = quat_slerp(da->rot, db->rot, t);
+	return mat4_compose(loc, rot, scl);
 }
 
 mat4_decomposed_t *mat4_decompose(mat4_t m) {

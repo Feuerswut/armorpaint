@@ -86,17 +86,13 @@ static void (*foreground_callback)(void *)         = NULL;
 static void *foreground_callback_data              = NULL;
 static void (*background_callback)(void *)         = NULL;
 static void *background_callback_data              = NULL;
-static void (*pause_callback)(void *)              = NULL;
-static void *pause_callback_data                   = NULL;
-static void (*resume_callback)(void *)             = NULL;
-static void *resume_callback_data                  = NULL;
 static void (*shutdown_callback)(void *)           = NULL;
 static void *shutdown_callback_data                = NULL;
 static void (*drop_files_callback)(char *, void *) = NULL;
 static void *drop_files_callback_data              = NULL;
-static char *(*cut_callback)(void *)               = NULL;
+static void (*cut_callback)(void *)                = NULL;
 static void *cut_callback_data                     = NULL;
-static char *(*copy_callback)(void *)              = NULL;
+static void (*copy_callback)(void *)               = NULL;
 static void *copy_callback_data                    = NULL;
 static void (*paste_callback)(char *, void *)      = NULL;
 static void *paste_callback_data                   = NULL;
@@ -114,16 +110,6 @@ void iron_set_foreground_callback(void (*callback)(void *), void *data) {
 	foreground_callback_data = data;
 }
 
-void iron_set_resume_callback(void (*callback)(void *), void *data) {
-	resume_callback      = callback;
-	resume_callback_data = data;
-}
-
-void iron_set_pause_callback(void (*callback)(void *), void *data) {
-	pause_callback      = callback;
-	pause_callback_data = data;
-}
-
 void iron_set_background_callback(void (*callback)(void *), void *data) {
 	background_callback      = callback;
 	background_callback_data = data;
@@ -139,12 +125,12 @@ void iron_set_drop_files_callback(void (*callback)(char *, void *), void *data) 
 	drop_files_callback_data = data;
 }
 
-void iron_set_cut_callback(char *(*callback)(void *), void *data) {
+void iron_set_cut_callback(void (*callback)(void *), void *data) {
 	cut_callback      = callback;
 	cut_callback_data = data;
 }
 
-void iron_set_copy_callback(char *(*callback)(void *), void *data) {
+void iron_set_copy_callback(void (*callback)(void *), void *data) {
 	copy_callback      = callback;
 	copy_callback_data = data;
 }
@@ -166,18 +152,6 @@ void iron_internal_foreground_callback(void) {
 	}
 }
 
-void iron_internal_resume_callback(void) {
-	if (resume_callback != NULL) {
-		resume_callback(resume_callback_data);
-	}
-}
-
-void iron_internal_pause_callback(void) {
-	if (pause_callback != NULL) {
-		pause_callback(pause_callback_data);
-	}
-}
-
 void iron_internal_background_callback(void) {
 	if (background_callback != NULL) {
 		background_callback(background_callback_data);
@@ -196,18 +170,16 @@ void iron_internal_drop_files_callback(char *filePath) {
 	}
 }
 
-char *iron_internal_cut_callback(void) {
+void iron_internal_cut_callback(void) {
 	if (cut_callback != NULL) {
-		return cut_callback(cut_callback_data);
+		cut_callback(cut_callback_data);
 	}
-	return NULL;
 }
 
-char *iron_internal_copy_callback(void) {
+void iron_internal_copy_callback(void) {
 	if (copy_callback != NULL) {
-		return copy_callback(copy_callback_data);
+		copy_callback(copy_callback_data);
 	}
-	return NULL;
 }
 
 void iron_internal_paste_callback(char *value) {

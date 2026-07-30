@@ -27,9 +27,9 @@ void viewport_reset() {
 		if (string_equals(o->type, "camera_object")) {
 			cam->base->transform->local = mat4_from_f32_array(o->transform, 0);
 			transform_decompose(cam->base->transform);
-			cam->data->fov           = g_config->camera_fov;
-			g_context->cam_handle->i = 0;
-			cam->data->ortho         = NULL;
+			cam->data->fov         = g_config->camera_fov;
+			g_context->camera_type = 0;
+			cam->data->ortho       = NULL;
 			camera_object_build_proj(cam, -1.0);
 			g_context->ddirty = 2;
 			camera_reset(-1);
@@ -93,20 +93,8 @@ void viewport_update_camera_type(i32 camera_type) {
 	g_context->ddirty = 2;
 }
 
-void viewport_capture_screenshot() {
-	render_target_t *rt  = any_map_get(render_path_render_targets, "last");
-	gpu_texture_t   *tex = rt->_image;
-
-	// let screenshot: gpu_texture_t = gpu_create_render_target(512, 512);
-	// let r: f32                    = sys_w() / sys_h();
-	// draw_begin(screenshot);
-	// draw_scaled_image(tex, -(512 * r - 512) / 2, 0, 512 * r, 512);
-	// draw_end();
-
-	gpu_texture_t *screenshot = gpu_create_render_target(tex->width, tex->height, GPU_TEXTURE_FORMAT_RGBA32);
-	draw_begin(screenshot, false, 0);
-	draw_image(tex, 0, 0);
-	draw_end();
+void viewport_save_texture(gpu_texture_t *screenshot) {
+	// Save into the textures tab
 	if (g_project->packed_assets == NULL) {
 		g_project->packed_assets = any_array_create_from_raw((void *[]){}, 0);
 	}
@@ -124,8 +112,37 @@ void viewport_capture_screenshot() {
 	packed_asset_t *pa =
 	    GC_ALLOC_INIT(packed_asset_t, {.name = abs, .bytes = iron_encode_png(gpu_get_texture_pixels(screenshot), screenshot->width, screenshot->height, 0)});
 	any_array_push(g_project->packed_assets, pa);
-	any_map_set(data_cached_images, abs, screenshot);
+	any_map_set(data_cached_textures, abs, screenshot);
 	import_texture_run(abs, true);
+}
+
+void viewport_capture_screenshot() {
+	render_target_t *rt  = any_map_get(render_path_render_targets, "last");
+	gpu_texture_t   *tex = rt->_image;
+
+	gpu_texture_t *screenshot = gpu_create_render_target(tex->width, tex->height, GPU_TEXTURE_FORMAT_RGBA32);
+	draw_begin(screenshot, false, 0);
+	draw_image(tex, 0, 0);
+	draw_end();
+
+	viewport_save_texture(screenshot);
+	g_context->capturing_screenshot = false;
+	g_context->ddirty               = 2;
+}
+
+void viewport_capture_screenshot_to(gpu_texture_t *target, float x, float y, float w, float h) {
+	render_target_t *rt  = any_map_get(render_path_render_targets, "last");
+	gpu_texture_t   *tex = rt->_image;
+
+	// Crop the viewport texture to a square
+	float size = tex->width < tex->height ? tex->width : tex->height;
+	float sx   = (tex->width - size) / 2.0f;
+	float sy   = (tex->height - size) / 2.0f;
+
+	draw_begin(target, false, 0);
+	draw_scaled_sub_image(tex, sx, sy, size, size, x, y, w, h);
+	draw_end();
+
 	g_context->capturing_screenshot = false;
 	g_context->ddirty               = 2;
 }
@@ -134,18 +151,18 @@ void viewport_capture_video_update(void *_) {
 	render_target_t *rt     = any_map_get(render_path_render_targets, "last");
 	buffer_t        *pixels = gpu_get_texture_pixels(rt->_image);
 #ifdef IRON_BGRA
-	export_arm_bgra_swap(pixels);
+	buffer_bgra_swap(pixels);
 #endif
 	iron_mp4_encode(pixels);
 }
 
 void viewport_capture_video_begin() {
-	if (string_equals(project_filepath, "")) {
+	if (string_equals(g_project->_->filepath, "")) {
 		console_error(tr("Save project first"));
 		return;
 	}
 	viewport_recording    = true;
-	char            *path = string("%s/output.mp4", path_base_dir(project_filepath));
+	char            *path = string("%s/output.mp4", path_base_dir(g_project->_->filepath));
 	render_target_t *rt   = any_map_get(render_path_render_targets, "last");
 	iron_mp4_begin(path, rt->_image->width, rt->_image->height);
 	sys_notify_on_update(viewport_capture_video_update, NULL);

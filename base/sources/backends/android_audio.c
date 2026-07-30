@@ -1,5 +1,5 @@
 
-#ifdef IRON_A2
+#ifdef IRON_AUDIO
 
 #include "iron_audio.h"
 
@@ -110,8 +110,6 @@ void resumeAudio() {
 	}
 	SLresult result = (*bqPlayerPlay)->SetPlayState(bqPlayerPlay, SL_PLAYSTATE_PLAYING);
 }
-
-void iron_a2_update() {}
 
 void iron_a2_shutdown() {
 	if (bqPlayerObject != NULL) {

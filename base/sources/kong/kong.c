@@ -90,7 +90,15 @@ variable   all_variables[1024 * 1024];
 bool               kong_error          = false;
 static function   *functions           = NULL;
 static function_id functions_size      = 128;
+static function_id functions_zeroed    = 0;
 function_id        next_function_index = 0;
+
+static void zero_new_function_slots(void) {
+	if (functions_size > functions_zeroed) {
+		memset(&functions[functions_zeroed], 0, (functions_size - functions_zeroed) * sizeof(function));
+		functions_zeroed = functions_size;
+	}
+}
 
 static global globals[1024];
 global_id     globals_size = 0;
@@ -860,6 +868,10 @@ variable allocate_variable(type_ref type, variable_kind kind) {
 
 opcode *emit_op(opcodes *code, opcode *o) {
 	assert(code->size + o->size < OPCODES_SIZE);
+
+	if (code->o == NULL) {
+		code->o = (uint8_t *)malloc(OPCODES_SIZE);
+	}
 
 	uint8_t *location = &code->o[code->size];
 
@@ -2037,6 +2049,7 @@ void functions_init(void) {
 	debug_context context       = {0};
 	check(new_functions != NULL, context, "Could not allocate functions");
 	functions           = new_functions;
+	zero_new_function_slots();
 	next_function_index = 0;
 
 	{
@@ -2651,6 +2664,7 @@ static void grow_functions_if_needed(uint64_t size) {
 		debug_context context       = {0};
 		check(new_functions != NULL, context, "Could not allocate functions");
 		functions = new_functions;
+		zero_new_function_slots();
 	}
 }
 
@@ -2666,7 +2680,6 @@ function_id add_function(name_id name) {
 	functions[f].parameters_size = 0;
 	memset(functions[f].parameter_attributes, 0, sizeof(functions[f].parameter_attributes));
 	functions[f].block = NULL;
-	memset(functions[f].code.o, 0, sizeof(functions[f].code.o));
 	functions[f].code.size                  = 0;
 	functions[f].descriptor_set_group_index = UINT32_MAX;
 	functions[f].used_builtins              = (builtins){0};
@@ -4628,6 +4641,10 @@ tokens tokenize(const char *filename, const char *source) {
 }
 
 static void copy_opcode(opcode *o) {
+	if (new_code.o == NULL) {
+		new_code.o = (uint8_t *)malloc(OPCODES_SIZE);
+	}
+
 	uint8_t *new_data = &new_code.o[new_code.size];
 
 	assert(new_code.size + o->size < OPCODES_SIZE);
@@ -4943,7 +4960,10 @@ void transform(uint32_t flags) {
 			index += o->size;
 		}
 
-		f->code = new_code;
+		uint8_t *old_buffer = f->code.o;
+		f->code.o           = new_code.o;
+		f->code.size        = new_code.size;
+		new_code.o          = old_buffer;
 	}
 }
 
@@ -6033,10 +6053,12 @@ void indent(char *code, size_t *offset, int indentation) {
 	*offset += sprintf(&code[*offset], "%s", str);
 }
 
+#ifdef IRON_METAL
 extern size_t vertex_inputs_size;
 extern size_t fragment_inputs_size;
 extern size_t vertex_functions_size;
 extern size_t fragment_functions_size;
+#endif
 
 uint64_t    _next_variable_id;
 size_t      _allocated_globals_size;
@@ -6090,33 +6112,41 @@ void gpu_create_shaders_from_kong(char *kong, char **vs, char **fs, int *vs_size
 		types_init();
 		functions_init();
 
-		_next_variable_id        = next_variable_id;
-		_allocated_globals_size  = allocated_globals_size;
-		_next_function_index     = next_function_index;
-		_globals_size            = globals_size;
-		_names_index             = names_index;
-		_sets_count              = sets_count;
-		_next_type_index         = next_type_index;
+		_next_variable_id       = next_variable_id;
+		_allocated_globals_size = allocated_globals_size;
+		_next_function_index    = next_function_index;
+		_globals_size           = globals_size;
+		_names_index            = names_index;
+		_sets_count             = sets_count;
+		_next_type_index        = next_type_index;
+
+#ifdef IRON_METAL
 		_vertex_inputs_size      = vertex_inputs_size;
 		_fragment_inputs_size    = fragment_inputs_size;
 		_vertex_functions_size   = vertex_functions_size;
 		_fragment_functions_size = fragment_functions_size;
-		_hash                    = _clone_hash(hash);
-		_expression_index        = expression_index;
-		_statement_index         = statement_index;
+#endif
+
+		_hash             = _clone_hash(hash);
+		_expression_index = expression_index;
+		_statement_index  = statement_index;
 	}
 	else {
-		next_variable_id        = _next_variable_id;
-		allocated_globals_size  = _allocated_globals_size;
-		next_function_index     = _next_function_index;
-		globals_size            = _globals_size;
-		names_index             = _names_index;
-		sets_count              = _sets_count;
-		next_type_index         = _next_type_index;
+		next_variable_id       = _next_variable_id;
+		allocated_globals_size = _allocated_globals_size;
+		next_function_index    = _next_function_index;
+		globals_size           = _globals_size;
+		names_index            = _names_index;
+		sets_count             = _sets_count;
+		next_type_index        = _next_type_index;
+
+#ifdef IRON_METAL
 		vertex_inputs_size      = _vertex_inputs_size;
 		fragment_inputs_size    = _fragment_inputs_size;
 		vertex_functions_size   = _vertex_functions_size;
 		fragment_functions_size = _fragment_functions_size;
+#endif
+
 		shfree(hash);
 		hash             = _clone_hash(_hash);
 		expression_index = _expression_index;
