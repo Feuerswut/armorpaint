@@ -6,7 +6,7 @@ char *_plugin_name;
 plugin_t *plugin_create() {
 	plugin_t *p = GC_ALLOC_INIT(plugin_t, {0});
 	p->name     = string_copy(_plugin_name);
-	any_map_set(plugin_map, p->name, p);
+	any_map_set(g_plugins, p->name, p);
 	return p;
 }
 
@@ -18,18 +18,18 @@ void plugin_start(char *plugin) {
 	minic_ctx_t *ctx = minic_eval_named(sys_buffer_to_string(blob), plugin);
 	data_delete_blob(string("plugins/%s", plugin));
 	// Store context on the plugin so callbacks can use it and it can be freed on stop
-	plugin_t *p = any_map_get(plugin_map, plugin);
+	plugin_t *p = any_map_get(g_plugins, plugin);
 	p->ctx      = ctx;
 }
 
 void plugin_stop(char *plugin) {
-	plugin_t *p = any_map_get(plugin_map, plugin);
+	plugin_t *p = any_map_get(g_plugins, plugin);
 	if (p->on_delete != NULL) {
 		minic_ctx_call_fn(p->ctx, p->on_delete, NULL, 0);
 	}
 	minic_ctx_free(p->ctx);
 	p->ctx = NULL;
-	map_delete(plugin_map, plugin);
+	map_delete(g_plugins, plugin);
 }
 
 void plugin_notify_on_ui(plugin_t *plugin, void *f) {

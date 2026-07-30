@@ -20,6 +20,8 @@ void nodes_material_init() {
 	script_node_init();
 	shader_node_init();
 	texture_coordinate_node_init();
+	tilesheet_animation_node_init();
+	tilesheet_node_init();
 	uv_map_node_init();
 	value_node_init();
 	wireframe_node_init();
@@ -27,6 +29,7 @@ void nodes_material_init() {
 	gc_unroot(nodes_material_texture);
 	nodes_material_texture = any_array_create_from_raw((void *[]){}, 0);
 	gc_root(nodes_material_texture);
+	bake_texture_node_init();
 	brick_texture_node_init();
 	camera_texture_node_init();
 	checker_texture_node_init();
@@ -87,15 +90,14 @@ void nodes_material_init() {
 #ifdef IRON_WINDOWS
 	image_to_3d_mesh_node_init();
 #endif
-	image_to_depth_node_init();
-	image_to_normal_map_node_init();
 	image_to_pbr_node_init();
-	inpaint_image_node_init();
-	outpaint_image_node_init();
+	repeat_node_init();
+	save_image_node_init();
 	text_to_image_node_init();
-	tile_image_node_init();
+	if (g_config->experimental) {
+		texture_mesh_node_init();
+	}
 	upscale_image_node_init();
-	vary_image_node_init();
 
 #endif
 

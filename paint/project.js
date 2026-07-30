@@ -14,20 +14,23 @@ flags.with_plugins        = true;
 flags.with_kong           = true;
 flags.with_raytrace       = true;
 flags.with_bc7            = true;
+flags.with_audio          = platform == "linux";
 flags.idle_sleep          = true;
 flags.export_version_info = true;
 flags.export_data_list    = platform == "android"; // .apk contents
 
 if (platform == "wasm") {
-    flags.with_nfd = false;
-    flags.with_compress = false;
-    flags.with_plugins = false;
-    flags.with_raytrace = false;
-    flags.export_data_list = true;
+	flags.with_nfd         = false;
+	flags.with_compress    = false;
+	flags.with_plugins     = false;
+	flags.with_raytrace    = false;
+	flags.export_data_list = true;
 }
 
 let project = new Project(flags.name);
 project.add_project("../base");
+project.add_cfiles("sources/startup.c");
+project.add_cfiles("sources/minic_api.c");
 project.add_cfiles("sources/main.c");
 project.add_shaders("shaders/*.kong");
 project.add_assets("assets/*", {destination : "data/{name}"});

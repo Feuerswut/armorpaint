@@ -17,8 +17,8 @@ static ui_theme_t  *theme;
 static bool         ui_key_repeat         = true; // Emulate key repeat for non-character keys
 static bool         ui_dynamic_glyph_load = true; // Allow text input fields to push new glyphs into the font atlas
 static float        ui_key_repeat_time    = 0.0;
-char                ui_text_to_paste[1024];
-char                ui_text_to_copy[1024];
+char                ui_text_to_paste[UI_TEXT_MAX];
+char                ui_text_to_copy[UI_TEXT_MAX];
 static bool         ui_combo_first         = true;
 static ui_handle_t *ui_combo_search_handle = NULL;
 static int          touch_hold_x           = -1;
@@ -168,20 +168,16 @@ void ui_rect(float x, float y, float w, float h, uint32_t color, float strength)
 }
 
 void ui_draw_shadow(float x, float y, float w, float h) {
-	if (theme->SHADOWS) {
-		theme->SHADOWS   = false;
-		float max_offset = 16.0 * UI_SCALE();
-		for (int i = 0; i < 6; i++) {
-			float offset = (max_offset / 6) * (i + 1);
-			float a      = 0.04 - (0.04 / 6) * i;
-			draw_set_color(((uint8_t)(a * 255) << 24) | (0 << 16) | (0 << 8) | 0);
-			ui_draw_rect(true, x - offset, y, w + offset * 2, h + offset);
-		}
-		theme->SHADOWS = true;
+	float max_offset = 16.0 * UI_SCALE();
+	for (int i = 0; i < 6; i++) {
+		float offset = (max_offset / 6) * (i + 1);
+		float a      = 0.04 - (0.04 / 6) * i;
+		draw_set_color(((uint8_t)(a * 255) << 24) | (0 << 16) | (0 << 8) | 0);
+		ui_draw_rect(true, false, x - offset, y, w + offset * 2, h + offset);
 	}
 }
 
-void ui_draw_rect(bool fill, float x, float y, float w, float h) {
+void ui_draw_rect(bool fill, bool shadows, float x, float y, float w, float h) {
 	if (!current->enabled) {
 		ui_fade_color(0.25);
 	}
@@ -192,14 +188,14 @@ void ui_draw_rect(bool fill, float x, float y, float w, float h) {
 
 	if (fill) {
 		int r = current->filled_round_corner_image.width;
-		if (theme->ROUND_CORNERS && current->enabled && r > 0 && w >= r * 2.0) {
+		if (current->enabled && r > 0 && w >= r * 2.0) {
 			draw_scaled_image(&current->filled_round_corner_image, x, y, r, r);
 			draw_scaled_image(&current->filled_round_corner_image, x, y + h, r, -r);
 			draw_scaled_image(&current->filled_round_corner_image, x + w, y, -r, r);
 			draw_scaled_image(&current->filled_round_corner_image, x + w, y + h, -r, -r);
 			draw_filled_rect(x + r, y, w - r * 2.0, h);
 			draw_filled_rect(x, y + r, w, h - r * 2.0);
-			if (theme->SHADOWS) {
+			if (shadows) {
 				uint32_t color = draw_get_color();
 				draw_set_color(color + 0x00030303);
 				draw_filled_rect(x + r, y + h - 1.0, w - r * 2.0, 1.0);
@@ -216,7 +212,7 @@ void ui_draw_rect(bool fill, float x, float y, float w, float h) {
 	else {
 		int   r        = current->round_corner_image.width;
 		float strength = 1.0;
-		if (theme->ROUND_CORNERS && current->enabled && r > 0) {
+		if (current->enabled && r > 0) {
 			draw_scaled_image(&current->round_corner_image, x, y, r, r);
 			draw_scaled_image(&current->round_corner_image, x, y + h, r, -r);
 			draw_scaled_image(&current->round_corner_image, x + w, y, -r, r);
@@ -232,15 +228,29 @@ void ui_draw_rect(bool fill, float x, float y, float w, float h) {
 	}
 }
 
-void ui_draw_round_bottom(float x, float y, float w) {
-	if (theme->ROUND_CORNERS) {
-		int r = current->filled_round_corner_image.width;
-		int h = 4;
-		draw_set_color(theme->SEPARATOR_COL);
-		draw_scaled_image(&current->filled_round_corner_image, x, y + h, r, -r);
-		draw_scaled_image(&current->filled_round_corner_image, x + w, y + h, -r, -r);
-		draw_filled_rect(x + r, y, w - r * 2.0, h);
+void ui_draw_rect_round_top(bool shadows, float x, float y, float w, float h) {
+	int r = current->filled_round_corner_image.width;
+	draw_scaled_image(&current->filled_round_corner_image, x, y, r, r);
+	draw_scaled_image(&current->filled_round_corner_image, x + w, y, -r, r);
+	draw_filled_rect(x + r, y, w - r * 2.0, h);
+	draw_filled_rect(x, y + r, w, h - r);
+	if (shadows) {
+		uint32_t color = draw_get_color();
+		draw_set_color(color + 0x00030303);
+		draw_filled_rect(x, y + r, 1, h - r);
+		draw_filled_rect(x + w - 1, y + r, 1, h - r);
+		draw_set_color(color + 0x00080808);
+		draw_filled_rect(x + r, y, w - r * 2.0, 1);
 	}
+}
+
+void ui_draw_round_bottom(float x, float y, float w) {
+	int r = current->filled_round_corner_image.width;
+	int h = 4;
+	draw_set_color(theme->SEPARATOR_COL);
+	draw_scaled_image(&current->filled_round_corner_image, x, y + h, r, -r);
+	draw_scaled_image(&current->filled_round_corner_image, x + w, y + h, -r, -r);
+	draw_filled_rect(x + r, y, w - r * 2.0, h);
 }
 
 bool ui_is_char(int code) {
@@ -313,9 +323,13 @@ void ui_draw_string(char *text, float x_offset, float y_offset, int align, bool 
 		return;
 	}
 	if (truncation) {
-		assert(strlen(text) < 1024 - 2);
 		char *full_text = text;
-		strcpy(truncated, text);
+		size_t len = strlen(text);
+		if (len > sizeof(truncated) - 3) {
+			len = sizeof(truncated) - 3;
+		}
+		memcpy(truncated, text, len);
+		truncated[len] = '\0';
 		text = &truncated[0];
 		while (strlen(text) > 0 && draw_string_width(current->ops->font, current->font_size, text) > current->_w - 6.0 * UI_SCALE()) {
 			text[strlen(text) - 1] = 0;
@@ -985,26 +999,24 @@ void ui_bake_elements() {
 	draw_filled_circle(r / 2.0, r / 2.0, 4.0 * UI_SCALE(), 0);
 	draw_end();
 
-	if (theme->ROUND_CORNERS) {
-		if (current->filled_round_corner_image.width != 0) {
-			gpu_texture_destroy(&current->filled_round_corner_image);
-		}
-		r = 4.0 * UI_SCALE();
-		gpu_render_target_init(&current->filled_round_corner_image, r, r, GPU_TEXTURE_FORMAT_RGBA32);
-		draw_begin(&current->filled_round_corner_image, true, 0x00000000);
-		draw_set_color(0xffffffff);
-		draw_filled_circle(r, r, r, 0);
-		draw_end();
-
-		if (current->round_corner_image.width != 0) {
-			gpu_texture_destroy(&current->round_corner_image);
-		}
-		gpu_render_target_init(&current->round_corner_image, r, r, GPU_TEXTURE_FORMAT_RGBA32);
-		draw_begin(&current->round_corner_image, true, 0x00000000);
-		draw_set_color(0xffffffff);
-		draw_circle(r, r, r, 0, 1);
-		draw_end();
+	if (current->filled_round_corner_image.width != 0) {
+		gpu_texture_destroy(&current->filled_round_corner_image);
 	}
+	r = 4.0 * UI_SCALE();
+	gpu_render_target_init(&current->filled_round_corner_image, r, r, GPU_TEXTURE_FORMAT_RGBA32);
+	draw_begin(&current->filled_round_corner_image, true, 0x00000000);
+	draw_set_color(0xffffffff);
+	draw_filled_circle(r, r, r, 0);
+	draw_end();
+
+	if (current->round_corner_image.width != 0) {
+		gpu_texture_destroy(&current->round_corner_image);
+	}
+	gpu_render_target_init(&current->round_corner_image, r, r, GPU_TEXTURE_FORMAT_RGBA32);
+	draw_begin(&current->round_corner_image, true, 0x00000000);
+	draw_set_color(0xffffffff);
+	draw_circle(r, r, r, 0, 1);
+	draw_end();
 
 	current->elements_baked = true;
 }
@@ -1120,8 +1132,53 @@ void ui_insert_chars_at(char *str, int at, char *cs) {
 	}
 }
 
+int ui_insert_chars_at_capped(char *str, int at, char *cs, int cap) {
+	int len   = strlen(str);
+	int count = strlen(cs);
+	if (len + count > cap - 1) {
+		count = cap - 1 - len;
+	}
+	if (count <= 0) {
+		return 0;
+	}
+	memmove(str + at + count, str + at, len - at + 1);
+	memcpy(str + at, cs, count);
+	return count;
+}
+
+// Number of leading spaces to step over when moving/removing a tab backwards
+static int ui_tab_dedent_count(char *str, int cursor_x) {
+	int n = cursor_x % 4;
+	if (n == 0) {
+		n = 4;
+	}
+	if (cursor_x < n) {
+		return 0;
+	}
+	for (int i = 1; i <= n; ++i) {
+		if (str[cursor_x - i] != ' ') {
+			return 0;
+		}
+	}
+	return n;
+}
+
+// Number of trailing spaces to step over when moving/removing a tab forwards
+static int ui_tab_indent_count(char *str, int cursor_x, int len) {
+	int n = 4 - (cursor_x % 4);
+	if (cursor_x + n > len) {
+		return 0;
+	}
+	for (int i = 0; i < n; ++i) {
+		if (str[cursor_x + i] != ' ') {
+			return 0;
+		}
+	}
+	return n;
+}
+
 void ui_update_text_edit(int align, bool editable, bool live_update) {
-	char text[1024];
+	char text[UI_TEXT_MAX];
 	strcpy(text, current->text_selected);
 	if (current->is_key_pressed) {                // Process input
 		if (current->key_code == KEY_CODE_LEFT) { // Move cursor
@@ -1133,8 +1190,17 @@ void ui_update_text_edit(int align, bool editable, bool live_update) {
 					i--;
 				current->cursor_x = i;
 			}
+			else if (!current->is_shift_down && current->highlight_anchor != current->cursor_x) { // Collapse selection to start
+				current->cursor_x = current->highlight_anchor < current->cursor_x ? current->highlight_anchor : current->cursor_x;
+			}
 			else if (current->cursor_x > 0) {
-				current->cursor_x--;
+				int n = current->tab_switch_enabled ? 0 : ui_tab_dedent_count(text, current->cursor_x);
+				if (n > 0) {
+					current->cursor_x -= n; // Tab
+				}
+				else {
+					current->cursor_x--;
+				}
 			}
 		}
 		else if (current->key_code == KEY_CODE_RIGHT) {
@@ -1147,14 +1213,40 @@ void ui_update_text_edit(int align, bool editable, bool live_update) {
 					i++;
 				current->cursor_x = i;
 			}
+			else if (!current->is_shift_down && current->highlight_anchor != current->cursor_x) { // Collapse selection to end
+				current->cursor_x = current->highlight_anchor > current->cursor_x ? current->highlight_anchor : current->cursor_x;
+			}
 			else if (current->cursor_x < strlen(text)) {
-				current->cursor_x++;
+				int n = current->tab_switch_enabled ? 0 : ui_tab_indent_count(text, current->cursor_x, strlen(text));
+				if (n > 0) {
+					current->cursor_x += n; // Tab
+				}
+				else {
+					current->cursor_x++;
+				}
 			}
 		}
 		else if (editable && current->key_code == KEY_CODE_BACKSPACE) { // Remove char
-			if (current->cursor_x > 0 && current->highlight_anchor == current->cursor_x) {
-				ui_remove_char_at(text, current->cursor_x - 1);
-				current->cursor_x--;
+			if (current->is_ctrl_down) {                                // Remove previous word
+				int i = current->cursor_x;
+				while (i > 0 && text[i - 1] == ' ')
+					i--;
+				while (i > 0 && text[i - 1] != ' ')
+					i--;
+				ui_remove_chars_at(text, i, current->cursor_x - i);
+				current->cursor_x         = i;
+				current->highlight_anchor = i;
+			}
+			else if (current->cursor_x > 0 && current->highlight_anchor == current->cursor_x) {
+				int n = current->tab_switch_enabled ? 0 : ui_tab_dedent_count(text, current->cursor_x);
+				if (n > 0) {
+					ui_remove_chars_at(text, current->cursor_x - n, n); // Tab
+					current->cursor_x -= n;
+				}
+				else {
+					ui_remove_char_at(text, current->cursor_x - 1);
+					current->cursor_x--;
+				}
 			}
 			else if (current->highlight_anchor < current->cursor_x) {
 				int count = current->cursor_x - current->highlight_anchor;
@@ -1167,8 +1259,25 @@ void ui_update_text_edit(int align, bool editable, bool live_update) {
 			}
 		}
 		else if (editable && current->key_code == KEY_CODE_DELETE) {
-			if (current->highlight_anchor == current->cursor_x) {
-				ui_remove_char_at(text, current->cursor_x);
+			if (current->is_ctrl_down) { // Remove next word
+				int i   = current->cursor_x;
+				int len = strlen(text);
+				while (i < len && text[i] != ' ')
+					i++;
+				while (i < len && text[i] == ' ')
+					i++;
+				ui_remove_chars_at(text, current->cursor_x, i - current->cursor_x);
+				current->highlight_anchor = current->cursor_x;
+			}
+			else if (current->highlight_anchor == current->cursor_x) {
+				int len = strlen(text);
+				int n   = current->tab_switch_enabled ? 0 : ui_tab_indent_count(text, current->cursor_x, len);
+				if (n > 0) {
+					ui_remove_chars_at(text, current->cursor_x, n); // Tab
+				}
+				else {
+					ui_remove_char_at(text, current->cursor_x);
+				}
 			}
 			else if (current->highlight_anchor < current->cursor_x) {
 				int count = current->cursor_x - current->highlight_anchor;
@@ -1227,25 +1336,36 @@ void ui_update_text_edit(int align, bool editable, bool live_update) {
 
 	if (editable && ui_is_paste) { // Process cut copy paste
 		ui_remove_chars_at(text, current->highlight_anchor, current->cursor_x - current->highlight_anchor);
-		ui_insert_chars_at(text, current->highlight_anchor, ui_text_to_paste);
-		current->cursor_x += strlen(ui_text_to_paste);
+		current->cursor_x = current->highlight_anchor;
+		current->cursor_x += ui_insert_chars_at_capped(text, current->highlight_anchor, ui_text_to_paste, UI_TEXT_MAX);
 		current->highlight_anchor = current->cursor_x;
 		ui_text_to_paste[0]       = 0;
 		ui_is_paste               = false;
 	}
-	if (current->highlight_anchor == current->cursor_x) {
-		strcpy(ui_text_to_copy, text); // Copy
+
+	if (ui_is_copy) {
+		if (current->highlight_anchor == current->cursor_x) {
+			strncpy(ui_text_to_copy, text, UI_TEXT_MAX - 1); // Copy
+			ui_text_to_copy[UI_TEXT_MAX - 1] = '\0';
+		}
+		else if (current->highlight_anchor < current->cursor_x) {
+			int len = current->cursor_x - current->highlight_anchor;
+			if (len > UI_TEXT_MAX - 1)
+				len = UI_TEXT_MAX - 1;
+			strncpy(ui_text_to_copy, text + current->highlight_anchor, len);
+			ui_text_to_copy[len] = '\0';
+		}
+		else {
+			int len = current->highlight_anchor - current->cursor_x;
+			if (len > UI_TEXT_MAX - 1)
+				len = UI_TEXT_MAX - 1;
+			strncpy(ui_text_to_copy, text + current->cursor_x, len);
+			ui_text_to_copy[len] = '\0';
+		}
+		iron_copy_to_clipboard(ui_text_to_copy);
+		ui_is_copy = false;
 	}
-	else if (current->highlight_anchor < current->cursor_x) {
-		int len = current->cursor_x - current->highlight_anchor;
-		strncpy(ui_text_to_copy, text + current->highlight_anchor, len);
-		ui_text_to_copy[len] = '\0';
-	}
-	else {
-		int len = current->highlight_anchor - current->cursor_x;
-		strncpy(ui_text_to_copy, text + current->cursor_x, len);
-		ui_text_to_copy[len] = '\0';
-	}
+
 	if (editable && ui_is_cut) { // Cut
 		if (current->highlight_anchor == current->cursor_x) {
 			// No selection - nothing to cut
@@ -1289,6 +1409,8 @@ void ui_update_text_edit(int align, bool editable, bool live_update) {
 	float cursor_x   = align == UI_ALIGN_LEFT ? current->_x + strw + off : current->_x + current->_w - strw - off;
 	draw_set_color(theme->TEXT_COL); // Cursor
 	draw_filled_rect(cursor_x, current->_y + current->button_offset_y * 1.5, 1.0 * UI_SCALE(), cursor_height);
+	current->cursor_screen_x = cursor_x;
+	current->cursor_screen_y = current->_y;
 
 	strcpy(current->text_selected, text);
 	if (live_update && current->text_selected_handle != NULL) {
@@ -1317,7 +1439,9 @@ void ui_draw_tabs() {
 	float tab_y                  = 0.0;
 	float tab_h_min              = UI_BUTTON_H() * 1.1;
 	float header_h               = current->current_window->drag_enabled ? UI_HEADER_DRAG_H() : 0;
-	float tab_h                  = (theme->FULL_TABS && current->tab_vertical) ? ((current->_window_h - header_h) / current->tab_count) : tab_h_min;
+	float tab_h                  = (theme->FULL_TABS && current->tab_vertical)
+	                                   ? ((current->_window_h - header_h - 20 - current->tab_count * 6 * UI_SCALE()) / current->tab_count)
+	                                   : tab_h_min;
 	float orig_y                 = current->_y;
 	current->_y                  = header_h;
 	current->tab_handle->changed = false;
@@ -1337,29 +1461,26 @@ void ui_draw_tabs() {
 
 	draw_set_color(theme->SEPARATOR_COL); // Tab background
 	if (current->tab_vertical) {
-		draw_filled_rect(0, current->_y, UI_ELEMENT_W(), current->_window_h);
+		ui_draw_rect(true, false, 5, current->_y + 5, UI_ELEMENT_W() * 1.2 - 10, current->_window_h - header_h - 10);
 	}
 	else {
 		draw_filled_rect(0, current->_y, current->_window_w, current->button_offset_y + tab_h + 2);
 	}
 
 	draw_set_color(theme->BUTTON_COL); // Underline tab buttons
-	if (current->tab_vertical) {
-		draw_filled_rect(UI_ELEMENT_W(), current->_y, 1, current->_window_h);
-	}
-	else {
+	if (!current->tab_vertical) {
 		draw_filled_rect(current->button_offset_y, current->_y + current->button_offset_y + tab_h + 2, current->_window_w - current->button_offset_y * 2.0, 1);
 	}
 
-	float base_y   = current->tab_vertical ? current->_y : current->_y + 2;
+	float base_y   = current->tab_vertical ? current->_y + 10 : current->_y + 2;
 	bool  _enabled = current->enabled;
 
 	for (int i = 0; i < current->tab_count; ++i) {
 		current->enabled = current->tab_enabled[i];
-		current->_x      = tab_x;
+		current->_x      = current->tab_vertical ? tab_x + UI_ELEMENT_W() * 0.1 : tab_x;
 		current->_y      = base_y + tab_y;
 		current->_w =
-		    current->tab_vertical ? (UI_ELEMENT_W() - 1 * UI_SCALE())
+		    current->tab_vertical ? UI_ELEMENT_W()
 		    : theme->FULL_TABS
 		        ? (current->_window_w / current->tab_count)
 		        : (draw_string_width(current->ops->font, current->font_size, current->tab_names[i]) + current->button_offset_y * 2.0 + 18.0 * UI_SCALE());
@@ -1396,23 +1517,28 @@ void ui_draw_tabs() {
 		               : selected                                                       ? theme->WINDOW_BG_COL
 		                                                                                : theme->SEPARATOR_COL);
 		if (current->tab_vertical) {
-			tab_y += tab_h + 1;
+			tab_y += tab_h + 6 * UI_SCALE();
 		}
 		else {
 			tab_x += current->_w + 1;
 		}
 
-		if (theme->ROUND_CORNERS && !current->tab_vertical) {
-			int x = current->_x + current->button_offset_y;
-			int y = current->_y + current->button_offset_y;
-			int w = current->_w;
-			int h = tab_h;
-			int r = current->filled_round_corner_image.width;
+		int x = current->_x + current->button_offset_y;
+		int y = current->_y + current->button_offset_y;
+		int w = current->_w;
+		int h = tab_h;
+
+		int r = current->filled_round_corner_image.width;
+
+		if (current->tab_vertical) {
+			ui_draw_rect(true, selected, x, y, w, h);
+		}
+		else {
 			draw_scaled_image(&current->filled_round_corner_image, x, y, r, r);
 			draw_scaled_image(&current->filled_round_corner_image, x + w, y, -r, r);
 			draw_filled_rect(x + r, y, w - r * 2.0, h);
 			draw_filled_rect(x, y + r, w, h - r);
-			if (selected && theme->SHADOWS) {
+			if (selected) {
 				uint32_t color = draw_get_color();
 				draw_set_color(color + 0x00030303);
 				draw_filled_rect(x, y + r, 1, h - r * 2.0);
@@ -1420,9 +1546,6 @@ void ui_draw_tabs() {
 				draw_set_color(color + 0x00080808);
 				draw_filled_rect(x + r, y, w - r * 2.0, 1);
 			}
-		}
-		else {
-			draw_filled_rect(current->_x + current->button_offset_y, current->_y + current->button_offset_y, current->_w, tab_h);
 		}
 
 		draw_set_color(theme->TEXT_COL);
@@ -1436,12 +1559,7 @@ void ui_draw_tabs() {
 		               (theme->FULL_TABS || !current->tab_vertical) ? UI_ALIGN_CENTER : UI_ALIGN_LEFT, true);
 
 		if (selected) {
-			if (current->tab_vertical) {
-				// Highlight
-				draw_set_color(theme->HIGHLIGHT_COL);
-				draw_filled_rect(current->_x + current->button_offset_y, current->_y + current->button_offset_y - 1, 2, tab_h + current->button_offset_y);
-			}
-			else {
+			if (!current->tab_vertical) {
 				// Hide underline
 				draw_set_color(theme->WINDOW_BG_COL);
 				draw_filled_rect(current->_x + current->button_offset_y, current->_y + current->button_offset_y + tab_h, current->_w, 1);
@@ -1493,10 +1611,10 @@ void ui_draw_check(bool selected, bool hover) {
 	float y = current->_y + current->check_offset_y;
 
 	draw_set_color(selected ? theme->HIGHLIGHT_COL : theme->PRESSED_COL);
-	ui_draw_rect(true, x, y, UI_CHECK_SIZE(), UI_CHECK_SIZE()); // Bg
+	ui_draw_rect(true, true, x, y, UI_CHECK_SIZE(), UI_CHECK_SIZE()); // Bg
 
 	draw_set_color(hover ? theme->HOVER_COL : theme->BUTTON_COL);
-	ui_draw_rect(false, x, y, UI_CHECK_SIZE(), UI_CHECK_SIZE()); // Bg
+	ui_draw_rect(false, true, x, y, UI_CHECK_SIZE(), UI_CHECK_SIZE()); // Bg
 
 	if (selected) { // Check
 		draw_set_color(hover ? theme->TEXT_COL : theme->LABEL_COL);
@@ -1529,11 +1647,11 @@ void ui_draw_slider(float value, float from, float to, bool filled, bool hover) 
 	float w = current->_w - current->button_offset_y * 2.0;
 
 	draw_set_color(theme->PRESSED_COL);
-	ui_draw_rect(true, x, y, w, UI_BUTTON_H()); // Bg
+	ui_draw_rect(true, true, x, y, w, UI_BUTTON_H()); // Bg
 
 	if (hover) {
 		draw_set_color(theme->HOVER_COL);
-		ui_draw_rect(false, x, y, w, UI_BUTTON_H()); // Bg
+		ui_draw_rect(false, true, x, y, w, UI_BUTTON_H()); // Bg
 	}
 
 	draw_set_color(hover ? theme->HOVER_COL : theme->BUTTON_COL);
@@ -1543,7 +1661,7 @@ void ui_draw_slider(float value, float from, float to, bool filled, bool hover) 
 	slider_x       = fmax(fmin(slider_x, x + (w - bar_w)), x);
 	float slider_w = filled ? w * offset : bar_w;
 	slider_w       = fmax(fmin(slider_w, w), 0);
-	ui_draw_rect(true, slider_x, y, slider_w, UI_BUTTON_H());
+	ui_draw_rect(true, true, slider_x, y, slider_w, UI_BUTTON_H());
 }
 
 void ui_set_scale(float factor) {
@@ -1652,9 +1770,11 @@ void ui_end_window() {
 
 		if (handle->drag_enabled) { // Draggable header
 			draw_set_color(theme->SEPARATOR_COL);
-			draw_filled_rect(0, 0, current->_window_w, UI_HEADER_DRAG_H());
+			ui_draw_rect_round_top(true, 0, 0, current->_window_w, UI_HEADER_DRAG_H());
+
 			if (handle->text != NULL) { // Window title
 				draw_set_color(theme->TEXT_COL);
+				draw_set_font(current->ops->font, current->font_size);
 				draw_string(handle->text, current->_window_w / 2 - draw_string_width(current->ops->font, current->font_size, handle->text) / 2,
 				            10 * UI_SCALE());
 			}
@@ -1720,15 +1840,9 @@ void ui_end_window() {
 				draw_set_color(theme->BUTTON_COL); // Bar
 				bool  scrollbar_focus = ui_input_in_rect(current->_window_x + current->_window_w - UI_SCROLL_W(), wy, UI_SCROLL_W(), window_size);
 				float bar_w           = (scrollbar_focus || handle == current->scroll_handle) ? UI_SCROLL_W() : UI_SCROLL_MINI_W();
-				ui_draw_rect(true, current->_window_w - bar_w - current->scroll_align, bar_y, bar_w, bar_h);
+				ui_draw_rect(true, true, current->_window_w - bar_w - current->scroll_align, bar_y, bar_w, bar_h);
 			}
 		}
-
-		// Window border
-		// draw_set_color(0xff202020);
-		// draw_rect(0, 0, current->_window_w, current->_window_h, 4);
-		// draw_set_color(0xff303030);
-		// ui_draw_rect(false, 3, 3, current->_window_w - 4, current->_window_h - 4);
 
 		handle->last_max_x = current->_x;
 		handle->last_max_y = current->_y;
@@ -1818,13 +1932,14 @@ bool ui_window(ui_handle_t *handle, int x, int y, int w, int h, bool drag) {
 	current->tooltip_img     = NULL;
 	current->tab_count       = 0;
 
-	if (theme->FILL_WINDOW_BG) {
-		draw_begin(&handle->texture, true, theme->WINDOW_BG_COL);
-	}
-	else {
+	// Fill window bg
+	if (drag) {
 		draw_begin(&handle->texture, true, 0x00000000);
 		draw_set_color(theme->WINDOW_BG_COL);
-		draw_filled_rect(current->_x, current->_y - handle->scroll_offset, handle->last_max_x, handle->last_max_y);
+		ui_draw_rect(true, true, 0, 0, w, h);
+	}
+	else {
+		draw_begin(&handle->texture, true, theme->WINDOW_BG_COL);
 	}
 
 	handle->drag_enabled = drag;
@@ -1847,7 +1962,7 @@ bool ui_window(ui_handle_t *handle, int x, int y, int w, int h, bool drag) {
 	return true;
 }
 
-bool ui_button(char *text, int align, char *label /*, gpu_texture_t *icon, int sx, int sy, int sw, int sh*/) {
+bool ui_button(char *text, int align, char *label) {
 	if (!ui_is_visible(UI_ELEMENT_H())) {
 		ui_end_element();
 		return false;
@@ -1861,8 +1976,8 @@ bool ui_button(char *text, int align, char *label /*, gpu_texture_t *icon, int s
 
 	if (theme->FILL_BUTTON_BG || pushed || hover) {
 		draw_set_color(pushed ? theme->PRESSED_COL : (!theme->FILL_BUTTON_BG && hover) ? theme->HIGHLIGHT_COL : hover ? theme->HOVER_COL : theme->BUTTON_COL);
-		ui_draw_rect(true, current->_x + current->button_offset_y, current->_y + current->button_offset_y, current->_w - current->button_offset_y * 2,
-		             UI_BUTTON_H());
+		ui_draw_rect(true, theme->SHADOWS, current->_x + current->button_offset_y, current->_y + current->button_offset_y,
+		             current->_w - current->button_offset_y * 2, UI_BUTTON_H());
 	}
 
 	draw_set_color(theme->TEXT_COL);
@@ -1871,13 +1986,6 @@ bool ui_button(char *text, int align, char *label /*, gpu_texture_t *icon, int s
 		draw_set_color(theme->LABEL_COL);
 		ui_draw_string(label, theme->TEXT_OFFSET, 0, align == UI_ALIGN_RIGHT ? UI_ALIGN_LEFT : UI_ALIGN_RIGHT, true);
 	}
-
-	/*
-	if (icon != NULL) {
-	    draw_set_color(0xffffffff);
-	    draw_scaled_sub_image(icon, sx, sy, sw, sh, _x + current->button_offset_y, _y - 1, sw, sh);
-	}
-	*/
 
 	ui_end_element();
 	return released;
@@ -1921,9 +2029,9 @@ bool ui_tab(ui_handle_t *handle, char *text, bool vertical, uint32_t color, bool
 		current->tab_handle      = handle;
 		current->tab_vertical    = vertical;
 		current->tab_align_right = align_right;
-		current->_w -= current->tab_vertical ? UI_ELEMENT_OFFSET() + UI_ELEMENT_W() - 1 * UI_SCALE() : 0; // Shrink window area by width of vertical tabs
 		if (vertical) {
-			current->window_header_w += UI_ELEMENT_W();
+			current->_w -= UI_ELEMENT_OFFSET() + UI_ELEMENT_W() * 1.2; // Shrink window area by width of vertical tabs
+			current->window_header_w += UI_ELEMENT_W() * 1.2;
 		}
 		else {
 			current->window_header_h += UI_BUTTON_H() + current->button_offset_y + UI_ELEMENT_OFFSET();
@@ -2046,7 +2154,7 @@ char *ui_text_input(ui_handle_t *handle, char *label, int align, bool editable, 
 		iron_mouse_set_cursor(IRON_CURSOR_IBEAM);
 	}
 	draw_set_color(hover ? theme->HOVER_COL : theme->BUTTON_COL); // Text bg
-	ui_draw_rect(false, current->_x + current->button_offset_y, current->_y + current->button_offset_y, current->_w - current->button_offset_y * 2,
+	ui_draw_rect(false, true, current->_x + current->button_offset_y, current->_y + current->button_offset_y, current->_w - current->button_offset_y * 2,
 	             UI_BUTTON_H());
 
 	bool released = ui_get_released(UI_ELEMENT_H());
@@ -2192,12 +2300,12 @@ int ui_combo(ui_handle_t *handle, string_array_t *texts, char *label, bool show_
 	}
 
 	draw_set_color(theme->PRESSED_COL); // Bg
-	ui_draw_rect(true, current->_x + current->button_offset_y, current->_y + current->button_offset_y, current->_w - current->button_offset_y * 2,
+	ui_draw_rect(true, true, current->_x + current->button_offset_y, current->_y + current->button_offset_y, current->_w - current->button_offset_y * 2,
 	             UI_BUTTON_H());
 
 	bool hover = ui_get_hover(UI_ELEMENT_H());
 	draw_set_color(hover ? theme->HOVER_COL : theme->BUTTON_COL);
-	ui_draw_rect(false, current->_x + current->button_offset_y, current->_y + current->button_offset_y, current->_w - current->button_offset_y * 2,
+	ui_draw_rect(false, true, current->_x + current->button_offset_y, current->_y + current->button_offset_y, current->_w - current->button_offset_y * 2,
 	             UI_BUTTON_H());
 
 	int x = current->_x + current->_w - current->arrow_offset_x - 8;
@@ -2292,6 +2400,9 @@ float ui_slider(ui_handle_t *handle, char *text, float from, float to, bool fill
 	if (current->submit_text_handle == handle) {
 		ui_submit_text_edit();
 #ifdef WITH_EVAL
+		if (handle->text[0] == '.') {
+			handle->text = string("0%s", handle->text);
+		}
 		minic_ctx_t *_ctx = minic_eval(string("float main() { return %s; }", handle->text));
 		handle->f         = minic_ctx_result(_ctx);
 		minic_ctx_free(_ctx);
@@ -2333,8 +2444,12 @@ void ui_separator(int h, bool fill) {
 }
 
 void ui_tooltip(char *text) {
-	assert(strlen(text) < 512);
-	strcpy(current->tooltip_text, text);
+	size_t len = strlen(text);
+	if (len > sizeof(current->tooltip_text) - 1) {
+		len = sizeof(current->tooltip_text) - 1;
+	}
+	memcpy(current->tooltip_text, text, len);
+	current->tooltip_text[len] = '\0';
 	current->tooltip_y = current->_y + current->_window_y;
 }
 
@@ -2635,20 +2750,19 @@ void ui_touch_move(ui_t *ui, int index, int x, int y) {
 }
 #endif
 
-char *ui_copy() {
+void ui_copy() {
 	ui_is_copy = true;
-	return &ui_text_to_copy[0];
 }
 
-char *ui_cut() {
+void ui_cut() {
 	ui_is_cut = true;
-	return ui_copy();
+	ui_copy();
 }
 
 void ui_paste(char *s) {
 	ui_is_paste = true;
-	strncpy(ui_text_to_paste, s, 1024);
-	ui_text_to_paste[1023] = 0;
+	strncpy(ui_text_to_paste, s, UI_TEXT_MAX - 1);
+	ui_text_to_paste[UI_TEXT_MAX - 1] = 0;
 }
 
 void ui_theme_default(ui_theme_t *t) {
@@ -2672,11 +2786,9 @@ void ui_theme_default(ui_theme_t *t) {
 	t->SCROLL_MINI_W     = 3;
 	t->TEXT_OFFSET       = 8;
 	t->TAB_W             = 6;
-	t->FILL_WINDOW_BG    = true;
 	t->FILL_BUTTON_BG    = true;
-	t->LINK_STYLE        = UI_LINK_STYLE_LINE;
 	t->FULL_TABS         = false;
-	t->ROUND_CORNERS     = true;
 	t->SHADOWS           = true;
+	t->LINK_STYLE        = UI_LINK_STYLE_LINE;
 	t->VIEWPORT_COL      = 0xff070707;
 }

@@ -8,6 +8,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define UI_TEXT_MAX 8192
+
+// #define UI_HANDLE(name)                                                                       \
+// 	ui_handle_t  _##name##_h = {.redraws = 2, .color = 0xffffffff, .text = "", .init = true}; \
+// 	ui_handle_t *name        = &_##name##_h
+
 typedef enum {
 	UI_LAYOUT_VERTICAL,
 	UI_LAYOUT_HORIZONTAL
@@ -53,12 +59,10 @@ typedef struct ui_theme {
 	int          SCROLL_MINI_W;
 	int          TEXT_OFFSET;
 	int          TAB_W; // Indentation
-	/*bool*/ int FILL_WINDOW_BG;
 	/*bool*/ int FILL_BUTTON_BG;
-	int          LINK_STYLE;
 	/*bool*/ int FULL_TABS; // Make tabs take full window width
-	/*bool*/ int ROUND_CORNERS;
 	/*bool*/ int SHADOWS;
+	int          LINK_STYLE;
 	int          VIEWPORT_COL;
 } ui_theme_t;
 
@@ -194,7 +198,9 @@ typedef struct ui {
 	int                 cursor_x; // Text input
 	int                 highlight_anchor;
 	int                 cursor_sticky_x; // Remember column for vertical navigation
-	f32_array_t        *ratios;          // Splitting rows
+	float               cursor_screen_x; // Caret screen position, updated while editing
+	float               cursor_screen_y;
+	f32_array_t        *ratios; // Splitting rows
 	int                 current_ratio;
 	float               x_before_split;
 	int                 w_before_split;
@@ -238,9 +244,9 @@ typedef struct ui {
 	float        restore_y;
 
 	ui_handle_t    *text_selected_handle;
-	char            text_selected[1024];
+	char            text_selected[UI_TEXT_MAX];
 	ui_handle_t    *submit_text_handle;
-	char            text_to_submit[1024];
+	char            text_to_submit[UI_TEXT_MAX];
 	bool            tab_pressed;
 	ui_handle_t    *tab_pressed_handle;
 	ui_handle_t    *combo_selected_handle;
@@ -331,8 +337,8 @@ void ui_touch_down(ui_t *ui, int index, int x, int y);
 void ui_touch_up(ui_t *ui, int index, int x, int y);
 void ui_touch_move(ui_t *ui, int index, int x, int y);
 #endif
-char        *ui_copy();
-char        *ui_cut();
+void         ui_copy();
+void         ui_cut();
 void         ui_paste(char *s);
 void         ui_theme_default(ui_theme_t *t);
 ui_t        *ui_get_current();
@@ -357,13 +363,14 @@ void  ui_end_frame();
 void  ui_fade_color(float alpha);
 void  ui_draw_string(char *text, float x_offset, float y_offset, int align, bool truncation);
 void  ui_draw_shadow(float x, float y, float w, float h);
-void  ui_draw_rect(bool fill, float x, float y, float w, float h);
+void  ui_draw_rect(bool fill, bool shadows, float x, float y, float w, float h);
 void  ui_draw_round_bottom(float x, float y, float w);
 void  ui_start_text_edit(ui_handle_t *handle, int align);
 void  ui_remove_char_at(char *str, int at);
 void  ui_remove_chars_at(char *str, int at, int count);
 void  ui_insert_char_at(char *str, int at, char c);
 void  ui_insert_chars_at(char *str, int at, char *cs);
+int   ui_insert_chars_at_capped(char *str, int at, char *cs, int cap);
 
 float UI_SCALE();
 float UI_ELEMENT_W();
@@ -385,8 +392,8 @@ extern float ui_touch_speed;
 extern bool  ui_is_cut;
 extern bool  ui_is_copy;
 extern bool  ui_is_paste;
-extern char  ui_text_to_paste[1024];
-extern char  ui_text_to_copy[1024];
+extern char  ui_text_to_paste[UI_TEXT_MAX];
+extern char  ui_text_to_copy[UI_TEXT_MAX];
 extern void (*ui_on_border_hover)(ui_handle_t *, int);
 extern void (*ui_on_tab_drop)(ui_handle_t *, int, ui_handle_t *, int);
 extern bool (*ui_picker_button)(void);
@@ -541,8 +548,8 @@ extern char           *ui_clipboard;
 extern string_array_t *ui_nodes_exclude_remove;
 extern bool            ui_nodes_socket_released;
 extern string_array_t *(*ui_nodes_enum_texts)(char *);
-extern any_array_t *(*ui_nodes_enum_images)(char *);
-extern gpu_texture_t *(*ui_nodes_preview_image)(ui_node_t *);
+extern any_array_t *(*ui_nodes_enum_textures)(char *);
+extern gpu_texture_t *(*ui_nodes_preview_texture)(ui_node_t *);
 extern void (*ui_nodes_on_custom_button)(int, char *);
 extern ui_canvas_control_t *(*ui_nodes_on_canvas_control)(void);
 extern void (*ui_nodes_on_canvas_released)(void);

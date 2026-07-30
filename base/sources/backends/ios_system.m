@@ -552,7 +552,7 @@ void importFile(NSURL *url) {
 }
 
 - (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)connectionOptions {
-#ifdef IRON_A2
+#ifdef IRON_AUDIO
 	AVAudioSession *sessionInstance = [AVAudioSession sharedInstance];
 	NSError        *error;
 	NSString       *category = AVAudioSessionCategoryAmbient;
@@ -577,11 +577,9 @@ void importFile(NSURL *url) {
 }
 
 - (void)sceneDidBecomeActive:(UIScene *)scene {
-	iron_internal_resume_callback();
 }
 
 - (void)sceneWillResignActive:(UIScene *)scene {
-	iron_internal_pause_callback();
 }
 
 - (void)sceneWillEnterForeground:(UIScene *)scene {

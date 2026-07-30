@@ -28,9 +28,9 @@ static bool ends_with(const char *s, const char *end) {
 }
 
 static gpu_texture_t read_png_jpg(const char *filename) {
-	int           width, height, n;
-	char         *data = stbi_load(filename, &width, &height, &n, 4);
-	gpu_texture_t img  = {.data = data, .width = width, .height = height, .is_hdr = false};
+	int            width, height, n;
+	unsigned char *data = stbi_load(filename, &width, &height, &n, 4);
+	gpu_texture_t  img  = {.data = data, .width = width, .height = height, .is_hdr = false};
 	return img;
 }
 
@@ -163,11 +163,16 @@ static void write_k(int width, int height, const char *format, char *data, int s
 }
 
 static uint16_t float_to_half_fast(float value) {
-	union { float f; uint32_t u; } v = {value};
+	union {
+		float    f;
+		uint32_t u;
+	} v           = {value};
 	uint32_t sign = (v.u >> 16) & 0x8000;
 	v.u &= 0x7FFFFFFF;
-	if (v.u >= 0x47800000) return sign | 0x7C00;
-	if (v.u < 0x38800000) return sign;
+	if (v.u >= 0x47800000)
+		return sign | 0x7C00;
+	if (v.u < 0x38800000)
+		return sign;
 	return sign | ((v.u - 0x38000000) >> 13);
 }
 

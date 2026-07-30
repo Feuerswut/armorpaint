@@ -9,6 +9,13 @@ typedef enum {
 } shortcut_type_t;
 
 typedef enum {
+	BORDER_SIDE_LEFT   = 0,
+	BORDER_SIDE_RIGHT  = 1,
+	BORDER_SIDE_TOP    = 2,
+	BORDER_SIDE_BOTTOm = 3,
+} border_side_t;
+
+typedef enum {
 	BAKE_TYPE_INIT          = -1,
 	BAKE_TYPE_CURVATURE     = 0,
 	BAKE_TYPE_NORMAL        = 1,
@@ -20,7 +27,7 @@ typedef enum {
 	BAKE_TYPE_MATERIALID    = 7,
 	BAKE_TYPE_OBJECTID      = 8,
 	BAKE_TYPE_VERTEX_COLOR  = 9,
-	BAKE_TYPE_AO            = 10,
+	BAKE_TYPE_OCCLUSION     = 10,
 	BAKE_TYPE_LIGHTMAP      = 11,
 	BAKE_TYPE_BENT_NORMAL   = 12,
 	BAKE_TYPE_THICKNESS     = 13,
@@ -119,9 +126,9 @@ typedef enum {
 } uv_type_t;
 
 typedef enum {
-	PICKER_MASK_NONE     = 0,
-	PICKER_MASK_MATERIAL = 1,
-} picker_mask_t;
+	SCULPT_TYPE_DRAW = 0,
+	SCULPT_TYPE_GRAB = 1,
+} sculpt_type_t;
 
 typedef enum {
 	BLEND_TYPE_MIX          = 0,
@@ -229,14 +236,19 @@ typedef enum {
 	TOOL_TYPE_TEXT     = 4,
 	TOOL_TYPE_CLONE    = 5,
 	TOOL_TYPE_BLUR     = 6,
-	TOOL_TYPE_SMUDGE   = 7,
-	TOOL_TYPE_PARTICLE = 8,
-	TOOL_TYPE_COLORID  = 9,
-	TOOL_TYPE_PICKER   = 10,
-	TOOL_TYPE_BAKE     = 11,
-	TOOL_TYPE_MATERIAL = 12,
-	TOOL_TYPE_CURSOR   = 13,
+	TOOL_TYPE_PARTICLE = 7,
+	TOOL_TYPE_COLORID  = 8,
+	TOOL_TYPE_PICKER   = 9,
+	TOOL_TYPE_MATERIAL = 10,
+	TOOL_TYPE_CURSOR   = 11,
+	TOOL_TYPE_SELECT   = 12,
+	TOOL_TYPE_BAKE     = 13, // Hidden, used by Bake Texture node
 } tool_type_t;
+
+typedef enum {
+	BLUR_TYPE_BLUR   = 0,
+	BLUR_TYPE_SMUDGE = 1,
+} blur_type_t;
 
 typedef enum {
 	TAB_AREA_SIDEBAR0 = 0,
@@ -245,15 +257,18 @@ typedef enum {
 } tab_area_t;
 
 typedef enum {
-	TEXTURE_RES_RES128   = 0,
-	TEXTURE_RES_RES256   = 1,
-	TEXTURE_RES_RES512   = 2,
-	TEXTURE_RES_RES1024  = 3,
-	TEXTURE_RES_RES2048  = 4,
-	TEXTURE_RES_RES4096  = 5,
-	TEXTURE_RES_RES8192  = 6,
-	TEXTURE_RES_RES16384 = 7,
+	TEXTURE_RES_RES2048  = 0,
+	TEXTURE_RES_RES4096  = 1,
+	TEXTURE_RES_RES8192  = 2,
+	TEXTURE_RES_RES16384 = 3,
+	TEXTURE_RES_CUSTOM   = 4,
 } texture_res_t;
+
+typedef enum {
+	CONSOLE_MODEL_QWEN   = 0,
+	CONSOLE_MODEL_CLAUDE = 1,
+	CONSOLE_MODEL_GROK   = 2,
+} console_model_t;
 
 typedef enum {
 	LAYOUT_SIZE_SIDEBAR_W  = 0,
@@ -266,12 +281,6 @@ typedef enum {
 } layout_size_t;
 
 typedef enum {
-	NEURAL_BACKEND_CPU    = 0,
-	NEURAL_BACKEND_VULKAN = 1,
-	NEURAL_BACKEND_CUDA   = 2,
-} neural_backend_t;
-
-typedef enum {
 	PREFERENCES_TAB_INTERFACE = 0,
 	PREFERENCES_TAB_THEME     = 1,
 	PREFERENCES_TAB_USAGE     = 2,
@@ -282,14 +291,6 @@ typedef enum {
 	PREFERENCES_TAB_NEURAL    = 7,
 	PREFERENCES_TAB_PLUGINS   = 8,
 } preferences_tab_t;
-
-typedef enum {
-	PHYSICS_SHAPE_BOX     = 0,
-	PHYSICS_SHAPE_SPHERE  = 1,
-	PHYSICS_SHAPE_HULL    = 2,
-	PHYSICS_SHAPE_TERRAIN = 3,
-	PHYSICS_SHAPE_MESH    = 4,
-} physics_shape_t;
 
 typedef enum {
 	ICON18_EYE_ON  = 0,
@@ -305,11 +306,11 @@ typedef enum {
 	ICON_TEXT             = 4,
 	ICON_CLONE            = 5,
 	ICON_BLUR             = 6,
-	ICON_SMUDGE           = 7,
-	ICON_PARTICLE         = 8,
-	ICON_COLOR_ID         = 9,
-	ICON_PICKER           = 10,
-	ICON_BAKE             = 11,
+	ICON_PARTICLE         = 7,
+	ICON_COLOR_ID         = 8,
+	ICON_PICKER           = 9,
+	ICON_MATERIAL         = 10,
+	ICON_CURSOR           = 11,
 	ICON_DROP             = 12,
 	ICON_MATERIAL_PREVIEW = 13,
 	ICON_FOLDER_FULL      = 14,
@@ -319,9 +320,9 @@ typedef enum {
 	ICON_TEXT_PREVIEW     = 18,
 	ICON_PROPERTIES       = 19,
 	ICON_FOLDER_OPEN      = 20,
-	ICON_EMPTY            = 21,
-	ICON_CURSOR           = 22,
-	ICON_MATERIAL         = 23,
+	ICON_BAKE             = 21,
+	ICON_SMUDGE           = 22,
+	ICON_SELECT           = 23,
 	ICON_MENU             = 24,
 	ICON_FILE_NEW         = 25,
 	ICON_FOLDER           = 26,
@@ -377,17 +378,17 @@ typedef enum {
 	ICON_LAYER            = 76,
 	ICON_LAYER_NEW        = 77,
 	ICON_WINDOW           = 78,
-	ICON_BOOKMARK         = 79,
-	ICON_FLAG             = 80,
-	ICON_PIN              = 81,
-	ICON_LABEL            = 82,
+	ICON_GESTURE          = 79,
+	ICON_NODES            = 80,
+	ICON_CURVE            = 81,
+	ICON_PATH             = 82,
 	ICON_ACCOUNT          = 83,
 	ICON_ARROW_UP_LEFT    = 84,
 	ICON_GIZMO            = 85,
 	ICON_BLOCK            = 86,
 	ICON_LANDSCAPE        = 87,
 	ICON_CHAT             = 88,
-	ICON_CHICK            = 89,
+	ICON_EGG              = 89,
 	ICON_CLOUD            = 90,
 	ICON_PICKER2          = 91,
 	ICON_COPY             = 92,
@@ -409,7 +410,7 @@ typedef enum {
 	ICON_LAYERS           = 108,
 	ICON_LINK             = 109,
 	ICON_LOCK             = 110,
-	ICON_MAIL             = 111,
+	ICON_STICKER          = 111,
 	ICON_MASK             = 112,
 	ICON_DISPLAY          = 113,
 	ICON_MOVIE            = 114,
@@ -430,6 +431,18 @@ typedef enum {
 	ICON_TERMINAL         = 129,
 	ICON_TRANSLATE        = 130,
 	ICON_UPLOAD           = 131,
+	ICON_RESERVED0        = 132,
+	ICON_RESERVED1        = 133,
+	ICON_RESERVED2        = 134,
+	ICON_RESERVED3        = 135,
+	ICON_RESERVED4        = 136,
+	ICON_WORKSPACE        = 137,
+	ICON_UVSPHERE         = 138,
+	ICON_PLANE            = 139,
+	ICON_TORUS            = 140,
+	ICON_CYLINDER         = 141,
+	ICON_CONE             = 142,
+	ICON_BOX              = 143,
 } icon_t;
 
 typedef enum {

@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern int                                  constant_buffer_index;
+extern uint32_t                             constant_buffer_index;
 static gpu_buffer_t                        *current_vb;
 static gpu_buffer_t                        *current_ib;
 static WGPUBindGroupLayout                  descriptor_layout;
@@ -191,7 +191,7 @@ static void create_descriptors(void) {
 
 void gpu_barrier(gpu_texture_t *render_target, gpu_texture_state_t state_after) {}
 
-void gpu_render_target_init2(gpu_texture_t *target, int width, int height, gpu_texture_format_t format, int framebuffer_index) {
+void gpu_render_target_init2(gpu_texture_t *target, uint32_t width, uint32_t height, gpu_texture_format_t format, int framebuffer_index) {
 	target->width  = width;
 	target->height = height;
 	target->format = format;
@@ -516,14 +516,14 @@ static WGPUBindGroup get_descriptor_set(WGPUBuffer buffer) {
 	return wgpuDeviceCreateBindGroup(device, &desc);
 }
 
-void gpu_set_constant_buffer(gpu_buffer_t *buffer, int offset, size_t size) {
+void gpu_set_constant_buffer(gpu_buffer_t *buffer, uint32_t offset, size_t size) {
 	WGPUBindGroup bind_group = get_descriptor_set(buffer->impl.buf);
 	uint32_t      offsets[1] = {(uint32_t)offset};
 	wgpuRenderPassEncoderSetBindGroup(render_pass_encoder, 0, bind_group, 1, offsets);
 	wgpuBindGroupRelease(bind_group);
 }
 
-void gpu_set_texture(int unit, gpu_texture_t *texture) {
+void gpu_set_texture(uint32_t unit, gpu_texture_t *texture) {
 	current_textures[unit] = texture;
 }
 
@@ -668,7 +668,7 @@ void gpu_shader_destroy(gpu_shader_t *shader) {
 	shader->impl.source = NULL;
 }
 
-void gpu_texture_init_from_bytes(gpu_texture_t *texture, void *data, int width, int height, gpu_texture_format_t format) {
+void gpu_texture_init_from_bytes(gpu_texture_t *texture, void *data, uint32_t width, uint32_t height, gpu_texture_format_t format) {
 	texture->width  = width;
 	texture->height = height;
 	texture->format = format;
@@ -767,7 +767,7 @@ void gpu_texture_destroy_internal(gpu_texture_t *target) {
 	wgpuTextureViewRelease(target->impl.view);
 }
 
-void gpu_render_target_init(gpu_texture_t *target, int width, int height, gpu_texture_format_t format) {
+void gpu_render_target_init(gpu_texture_t *target, uint32_t width, uint32_t height, gpu_texture_format_t format) {
 	gpu_render_target_init2(target, width, height, format, -1);
 }
 
@@ -780,7 +780,7 @@ static void _gpu_buffer_copy(WGPUBuffer dest, WGPUBuffer source, uint32_t size) 
 	wgpuCommandEncoderRelease(encoder);
 }
 
-void gpu_vertex_buffer_init(gpu_buffer_t *buffer, int count, gpu_vertex_structure_t *structure) {
+void gpu_vertex_buffer_init(gpu_buffer_t *buffer, uint32_t count, gpu_vertex_structure_t *structure) {
 	buffer->count  = count;
 	buffer->stride = 0;
 	for (int i = 0; i < structure->size; ++i) {
@@ -801,7 +801,7 @@ void gpu_vertex_buffer_unlock(gpu_buffer_t *buffer) {
 	wgpuQueueWriteBuffer(queue, buffer->impl.buf, 0, buffer->impl.mem, buffer->count * buffer->stride);
 }
 
-void gpu_index_buffer_init(gpu_buffer_t *buffer, int count) {
+void gpu_index_buffer_init(gpu_buffer_t *buffer, uint32_t count) {
 	buffer->count  = count;
 	buffer->stride = sizeof(uint32_t);
 
@@ -819,7 +819,7 @@ void gpu_index_buffer_unlock(gpu_buffer_t *buffer) {
 	wgpuQueueWriteBuffer(queue, buffer->impl.buf, 0, buffer->impl.mem, buffer->count * buffer->stride);
 }
 
-void gpu_constant_buffer_init(gpu_buffer_t *buffer, int size) {
+void gpu_constant_buffer_init(gpu_buffer_t *buffer, uint32_t size) {
 	buffer->count  = size;
 	buffer->stride = 1;
 
@@ -828,7 +828,7 @@ void gpu_constant_buffer_init(gpu_buffer_t *buffer, int size) {
 	buffer->impl.mem          = malloc(buffer->count * buffer->stride);
 }
 
-void gpu_constant_buffer_lock(gpu_buffer_t *buffer, int start, int count) {
+void gpu_constant_buffer_lock(gpu_buffer_t *buffer, uint32_t start, uint32_t count) {
 	buffer->impl.start = start;
 	buffer->count      = count;
 	buffer->data       = &buffer->impl.mem[start];

@@ -4,7 +4,9 @@
 #include "engine.h"
 #include "iron_array.h"
 #include "iron_map.h"
+#include "iron_obj.h"
 #include "iron_ui.h"
+#include <stdlib.h>
 
 void *io_svg_parse(char *buf);
 void *io_exr_parse(char *buf, size_t len);
@@ -29,9 +31,9 @@ extern any_map_t      *import_texture_importers;
 extern string_array_t *_path_texture_formats;
 string_array_t        *path_texture_formats(void);
 extern any_map_t      *util_mesh_unwrappers;
-extern any_map_t      *data_cached_images;
+extern any_map_t      *data_cached_textures;
 void                   import_texture_run(char *path, bool hdr_as_envmap);
-extern any_array_t    *project_assets;
+any_array_t           *project_get_assets(void);
 void                   tab_textures_delete_texture(asset_t *asset);
 
 int plugins_skinning_frame = -1;
@@ -39,7 +41,7 @@ int plugins_split_by       = 0;
 
 void io_psd_import_layer(char *file_name, char *layer_name, void *tex) {
 	char *path = string("%s.%s.png", file_name, layer_name);
-	any_map_set(data_cached_images, path, tex);
+	any_map_set(data_cached_textures, path, tex);
 	import_texture_run(path, false);
 }
 
@@ -54,6 +56,7 @@ static void *import_psd(char *path) {
 
 	// Delete existing layers so they can be re-imported
 	char *prefix = string("%s.", filename);
+	any_array_t *project_assets = project_get_assets();
 	for (int i = project_assets->length - 1; i >= 0; --i) {
 		asset_t *a = project_assets->buffer[i];
 		if (starts_with(a->name, prefix)) {
@@ -78,6 +81,57 @@ static void *import_svg(char *path) {
 	return io_svg_parse((char *)b->buffer);
 }
 
+static buffer_t *plugins_skin_blob = NULL;
+
+void plugins_skin_data_clear() {
+	gc_unroot(plugins_skin_blob);
+	plugins_skin_blob = NULL;
+}
+
+static void plugins_skin_data_set(buffer_t *b) {
+	plugins_skin_data_clear();
+	plugins_skin_blob = b;
+	gc_root(plugins_skin_blob);
+}
+
+bool plugins_skin_data_exists() {
+	return plugins_skin_blob != NULL;
+}
+
+static void plugins_free_raw_mesh(raw_mesh_t *raw) {
+	i16_array_t *arrays[] = {raw->posa, raw->nora, raw->texa, raw->texa1, raw->cola};
+	for (int i = 0; i < 5; ++i) {
+		if (arrays[i] != NULL) {
+			free(arrays[i]->buffer);
+			free(arrays[i]);
+		}
+	}
+	if (raw->inda != NULL) {
+		free(raw->inda->buffer);
+		free(raw->inda);
+	}
+	free(raw->name);
+	free(raw);
+}
+
+bool plugins_skin_data_apply(int frame, i16_array_t *posa, i16_array_t *nora, float *scale_pos) {
+	if (plugins_skin_blob == NULL) {
+		return false;
+	}
+
+	raw_mesh_t *raw = io_gltf_parse_skinned((char *)plugins_skin_blob->buffer, plugins_skin_blob->length, NULL, frame);
+	if (raw == NULL) {
+		return false;
+	}
+
+	memcpy(posa->buffer, raw->posa->buffer, posa->length * sizeof(int16_t));
+	memcpy(nora->buffer, raw->nora->buffer, nora->length * sizeof(int16_t));
+	*scale_pos = raw->scale_pos;
+
+	plugins_free_raw_mesh(raw);
+	return true;
+}
+
 static void *import_gltf_glb(char *path) {
 	buffer_t *b = data_get_blob(path);
 	data_delete_blob(path);
@@ -85,6 +139,7 @@ static void *import_gltf_glb(char *path) {
 		return io_gltf_parse((char *)b->buffer, b->length, path);
 	}
 	else {
+		plugins_skin_data_set(b);
 		return io_gltf_parse_skinned((char *)b->buffer, b->length, path, plugins_skinning_frame);
 	}
 }

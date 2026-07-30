@@ -8,6 +8,8 @@ const constants: {
 	radius: float;
 	camera_right: float3;
 	tint: float3;
+	camera_up: float3;
+	camera_align: float;
 };
 
 #[set(everything)]
@@ -40,11 +42,6 @@ fun get_normal(p0: float3, uv: float2): float3 {
 	return normalize(cross(p2 - p0, p1 - p0));
 }
 
-// fun create_basis(normal: float3, out tangent: float3, out binormal: float3) {
-// 	tangent = normalize(constants.camera_right - normal * dot(constants.camera_right, normal));
-// 	binormal = cross(tangent, normal);
-// }
-
 fun cursor_vert(input: vert_in): vert_out {
 	var keep: float = input.pos.x + input.nor.x; // hlsl
 
@@ -59,9 +56,14 @@ fun cursor_vert(input: vert_in): vert_out {
 	var n_tan: float3;
 	var n_bin: float3;
 
-	// create_basis(n, n_tan, n_bin);
-	n_tan = normalize(constants.camera_right - n * dot(constants.camera_right, n));
-	n_bin = cross(n_tan, n);
+	if (constants.camera_align > 0.0) {
+		n_tan = constants.camera_right;
+		n_bin = constants.camera_up;
+	}
+	else {
+		n_tan = normalize(constants.camera_right - n * dot(constants.camera_right, n));
+		n_bin = cross(n_tan, n);
+	}
 
 	if (vertex_id() == 0) {
 		wpos += normalize(-n_tan - n_bin) * 0.7 * constants.radius;

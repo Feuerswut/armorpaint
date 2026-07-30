@@ -840,15 +840,11 @@ static bool _handle_messages() {
 			}
 			else if (controlDown && (ksKey == XK_c || ksKey == XK_C)) {
 				XSetSelectionOwner(x11_ctx.display, CLIPBOARD, window, CurrentTime);
-				char *text = iron_internal_copy_callback();
-				if (text != NULL)
-					iron_copy_to_clipboard(text);
+				iron_internal_copy_callback();
 			}
 			else if (controlDown && (ksKey == XK_x || ksKey == XK_X)) {
 				XSetSelectionOwner(x11_ctx.display, CLIPBOARD, window, CurrentTime);
-				char *text = iron_internal_cut_callback();
-				if (text != NULL)
-					iron_copy_to_clipboard(text);
+				iron_internal_cut_callback();
 			}
 
 			if (event.xkey.keycode == ignoreKeycode) {
@@ -1554,13 +1550,21 @@ void iron_exec_async(const char *path, char *argv[]) {
 	iron_exec_async_done = 0;
 	child_pid            = fork();
 	if (child_pid == 0) {
-		if (iron_exec_async_output_file != NULL) {
-			int fd = open(iron_exec_async_output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-			dup2(fd, STDOUT_FILENO);
+		int fd = iron_exec_async_output_file != NULL ? open(iron_exec_async_output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644) : open("/dev/null", O_WRONLY);
+		dup2(fd, STDOUT_FILENO);
+		dup2(fd, STDERR_FILENO);
+		if (fd > STDERR_FILENO) {
 			close(fd);
 		}
-		execve(path, argv, NULL);
-		exit(1);
+		char *home = getenv("HOME");
+		char *env  = getenv("PATH");
+		if (home != NULL) {
+			char new_path[4096];
+			snprintf(new_path, sizeof(new_path), "%s/.local/bin:%s/bin:%s", home, home, env);
+			setenv("PATH", new_path, 1);
+		}
+		execvp(path, argv);
+		_exit(1);
 	}
 	else {
 		struct sigaction sa = {0};

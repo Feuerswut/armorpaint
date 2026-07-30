@@ -118,14 +118,14 @@ int ui_inline_radio(ui_handle_t *handle, string_array_t *texts, int align) {
 			if (!current->enabled) {
 				ui_fade_color(0.25);
 			}
-			ui_draw_rect(true, current->_x + step * i, current->_y + current->button_offset_y, step, UI_BUTTON_H());
+			ui_draw_rect(true, true, current->_x + step * i, current->_y + current->button_offset_y, step, UI_BUTTON_H());
 		}
 		else if (hovered == i) {
 			draw_set_color(theme->BUTTON_COL);
 			if (!current->enabled) {
 				ui_fade_color(0.25);
 			}
-			ui_draw_rect(false, current->_x + step * i, current->_y + current->button_offset_y, step, UI_BUTTON_H());
+			ui_draw_rect(false, true, current->_x + step * i, current->_y + current->button_offset_y, step, UI_BUTTON_H());
 		}
 		draw_set_color(theme->TEXT_COL); // Text
 		current->_x += step * i;
@@ -466,6 +466,19 @@ static int ui_line_pos(char *str, int line) {
 static char *lines_buffer = NULL;
 static int   lines_size   = 0;
 
+static void ui_append_capped(char *dst, char *src, int cap) {
+	int len   = strlen(dst);
+	int count = strlen(src);
+	if (len + count > cap - 1) {
+		count = cap - 1 - len;
+	}
+	if (count <= 0) {
+		return;
+	}
+	memcpy(dst + len, src, count);
+	dst[len + count] = '\0';
+}
+
 void ui_text_area_word_wrap(char *lines, ui_handle_t *handle, bool selected) {
 	ui_t *current    = ui_get_current();
 	bool  cursor_set = false;
@@ -479,9 +492,9 @@ void ui_text_area_word_wrap(char *lines, ui_handle_t *handle, bool selected) {
 		anchor_pos += strlen(ui_extract_line(lines, i)) + 1;
 	}
 	int  word_count = ui_word_count(lines);
-	char line[1024];
+	char line[UI_TEXT_MAX];
 	line[0] = '\0';
-	char new_lines[4096];
+	char new_lines[UI_TEXT_MAX];
 	new_lines[0] = '\0';
 
 	for (int i = 0; i < word_count; ++i) {
@@ -491,18 +504,18 @@ void ui_text_area_word_wrap(char *lines, ui_handle_t *handle, bool selected) {
 		float linew  = wordw + draw_string_width(current->ops->font, current->font_size, line);
 		if (linew > current->_w - 10 && linew > wordw) {
 			if (new_lines[0] != '\0') {
-				strcat(new_lines, "\n");
+				ui_append_capped(new_lines, "\n", UI_TEXT_MAX);
 			}
-			strcat(new_lines, line);
+			ui_append_capped(new_lines, line, UI_TEXT_MAX);
 			line[0] = '\0';
 		}
 
 		if (line[0] == '\0') {
-			strcpy(line, w);
+			ui_append_capped(line, w, UI_TEXT_MAX);
 		}
 		else {
-			strcat(line, " ");
-			strcat(line, w);
+			ui_append_capped(line, " ", UI_TEXT_MAX);
+			ui_append_capped(line, w, UI_TEXT_MAX);
 		}
 
 		int new_line_count = new_lines[0] == '\0' ? 0 : ui_line_count(new_lines);
@@ -522,11 +535,11 @@ void ui_text_area_word_wrap(char *lines, ui_handle_t *handle, bool selected) {
 		}
 	}
 	if (new_lines[0] != '\0') {
-		strcat(new_lines, "\n");
+		ui_append_capped(new_lines, "\n", UI_TEXT_MAX);
 	}
-	strcat(new_lines, line);
+	ui_append_capped(new_lines, line, UI_TEXT_MAX);
 	if (selected) {
-		strcpy(handle->text, ui_extract_line(new_lines, handle->i));
+		handle->text = string_copy(ui_extract_line(new_lines, handle->i));
 		strcpy(current->text_selected, handle->text);
 	}
 	strcpy(lines, new_lines);
@@ -558,7 +571,7 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 	handle->text  = string_replace_all(handle->text, "\t", "    ");
 	bool selected = current->text_selected_handle == handle; // Text being edited
 
-	int text_size = strlen(handle->text) + 1 + 1024;
+	int text_size = strlen(handle->text) + 1 + UI_TEXT_MAX;
 	if (lines_size < text_size) {
 		if (lines_buffer != NULL) {
 			free(lines_buffer);
@@ -585,7 +598,7 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 
 	ui_theme_t *theme = current->ops->theme;
 	draw_set_color(theme->SEPARATOR_COL); // Background
-	ui_draw_rect(true, current->_x + current->button_offset_y, current->_y + current->button_offset_y, current->_w - current->button_offset_y * 2,
+	ui_draw_rect(true, true, current->_x + current->button_offset_y, current->_y + current->button_offset_y, current->_w - current->button_offset_y * 2,
 	             line_count * UI_ELEMENT_H() - current->button_offset_y * 2);
 
 	ui_text_coloring_t *_text_coloring = current->text_coloring;
@@ -598,7 +611,7 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 	int  lines_off         = 0;
 	int  edit_line_pos     = -1;
 	int  edit_line_old_len = 0;
-	char edit_new_text[1024];
+	char edit_new_text[UI_TEXT_MAX];
 	edit_new_text[0] = '\0';
 	for (int i = 0; i < line_count; ++i) { // Draw lines
 		char *line = ui_extract_line_off(lines, 0, &lines_off);
@@ -609,6 +622,7 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 			current->submit_text_handle = NULL;
 			// Suppress cut / paste / select-all in ui_update_text_edit for multi-line handling
 			bool _is_cut            = ui_is_cut;
+			bool _is_copy           = ui_is_copy;
 			bool _is_paste          = ui_is_paste;
 			bool _is_a_down         = current->is_a_down;
 			int  _key_char          = current->key_char;
@@ -618,6 +632,7 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 			bool paste_is_multiline = ui_is_paste && strchr(ui_text_to_paste, '\n') != NULL;
 			if ((text_area_selection_start != -1 && text_area_selection_start != i) || paste_is_multiline) {
 				ui_is_cut   = false;
+				ui_is_copy  = false;
 				ui_is_paste = false;
 				// Suppress editing keys for multi-line selection, keep navigation keys active
 				if (current->key_code == KEY_CODE_BACKSPACE || current->key_code == KEY_CODE_DELETE || current->key_code == KEY_CODE_RETURN ||
@@ -640,6 +655,7 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 			if ((text_area_selection_start != -1 && text_area_selection_start != i) || paste_is_multiline) {
 				// Restore flags that were suppressed for multi-line handling
 				ui_is_cut                 = _is_cut;
+				ui_is_copy                = _is_copy;
 				ui_is_paste               = _is_paste;
 				current->key_code         = _key_code;
 				current->highlight_anchor = _highlight_anchor;
@@ -717,7 +733,7 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 		ui_text_to_paste[0]                           = '\0';
 		ui_is_paste                                   = false;
 		strcpy(current->text_selected, ui_extract_line(lines, handle->i));
-		strcpy(handle->text, current->text_selected);
+		handle->text = string_copy(current->text_selected);
 	}
 
 	// Multi-line copy/cut/paste
@@ -752,6 +768,8 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 					strcat(ui_text_to_copy, "\n");
 				}
 			}
+			iron_copy_to_clipboard(ui_text_to_copy);
+			ui_is_copy = false;
 		}
 		if (editable && (ui_is_cut || current->key_code == KEY_CODE_BACKSPACE || current->key_code == KEY_CODE_DELETE)) {
 			// Delete from sel_top_col on sel_top_line to sel_bot_col on sel_bot_line
@@ -762,7 +780,7 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 			current->cursor_x = current->highlight_anchor = sel_top_col;
 			text_area_selection_start                     = -1;
 			strcpy(current->text_selected, ui_extract_line(lines, handle->i));
-			strcpy(handle->text, current->text_selected);
+			handle->text = string_copy(current->text_selected);
 		}
 		if (editable && ui_is_paste) {
 			// Delete selected range then insert clipboard
@@ -779,7 +797,7 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 			ui_text_to_paste[0]                           = '\0';
 			ui_is_paste                                   = false;
 			strcpy(current->text_selected, ui_extract_line(lines, handle->i));
-			strcpy(handle->text, current->text_selected);
+			handle->text = string_copy(current->text_selected);
 		}
 	}
 
@@ -818,7 +836,7 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 			current->highlight_anchor = 0;
 			current->cursor_sticky_x  = 0;
 			strcpy(current->text_selected, ui_extract_line(lines, handle->i));
-			strcpy(handle->text, current->text_selected);
+			handle->text = string_copy(current->text_selected);
 			scroll_align(current, handle);
 		}
 		else if (current->key_code == KEY_CODE_LEFT && cursor_start_x == 0 && handle->i > 0 && !current->is_ctrl_down) {
@@ -829,7 +847,7 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 			current->highlight_anchor = prev_len;
 			current->cursor_sticky_x  = prev_len;
 			strcpy(current->text_selected, ui_extract_line(lines, handle->i));
-			strcpy(handle->text, current->text_selected);
+			handle->text = string_copy(current->text_selected);
 			scroll_align(current, handle);
 		}
 		else if (current->key_code == KEY_CODE_HOME || current->key_code == KEY_CODE_END) {
@@ -843,7 +861,7 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 			current->cursor_x             = (int)strlen(ui_extract_line(lines, handle->i));
 			current->cursor_sticky_x      = current->cursor_x;
 			strcpy(current->text_selected, ui_extract_line(lines, handle->i));
-			strcpy(handle->text, current->text_selected);
+			handle->text = string_copy(current->text_selected);
 			scroll_align(current, handle);
 		}
 		else {
@@ -856,8 +874,18 @@ char *ui_text_area(ui_handle_t *handle, int align, bool editable, char *label, b
 		if (editable && current->key_code == KEY_CODE_RETURN && !word_wrap) {
 			handle->i++;
 			ui_insert_char_at(lines, ui_line_pos(lines, handle->i - 1) + current->cursor_x, '\n');
+			// Auto indent
+			char *prev_line = ui_extract_line(lines, handle->i - 1);
+			int   indent    = 0;
+			while (prev_line[indent] == ' ') {
+				indent++;
+			}
+			int new_line_pos = ui_line_pos(lines, handle->i);
+			for (int s = 0; s < indent; ++s) {
+				ui_insert_char_at(lines, new_line_pos, ' ');
+			}
 			ui_start_text_edit(handle, UI_ALIGN_LEFT);
-			current->cursor_x = current->highlight_anchor = 0;
+			current->cursor_x = current->highlight_anchor = indent;
 			scroll_align(current, handle);
 		}
 		// Delete line
@@ -921,10 +949,10 @@ bool ui_menubar_button(char *text) {
 	return ui_button(text, UI_ALIGN_CENTER, "");
 }
 
-const char *ui_theme_keys[] = {"WINDOW_BG_COL",  "HOVER_COL",         "BUTTON_COL", "PRESSED_COL",   "TEXT_COL",       "LABEL_COL",   "SEPARATOR_COL",
-                               "HIGHLIGHT_COL",  "FONT_SIZE",         "ELEMENT_W",  "ELEMENT_H",     "ELEMENT_OFFSET", "ARROW_SIZE",  "BUTTON_H",
-                               "CHECK_SIZE",     "CHECK_SELECT_SIZE", "SCROLL_W",   "SCROLL_MINI_W", "TEXT_OFFSET",    "TAB_W",       "FILL_WINDOW_BG",
-                               "FILL_BUTTON_BG", "LINK_STYLE",        "FULL_TABS",  "ROUND_CORNERS", "SHADOWS",        "VIEWPORT_COL"};
+const char *ui_theme_keys[] = {"WINDOW_BG_COL", "HOVER_COL",         "BUTTON_COL", "PRESSED_COL",   "TEXT_COL",       "LABEL_COL",  "SEPARATOR_COL",
+                               "HIGHLIGHT_COL", "FONT_SIZE",         "ELEMENT_W",  "ELEMENT_H",     "ELEMENT_OFFSET", "ARROW_SIZE", "BUTTON_H",
+                               "CHECK_SIZE",    "CHECK_SELECT_SIZE", "SCROLL_W",   "SCROLL_MINI_W", "TEXT_OFFSET",    "TAB_W",      "FILL_BUTTON_BG",
+                               "FULL_TABS",     "SHADOWS",           "LINK_STYLE", "VIEWPORT_COL"};
 
 int ui_theme_keys_count = sizeof(ui_theme_keys) / sizeof(ui_theme_keys[0]);
 

@@ -94,8 +94,8 @@ void line_draw_init(void) {
 		line_draw_pipeline->depth_attachment_bits  = 32;
 		gpu_pipeline_compile(line_draw_pipeline);
 		pipes_offset            = 0;
-		line_draw_vp_loc        = pipes_get_constant_location("mat4");
-		line_draw_color_loc     = pipes_get_constant_location("vec3");
+		line_draw_vp_loc        = pipes_get_constant_location("float4x4");
+		line_draw_color_loc     = pipes_get_constant_location("float3");
 		line_draw_vp            = mat4_identity();
 		line_draw_vertex_buffer = gpu_create_vertex_buffer(line_draw_max_vertices, &structure);
 		line_draw_index_buffer  = gpu_create_index_buffer(line_draw_max_indices);
@@ -226,7 +226,7 @@ void line_draw_line(f32 x1, f32 y1, f32 z1, f32 x2, f32 y2, f32 z2) {
 	line_draw_vb_data[i + 1] = line_draw_corner4.y;
 	line_draw_vb_data[i + 2] = line_draw_corner4.z;
 
-	i                    = line_draw_lines * 6;
+	i                        = line_draw_lines * 6;
 	line_draw_ib_data[i]     = line_draw_lines * 4;
 	line_draw_ib_data[i + 1] = line_draw_lines * 4 + 1;
 	line_draw_ib_data[i + 2] = line_draw_lines * 4 + 2;
@@ -272,7 +272,7 @@ void shape_draw_sphere(mat4_t mat) {
 		gpu_vertex_structure_t structure = {0};
 		gpu_vertex_structure_add(&structure, "pos", GPU_VERTEX_DATA_F32_3X);
 		_shape_draw_sphere_vb = gpu_create_vertex_buffer(posa->length, &structure);
-		float *data = gpu_vertex_buffer_lock(_shape_draw_sphere_vb);
+		float *data           = gpu_vertex_buffer_lock(_shape_draw_sphere_vb);
 		for (i32 i = 0; i < (i32)posa->length / 4; ++i) {
 			data[i * 3 + 0] = posa->buffer[i * 4 + 0] / 32767.0;
 			data[i * 3 + 1] = posa->buffer[i * 4 + 1] / 32767.0;

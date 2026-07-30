@@ -671,3 +671,31 @@ uint8_t half_to_u8_fast(uint16_t h) {
 	uint32_t res   = (val * 255) >> shift;
 	return (uint8_t)res;
 }
+
+buffer_t *buffer_half_to_u8(buffer_t *buffer) {
+	for (int32_t i = 0; i < buffer->length / 2.0; ++i) {
+		buffer->buffer[i] = half_to_u8_fast(buffer_get_u16(buffer, i * 2));
+	}
+	return buffer;
+}
+
+buffer_t *buffer_bgra_swap(buffer_t *buffer) {
+	for (uint32_t i = 0; i < buffer->length / 4; ++i) {
+		uint8_t r                 = buffer->buffer[i * 4];
+		buffer->buffer[i * 4]     = buffer->buffer[i * 4 + 2];
+		buffer->buffer[i * 4 + 2] = r;
+	}
+	return buffer;
+}
+
+buffer_t *buffer_bgra64_swap(buffer_t *buffer) {
+	for (uint32_t i = 0; i < buffer->length / 8; ++i) {
+		uint8_t r_low             = buffer->buffer[i * 8 + 4];
+		uint8_t r_high            = buffer->buffer[i * 8 + 5];
+		buffer->buffer[i * 8 + 4] = buffer->buffer[i * 8 + 0];
+		buffer->buffer[i * 8 + 5] = buffer->buffer[i * 8 + 1];
+		buffer->buffer[i * 8]     = r_low;
+		buffer->buffer[i * 8 + 1] = r_high;
+	}
+	return buffer;
+}
