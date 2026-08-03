@@ -2695,7 +2695,17 @@ function export_iron_project(project, options) {
 	if (globalThis.flags.embed) {
 		let embed_files = [];
 		for (let asset of assets) {
-			if (asset.noembed || asset.from.endsWith(".txt") || asset.from.endsWith(".md") || asset.from.endsWith(".json") || asset.from.endsWith(".c") || asset.from.endsWith(".html") || asset.from.endsWith(".js") || asset.from.endsWith(".ico")) {
+			if (globalThis.flags.embed_all) {
+				// Portable build: embed every file that can be fetched through
+				// iron_load_blob()/iron_load_texture() at runtime, so the exe needs
+				// no data/ folder next to it. Only files that are never loaded as
+				// data are skipped. Note this also makes themes, keymaps, locales,
+				// export presets and plugins read-only.
+				if (asset.from.endsWith(".md") || asset.from.endsWith(".html") || asset.from.endsWith(".ico")) {
+					continue;
+				}
+			}
+			else if (asset.noembed || asset.from.endsWith(".txt") || asset.from.endsWith(".md") || asset.from.endsWith(".json") || asset.from.endsWith(".c") || asset.from.endsWith(".html") || asset.from.endsWith(".js") || asset.from.endsWith(".ico")) {
 				continue;
 			}
 			embed_files.push(path_resolve("build", "temp", asset.files[0]));

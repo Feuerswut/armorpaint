@@ -1,0 +1,244 @@
+name: Release (Windows portable single-exe)
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag/version name for this build (e.g. v0.1-test). Leave empty for a SHA-named dev build."
+        required: false
+        default: ""
+      draft:
+        description: "Create the GitHub release as a draft"
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  windows-portable:
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------
+      # Work out how to name the artifact.
+      # ------------------------------------------------------------------
+      - name: Determine version
+        id: ver
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $v = "${{ github.ref_name }}"
+          } elseif ("${{ inputs.tag }}" -ne "") {
+            $v = "${{ inputs.tag }}"
+          } else {
+            $v = "dev-" + "${{ github.sha }}".Substring(0,7)
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "Building version: $v"
+
+      # ------------------------------------------------------------------
+      # The --embed path uses the C23 #embed directive, which needs clang 19+.
+      # The ClangCL toolset normally uses the LLVM bundled with Visual Studio,
+      # which may be older. Probe it, and fall back to a standalone LLVM.
+      # ------------------------------------------------------------------
+      - name: "Probe clang-cl for C23 #embed support"
+        id: probe
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Continue"
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsRoot  = & $vswhere -products * -latest -property installationPath
+          $clang   = Join-Path $vsRoot "VC\Tools\Llvm\x64\bin\clang-cl.exe"
+          "VS root:  $vsRoot"
+          "clang-cl: $clang"
+
+          $ok = $false
+          if (Test-Path $clang) {
+            & $clang --version
+            # Minimal translation unit exercising #embed.
+            "probe payload" | Out-File -Encoding ascii probe_payload.bin
+            @'
+          const unsigned char data[] = {
+          #embed "probe_payload.bin"
+          };
+          int main(void) { return sizeof(data) == 0; }
+          '@ | Out-File -Encoding ascii probe.c
+            & $clang /std:c23 /c probe.c /Foprobe.obj 2>&1 | Write-Host
+            if ($LASTEXITCODE -eq 0) { $ok = $true }
+          }
+
+          if ($ok) {
+            "Bundled clang-cl supports #embed."
+            "need_llvm=false" >> $env:GITHUB_OUTPUT
+          } else {
+            "Bundled clang-cl does NOT support #embed - will install standalone LLVM."
+            "need_llvm=true" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Install standalone LLVM (only if needed)
+        if: steps.probe.outputs.need_llvm == 'true'
+        shell: pwsh
+        run: |
+          choco install llvm -y --no-progress
+          if (-not (Test-Path "C:\Program Files\LLVM\bin\clang-cl.exe")) {
+            throw "LLVM install did not produce clang-cl.exe"
+          }
+          & "C:\Program Files\LLVM\bin\clang-cl.exe" --version
+
+      # ------------------------------------------------------------------
+      # Phase 1: generate the Visual Studio project AND build/embed.h.
+      # No --compile here, so we get a chance to inspect/patch before building.
+      # ------------------------------------------------------------------
+      - name: Generate project + embed.h
+        shell: cmd
+        working-directory: paint
+        run: ..\base\make --embed-all --graphics direct3d12
+
+      - name: Verify embed.h looks sane
+        shell: pwsh
+        working-directory: paint
+        run: |
+          $h = "build\embed.h"
+          if (-not (Test-Path $h)) {
+            throw "build/embed.h was not generated - the --embed-all path did not run."
+          }
+          $content = Get-Content $h -Raw
+          if ($content -notmatch "int embed_count = (\d+);") {
+            throw "embed.h has no embed_count - generation failed."
+          }
+          $count = [int]$Matches[1]
+          "embed_count = $count"
+          if ($count -lt 50) {
+            throw "embed_count=$count is implausibly low; expected the full asset+shader set."
+          }
+          # These are the files upstream --embed leaves on disk. With --embed-all
+          # they must all be inside the exe, otherwise it is not portable.
+          foreach ($needle in @("/data/locale/", "/data/themes/", "/data/export_presets/", "/data/meshes/", "/data/plugins/")) {
+            if ($content -notmatch [regex]::Escape($needle)) {
+              throw "embed.h is missing entries for $needle - build would not be portable."
+            }
+          }
+          "All expected asset groups are embedded."
+
+      - name: Point ClangCL at standalone LLVM (only if needed)
+        if: steps.probe.outputs.need_llvm == 'true'
+        shell: pwsh
+        working-directory: paint
+        run: |
+          $proj = "build\ArmorPaint.vcxproj"
+          [xml]$xml = Get-Content $proj
+          $ns = $xml.DocumentElement.NamespaceURI
+          foreach ($pg in $xml.Project.PropertyGroup) {
+            if ($pg.PlatformToolset) {
+              $e = $xml.CreateElement("LLVMInstallDir", $ns)
+              $e.InnerText = "C:\Program Files\LLVM"
+              [void]$pg.AppendChild($e)
+              $e2 = $xml.CreateElement("LLVMToolsVersion", $ns)
+              $e2.InnerText = ""
+              [void]$pg.AppendChild($e2)
+            }
+          }
+          $xml.Save((Resolve-Path $proj))
+          "Patched $proj to use standalone LLVM."
+
+      # ------------------------------------------------------------------
+      # Phase 2: build.
+      # ------------------------------------------------------------------
+      - name: Build (Release x64)
+        shell: cmd
+        working-directory: paint
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -products * -latest -find VC\Auxiliary\Build\vcvars64.bat`) do set "VCVARS=%%i"
+          call "%VCVARS%"
+          MSBuild.exe "%CD%\build\ArmorPaint.vcxproj" /m /p:Configuration=Release /p:Platform=x64 /v:minimal
+
+      - name: Locate executable
+        id: exe
+        shell: pwsh
+        run: |
+          $found = Get-ChildItem -Recurse -Path paint\build -Filter "ArmorPaint.exe" -ErrorAction SilentlyContinue |
+                   Where-Object { $_.FullName -notmatch "\\Debug\\" } |
+                   Sort-Object Length -Descending
+          if (-not $found) { throw "ArmorPaint.exe not found under paint/build" }
+          $exe = $found[0].FullName
+          $mb  = [math]::Round($found[0].Length / 1MB, 1)
+          "Found: $exe ($mb MB)"
+          "path=$exe" >> $env:GITHUB_OUTPUT
+          if ($found[0].Length -lt 5MB) {
+            throw "Executable is only $mb MB - assets were probably not embedded."
+          }
+
+      # ------------------------------------------------------------------
+      # Portability check: nothing loadable may be left sitting on disk.
+      # ------------------------------------------------------------------
+      - name: Verify the exe is self-contained
+        shell: pwsh
+        run: |
+          $leftovers = Get-ChildItem -Recurse -Path paint\build -Directory -Filter "data" -ErrorAction SilentlyContinue |
+                       ForEach-Object { Get-ChildItem -Recurse -File $_.FullName } |
+                       Where-Object { $_.Extension -notin @(".md", ".html", ".ico", ".txt") }
+          if ($leftovers) {
+            "::warning::Files were still emitted to a data/ folder; these are NOT inside the exe:"
+            $leftovers | ForEach-Object { "  " + $_.FullName }
+          } else {
+            "No loadable files left on disk - exe is self-contained."
+          }
+
+      - name: Stage release artifact
+        id: stage
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $name = "ArmorPaint-${{ steps.ver.outputs.version }}-windows-x64-portable.exe"
+          Copy-Item "${{ steps.exe.outputs.path }}" "dist\$name"
+          Get-FileHash "dist\$name" -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  $name" } |
+            Out-File -Encoding ascii "dist\$name.sha256"
+          "name=$name" >> $env:GITHUB_OUTPUT
+          Get-ChildItem dist | Format-Table Name, Length
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: armorpaint-windows-x64-portable
+          path: dist/
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        if: github.ref_type == 'tag' || inputs.tag != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ steps.ver.outputs.version }}"
+          $notes = @'
+          Portable single-file Windows build (Direct3D 12, x64).
+
+          Download the .exe and run it - no installer, no data folder, no DLLs.
+          All shaders, textures, locales, themes, presets, meshes and plugins are
+          embedded in the executable.
+
+          Known limitations of the portable build:
+          - Themes, keymaps, locales, export presets and plugins are read-only.
+          - The 20 MB CJK font is not bundled, so CJK glyphs will not render.
+          '@
+          $notes | Out-File -Encoding utf8 notes.md
+
+          $ghArgs = @(
+            'release', 'create', $tag,
+            "dist/${{ steps.stage.outputs.name }}",
+            "dist/${{ steps.stage.outputs.name }}.sha256",
+            '--title', $tag,
+            '--notes-file', 'notes.md'
+          )
+          # Default to a draft so nothing is published publicly without review.
+          if ("${{ inputs.draft }}" -ne "false") { $ghArgs += '--draft' }
+          gh @ghArgs

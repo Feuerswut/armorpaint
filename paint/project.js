@@ -2,7 +2,8 @@
 let flags                 = globalThis.flags;
 flags.name                = "ArmorPaint";
 flags.package             = "org.armorpaint";
-flags.embed               = os_argv().indexOf("--embed") >= 0; // os_argv().indexOf("--debug") == -1; // clang 19
+flags.embed_all           = os_argv().indexOf("--embed-all") >= 0; // fully portable single-exe build
+flags.embed               = flags.embed_all || os_argv().indexOf("--embed") >= 0; // os_argv().indexOf("--debug") == -1; // clang 19
 flags.with_physics        = true;
 flags.with_d3dcompiler    = true;
 flags.with_nfd            = true;
@@ -38,7 +39,7 @@ project.add_assets("assets/export_presets/*", {destination : "data/export_preset
 project.add_assets("assets/keymap_presets/*", {destination : "data/keymap_presets/{name}"});
 project.add_assets("assets/licenses/**", {destination : "data/licenses/{name}"});
 project.add_assets("assets/plugins/*", {destination : "data/plugins/{name}"});
-project.add_assets("assets/meshes/*", {destination : "data/meshes/{name}", noembed : true});
+project.add_assets("assets/meshes/*", {destination : "data/meshes/{name}", noembed : !flags.embed_all});
 project.add_assets("assets/meshes/default/*", {destination : "data/meshes/{name}"}); // embed default mesh
 project.add_assets("assets/locale/*", {destination : "data/locale/{name}"});
 project.add_assets("assets/readme/readme.txt", {destination : "{name}"});
