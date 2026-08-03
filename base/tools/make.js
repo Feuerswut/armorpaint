@@ -2627,6 +2627,25 @@ function export_k(from, to) {
 	amake.export_k(from, to);
 }
 
+// Single source of truth for "is this asset baked into the exe?".
+// Used both when staging files into build/temp and when writing embed.h -
+// the two must agree exactly, or embed.h references files that are not there.
+function embed_skip(file, noembed) {
+	// Callers of copy_blob() already gate on noembed, so embed.h must honour it
+	// too in every mode - otherwise it points at files never staged into temp.
+	if (noembed) {
+		return true;
+	}
+	if (globalThis.flags.embed_all) {
+		// Portable build: embed everything reachable through iron_load_blob()/
+		// iron_load_texture(), so the exe needs no data/ folder. Only files that
+		// are never loaded as data are left out.
+		return file.endsWith(".md") || file.endsWith(".html") || file.endsWith(".ico");
+	}
+	return noembed || file.endsWith(".txt") || file.endsWith(".md") || file.endsWith(".json") || file.endsWith(".c") || file.endsWith(".html") ||
+	       file.endsWith(".js") || file.endsWith(".ico");
+}
+
 class IronExporter {
 	constructor(project, options) {
 		this.options = options;
@@ -2649,7 +2668,7 @@ class IronExporter {
 	copy_blob(from, to, embed) {
 		fs_ensuredir(path_join("build", "out", path_dirname(to)));
 		let to_full = path_join("build", "out", to);
-		if (embed && !to.endsWith(".txt") && !to.endsWith(".md") && !to.endsWith(".json") && !to.endsWith(".c") && !to.endsWith(".html") && !to.endsWith(".js") && !to.endsWith(".ico")) {
+		if (embed && !embed_skip(to, false)) {
 			fs_ensuredir(path_join("build", "temp", path_dirname(to)));
 			to_full = path_join("build", "temp", to);
 		}
@@ -2695,7 +2714,7 @@ function export_iron_project(project, options) {
 	if (globalThis.flags.embed) {
 		let embed_files = [];
 		for (let asset of assets) {
-			if (asset.noembed || asset.from.endsWith(".txt") || asset.from.endsWith(".md") || asset.from.endsWith(".json") || asset.from.endsWith(".c") || asset.from.endsWith(".html") || asset.from.endsWith(".js") || asset.from.endsWith(".ico")) {
+			if (embed_skip(asset.from, asset.noembed)) {
 				continue;
 			}
 			embed_files.push(path_resolve("build", "temp", asset.files[0]));
