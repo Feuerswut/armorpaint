@@ -45,17 +45,17 @@ node_shader_context_t *make_mesh_preview_run(material_t *data, material_context_
 	gc_unroot(parser_material_sample_uv_scale);
 	parser_material_sample_uv_scale = string_copy(brush_scale);
 	gc_root(parser_material_sample_uv_scale);
-	parser_material_parse_height            = make_material_height_used;
-	shader_out_t *sout                      = parser_material_parse(g_context->material->canvas, con_mesh, kong, matcon);
-	parser_material_parse_height            = false;
-	parser_material_sample_keep_aspect      = false;
-	char *base                              = sout->out_basecol;
-	char *rough                             = sout->out_roughness;
-	char *met                               = sout->out_metallic;
-	char *occ                               = sout->out_occlusion;
-	char *opac                              = sout->out_opacity;
-	char *height                            = sout->out_height;
-	char *nortan                            = parser_material_out_normaltan;
+	parser_material_parse_height       = make_material_height_used;
+	shader_out_t *sout                 = parser_material_parse(g_context->material->canvas, con_mesh, kong, matcon);
+	parser_material_parse_height       = false;
+	parser_material_sample_keep_aspect = false;
+	char *base                         = sout->out_basecol;
+	char *rough                        = sout->out_roughness;
+	char *met                          = sout->out_metallic;
+	char *occ                          = sout->out_occlusion;
+	char *opac                         = sout->out_opacity;
+	char *height                       = sout->out_height;
+	char *nortan                       = parser_material_out_normaltan;
 	node_shader_write_frag(kong, string("var basecol: float3 = pow3(%s, float3(2.2, 2.2, 2.2));", base));
 	node_shader_write_frag(kong, string("var roughness: float = %s;", rough));
 	node_shader_write_frag(kong, string("var metallic: float = %s;", met));
@@ -73,7 +73,7 @@ node_shader_context_t *make_mesh_preview_run(material_t *data, material_context_
 		node_shader_write_frag(kong, string("if (opacity <= float(%s)) { discard; }", f32_to_string(opac)));
 	}
 
-	kong->frag_out = "float4[2]";
+	kong->frag_out = viewport ? "float4[3]" : "float4[2]";
 	kong->frag_n   = true;
 
 	node_shader_add_function(kong, str_pack_float_int16);

@@ -29,9 +29,10 @@ void tab_meshes_accept_mesh_drop(mesh_object_t *mesh) {
 	array_remove(g_project->_->paint_objects, mesh);
 	i32 new_pos = dest > pos ? dest - 1 : dest;
 	array_insert(g_project->_->paint_objects, new_pos, mesh);
+	tab_timeline_sync();
 }
 
-void tab_meshes_set_override(mesh_object_t *o, i32 mat_index) {
+void tab_meshes_set_override_data(mesh_object_t *o, i32 mat_index, material_data_t *data) {
 	// Render an object with a chosen material instead of the painted layers
 	if (tab_meshes_override_map == NULL) {
 		tab_meshes_override_map = any_map_create();
@@ -44,9 +45,13 @@ void tab_meshes_set_override(mesh_object_t *o, i32 mat_index) {
 	}
 	else {
 		slot_material_t *slot = g_project->_->materials->buffer[mat_index];
-		o->material           = make_mesh_preview_viewport(slot);
+		o->material           = data != NULL ? data : make_mesh_preview_viewport(slot);
 		any_map_set(tab_meshes_override_map, uid_key, i32_to_string(mat_index));
 	}
+}
+
+void tab_meshes_set_override(mesh_object_t *o, i32 mat_index) {
+	tab_meshes_set_override_data(o, mat_index, NULL);
 }
 
 i32 tab_meshes_get_override(mesh_object_t *o) {
@@ -125,19 +130,26 @@ void tab_meshes_draw_context_menu_delete_next_frame(mesh_object_t *o) {
 	ui_base_hwnds->buffer[TAB_AREA_SIDEBAR0]->redraws = 2;
 }
 
+static void tab_meshes_reparent_keep_world(object_t *child, object_t *parent) {
+	mat4_t world = child->transform->world;
+	object_set_parent(child, parent);
+	mat4_t parent_world = child->parent != NULL ? child->parent->transform->world : mat4_identity();
+	transform_set_matrix(child->transform, mat4_mult_mat(world, mat4_inv(parent_world)));
+}
+
 void tab_meshes_draw_context_menu_delete(mesh_object_t *o) {
+	char *mesh_name = o->base->name;
 	array_remove(g_project->_->paint_objects, o);
-	while (o->base->children->length > 0) {
-		object_t *child = o->base->children->buffer[0];
-		object_set_parent(child, NULL);
-		if (g_project->_->paint_objects->buffer[0]->base != child) {
-			object_set_parent(child, g_project->_->paint_objects->buffer[0]->base);
-		}
-		if (o->base->children->length == 0) {
-			g_project->_->paint_objects->buffer[0]->base->transform->scale = o->base->transform->scale;
-			transform_build_matrix(g_project->_->paint_objects->buffer[0]->base->transform);
-		}
+	tab_timeline_on_mesh_deleted(mesh_name);
+
+	object_t *new_root = g_project->_->paint_objects->buffer[0]->base;
+	if (new_root->parent == o->base) {
+		tab_meshes_reparent_keep_world(new_root, NULL);
 	}
+	while (o->base->children->length > 0) {
+		tab_meshes_reparent_keep_world(o->base->children->buffer[0], new_root);
+	}
+
 	sys_notify_on_next_frame(tab_meshes_draw_context_menu_delete_next_frame, o);
 }
 
@@ -380,24 +392,29 @@ void tab_meshes_draw_context_menu() {
 
 	// Physics
 	if (g_config->experimental) {
-		asim_body_t    *pb         = o->base->_->body;
+		physics_body_t    *pb         = o->base->_->body;
 		string_array_t *phys_combo = string_array_create(0);
 		string_array_push(phys_combo, ""); // Empty = no physics
+		string_array_push(phys_combo, tr("Box"));
 		string_array_push(phys_combo, tr("Sphere"));
+		string_array_push(phys_combo, tr("Terrain"));
 		string_array_push(phys_combo, tr("Mesh"));
 
 		ui_handle_t *hphys = ui_handle(__ID__);
-		hphys->i           = pb == NULL ? 0 : (pb->shape == ASIM_SHAPE_SPHERE ? 1 : 2);
+		hphys->i           = pb == NULL ? 0 : pb->shape + 1;
 		ui_combo(hphys, phys_combo, tr("Physics"), true, UI_ALIGN_LEFT, false);
 		if (hphys->changed) {
 			if (pb != NULL) {
-				asim_body_remove(pb);
+				physics_body_remove(pb);
 				pb = NULL;
 			}
 			if (hphys->i > 0) {
-				sim_add_body(o->base, hphys->i == 1 ? ASIM_SHAPE_SPHERE : ASIM_SHAPE_MESH, hphys->i == 1 ? 1.0 : 0.0);
+				physics_shape_t shape   = (physics_shape_t)(hphys->i - 1);
+				bool         dynamic = shape == PHYSICS_SHAPE_BOX || shape == PHYSICS_SHAPE_SPHERE;
+				sim_add_body(o->base, shape, dynamic ? 1.0 : 0.0);
 				pb = o->base->_->body;
 			}
+			g_project->mesh_physics_shapes = i32_array_create(0);
 		}
 
 		if (pb != NULL) {
@@ -405,8 +422,9 @@ void tab_meshes_draw_context_menu() {
 			hmass->f           = pb->mass;
 			ui_slider(hmass, tr("Mass"), 0.0, 10.0, true, 100, true, UI_ALIGN_LEFT, true);
 			if (hmass->changed) {
-				asim_body_set_mass(pb, hmass->f); // Zero mass = static
-				ui_menu_keep_open = true;
+				physics_body_set_mass(pb, hmass->f); // Zero mass = static
+				g_project->mesh_physics_shapes = i32_array_create(0);
+				ui_menu_keep_open              = true;
 			}
 		}
 	}
@@ -505,7 +523,7 @@ void tab_meshes_draw_edit() {
 	}
 }
 
-void tab_meshes_append_shape(char *mesh_name) {
+mesh_object_t *tab_meshes_append_shape(char *mesh_name) {
 	scene_t     *scene_raw = NULL;
 	mesh_data_t *raw       = NULL;
 	if (string_equals(mesh_name, "sphere")) {
@@ -548,7 +566,9 @@ void tab_meshes_append_shape(char *mesh_name) {
 	mo->base->raw = o;
 	any_map_set(data_cached_meshes, md->_->handle, md);
 	any_array_push(g_project->_->paint_objects, mo);
+	tab_stages_add_object(mo->base->name);
 	g_context->paint_object = mo;
+	return mo;
 }
 
 static icon_t tab_meshes_mesh_name_to_icon(char *s) {
@@ -863,7 +883,8 @@ void tab_meshes_draw_mesh_slot(mesh_object_t *o, i32 i) {
 		if (hovered) {
 			ui_tooltip(o->base->name);
 			if (g_ui->input_started) {
-				g_context->paint_object = o;
+				g_context->paint_object   = o;
+				ui_header_handle->redraws = 2;
 				tab_meshes_set_drag_mesh(o, -(mouse_x - uix - g_ui->_window_x - 3), -(mouse_y - uiy - g_ui->_window_y + 1));
 			}
 			if (g_ui->input_released) {
@@ -884,8 +905,9 @@ void tab_meshes_draw_mesh_slot(mesh_object_t *o, i32 i) {
 				}
 			}
 			if (g_ui->input_released_r) {
-				g_context->paint_object = o;
-				_tab_meshes_draw_i      = i;
+				g_context->paint_object   = o;
+				ui_header_handle->redraws = 2;
+				_tab_meshes_draw_i        = i;
 				ui_menu_draw(&tab_meshes_draw_context_menu, -1, -1);
 			}
 		}

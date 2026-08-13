@@ -58,35 +58,35 @@ void ui_header_particle_menu_draw() {
 	hfriction->f                 = g_context->particle_friction;
 	g_context->particle_friction = ui_slider(hfriction, tr("Friction"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 	if (hfriction->changed) {
-		asim_set_friction(g_context->particle_friction);
+		physics_set_friction(g_context->particle_friction);
 	}
 
 	ui_handle_t *hbounciness       = ui_handle(__ID__);
 	hbounciness->f                 = g_context->particle_bounciness;
 	g_context->particle_bounciness = ui_slider(hbounciness, tr("Bounce"), 0.0, 1.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 	if (hbounciness->changed) {
-		asim_set_bounciness(g_context->particle_bounciness);
+		physics_set_bounciness(g_context->particle_bounciness);
 	}
 
 	ui_handle_t *hgravx           = ui_handle(__ID__);
 	hgravx->f                     = g_context->particle_gravity_x;
 	g_context->particle_gravity_x = ui_slider(hgravx, tr("Gravity X"), -10.0, 10.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 	if (hgravx->changed) {
-		asim_set_gravity(g_context->particle_gravity_x, g_context->particle_gravity_y, g_context->particle_gravity_z);
+		physics_set_gravity(g_context->particle_gravity_x, g_context->particle_gravity_y, g_context->particle_gravity_z);
 	}
 
 	ui_handle_t *hgravy           = ui_handle(__ID__);
 	hgravy->f                     = g_context->particle_gravity_y;
 	g_context->particle_gravity_y = ui_slider(hgravy, tr("Gravity Y"), -10.0, 10.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 	if (hgravy->changed) {
-		asim_set_gravity(g_context->particle_gravity_x, g_context->particle_gravity_y, g_context->particle_gravity_z);
+		physics_set_gravity(g_context->particle_gravity_x, g_context->particle_gravity_y, g_context->particle_gravity_z);
 	}
 
 	ui_handle_t *hgravz           = ui_handle(__ID__);
 	hgravz->f                     = g_context->particle_gravity_z;
 	g_context->particle_gravity_z = ui_slider(hgravz, tr("Gravity Z"), -10.0, 10.0, true, 100.0, true, UI_ALIGN_RIGHT, true);
 	if (hgravz->changed) {
-		asim_set_gravity(g_context->particle_gravity_x, g_context->particle_gravity_y, g_context->particle_gravity_z);
+		physics_set_gravity(g_context->particle_gravity_x, g_context->particle_gravity_y, g_context->particle_gravity_z);
 	}
 
 	if (g_ui->changed || g_ui->is_typing) {
@@ -478,6 +478,12 @@ void ui_header_draw_tool_properties() {
 			}
 		}
 
+		if (g_context->tool == TOOL_TYPE_CLONE) {
+			if (ui_button(g_context->clone_set_source ? tr("Setting Source") : tr("Set Source"), UI_ALIGN_CENTER, "")) {
+				g_context->clone_set_source = !g_context->clone_set_source;
+			}
+		}
+
 		if (g_context->tool == TOOL_TYPE_BLUR) {
 			string_array_t *blur_type_combo = any_array_create_from_raw(
 			    (void *[]){
@@ -595,7 +601,7 @@ void ui_header_draw_tool_properties() {
 		cursor_mode_handle->i           = 0;
 		ui_combo(cursor_mode_handle, cursor_mode_combo, tr("Mode"), false, UI_ALIGN_LEFT, true);
 
-		mesh_object_t *o = context_main_object();
+		mesh_object_t *o = g_context->paint_object != NULL ? g_context->paint_object : context_main_object();
 		if (o != NULL && o->base != NULL && o->base->transform != NULL) {
 			i32 _w = g_ui->_w;
 			f32 sc = UI_SCALE();

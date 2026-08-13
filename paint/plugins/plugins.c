@@ -14,6 +14,7 @@ void *io_psd_parse(uint8_t *buf, size_t len, const char *filename);
 void *io_tiff_parse(uint8_t *buf, size_t len);
 void *io_gltf_parse(char *buf, size_t size, const char *path);
 void *io_gltf_parse_skinned(char *buf, size_t size, const char *path, int frame);
+int   io_gltf_frame_count();
 void *io_fbx_parse(char *buf, size_t size);
 void *io_fbx_parse_skinned(char *buf, size_t size, int frame);
 void  proc_uv_unwrap(void *mesh);
@@ -55,7 +56,7 @@ static void *import_psd(char *path) {
 	char *filename = substring(path, string_last_index_of(path, PATH_SEP) + 1, string_length(path));
 
 	// Delete existing layers so they can be re-imported
-	char *prefix = string("%s.", filename);
+	char        *prefix         = string("%s.", filename);
 	any_array_t *project_assets = project_get_assets();
 	for (int i = project_assets->length - 1; i >= 0; --i) {
 		asset_t *a = project_assets->buffer[i];
@@ -81,23 +82,6 @@ static void *import_svg(char *path) {
 	return io_svg_parse((char *)b->buffer);
 }
 
-static buffer_t *plugins_skin_blob = NULL;
-
-void plugins_skin_data_clear() {
-	gc_unroot(plugins_skin_blob);
-	plugins_skin_blob = NULL;
-}
-
-static void plugins_skin_data_set(buffer_t *b) {
-	plugins_skin_data_clear();
-	plugins_skin_blob = b;
-	gc_root(plugins_skin_blob);
-}
-
-bool plugins_skin_data_exists() {
-	return plugins_skin_blob != NULL;
-}
-
 static void plugins_free_raw_mesh(raw_mesh_t *raw) {
 	i16_array_t *arrays[] = {raw->posa, raw->nora, raw->texa, raw->texa1, raw->cola};
 	for (int i = 0; i < 5; ++i) {
@@ -114,12 +98,12 @@ static void plugins_free_raw_mesh(raw_mesh_t *raw) {
 	free(raw);
 }
 
-bool plugins_skin_data_apply(int frame, i16_array_t *posa, i16_array_t *nora, float *scale_pos) {
-	if (plugins_skin_blob == NULL) {
+bool plugins_skin_data_apply(buffer_t *blob, int frame, i16_array_t *posa, i16_array_t *nora, float *scale_pos) {
+	if (blob == NULL) {
 		return false;
 	}
 
-	raw_mesh_t *raw = io_gltf_parse_skinned((char *)plugins_skin_blob->buffer, plugins_skin_blob->length, NULL, frame);
+	raw_mesh_t *raw = io_gltf_parse_skinned((char *)blob->buffer, blob->length, NULL, frame);
 	if (raw == NULL) {
 		return false;
 	}
@@ -132,6 +116,10 @@ bool plugins_skin_data_apply(int frame, i16_array_t *posa, i16_array_t *nora, fl
 	return true;
 }
 
+int plugins_skin_frame_count() {
+	return io_gltf_frame_count();
+}
+
 static void *import_gltf_glb(char *path) {
 	buffer_t *b = data_get_blob(path);
 	data_delete_blob(path);
@@ -139,8 +127,10 @@ static void *import_gltf_glb(char *path) {
 		return io_gltf_parse((char *)b->buffer, b->length, path);
 	}
 	else {
-		plugins_skin_data_set(b);
-		return io_gltf_parse_skinned((char *)b->buffer, b->length, path, plugins_skinning_frame);
+		raw_mesh_t *raw = io_gltf_parse_skinned((char *)b->buffer, b->length, path, plugins_skinning_frame);
+		raw->blob       = b;
+		gc_root(b);
+		return raw;
 	}
 }
 

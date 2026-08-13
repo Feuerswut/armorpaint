@@ -282,6 +282,17 @@ void export_arm_run_project() {
 	}
 	g_project->mesh_transforms = mesh_transforms;
 
+	// Source mesh bytes
+	// Meshes with no skin data store an empty buffer
+	buffer_t_array_t *mesh_skins = any_array_create_from_raw((void *[]){}, 0);
+	bool              has_skins  = false;
+	for (i32 i = 0; i < g_project->_->paint_objects->length; ++i) {
+		buffer_t *blob = g_project->_->paint_objects->buffer[i]->data->_->skin_blob;
+		any_array_push(mesh_skins, blob != NULL ? blob : buffer_create(0));
+		has_skins = has_skins || blob != NULL;
+	}
+	g_project->mesh_skins = has_skins ? mesh_skins : NULL;
+
 	if (g_project->mesh_materials != NULL) {
 		g_project->mesh_materials = i32_array_create(g_project->_->paint_objects->length);
 		for (i32 i = 0; i < g_project->mesh_materials->length; ++i) {
@@ -302,6 +313,16 @@ void export_arm_run_project() {
 					}
 				}
 			}
+		}
+	}
+
+	if (g_project->mesh_physics_shapes != NULL) {
+		g_project->mesh_physics_shapes = i32_array_create(g_project->_->paint_objects->length);
+		g_project->mesh_physics_masses = f32_array_create(g_project->_->paint_objects->length);
+		for (i32 i = 0; i < g_project->mesh_physics_shapes->length; ++i) {
+			physics_body_t *pb                           = g_project->_->paint_objects->buffer[i]->base->_->body;
+			g_project->mesh_physics_shapes->buffer[i] = pb != NULL ? pb->shape : -1; // No physics
+			g_project->mesh_physics_masses->buffer[i] = pb != NULL ? pb->mass : 0.0;
 		}
 	}
 

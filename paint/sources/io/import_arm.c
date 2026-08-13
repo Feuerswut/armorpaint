@@ -17,6 +17,14 @@ void import_arm_run_mesh_on_next_frame(void *_) {
 	layers_init();
 }
 
+static buffer_t *import_arm_get_mesh_skin(i32 i) {
+	if (g_project->mesh_skins == NULL || i >= g_project->mesh_skins->length) {
+		return NULL;
+	}
+	buffer_t *blob = g_project->mesh_skins->buffer[i];
+	return (blob != NULL && blob->length > 0) ? blob : NULL; // Empty buffer = no skin
+}
+
 void import_arm_run_mesh(project_t *raw) {
 	g_project->_->paint_objects = any_array_create_from_raw((void *[]){}, 0);
 	for (i32 i = 0; i < raw->mesh_datas->length; ++i) {
@@ -379,7 +387,8 @@ void import_arm_run_project(char *path) {
 		}
 	}
 
-	mesh_data_t *md = mesh_data_create(g_project->mesh_datas->buffer[0]);
+	mesh_data_t *md  = mesh_data_create(g_project->mesh_datas->buffer[0]);
+	md->_->skin_blob = import_arm_get_mesh_skin(0);
 
 	mesh_object_set_data(g_context->paint_object, md);
 	g_context->paint_object->base->transform->scale = (vec4_t){1, 1, 1, 1.0};
@@ -392,8 +401,9 @@ void import_arm_run_project(char *path) {
         1);
 
 	for (i32 i = 1; i < g_project->mesh_datas->length; ++i) {
-		mesh_data_t   *raw    = g_project->mesh_datas->buffer[i];
-		mesh_data_t   *md     = mesh_data_create(raw);
+		mesh_data_t *raw      = g_project->mesh_datas->buffer[i];
+		mesh_data_t *md       = mesh_data_create(raw);
+		md->_->skin_blob      = import_arm_get_mesh_skin(i);
 		mesh_object_t *object = scene_add_mesh_object(md, g_context->paint_object->material, g_context->paint_object->base);
 		object->base->name    = md->name;
 		object->skip_context  = "paint";
@@ -652,6 +662,17 @@ void import_arm_run_project(char *path) {
 			i32       parent_index = g_project->mesh_parents->buffer[i];
 			object_t *parent       = parent_index >= 0 ? g_project->_->paint_objects->buffer[parent_index]->base : NULL;
 			object_set_parent(g_project->_->paint_objects->buffer[i]->base, parent);
+		}
+	}
+
+	if (g_project->mesh_physics_shapes != NULL) {
+		for (i32 i = 0; i < g_project->_->paint_objects->length && i < g_project->mesh_physics_shapes->length; ++i) {
+			i32 shape = g_project->mesh_physics_shapes->buffer[i];
+			if (shape < 0) {
+				continue; // No physics
+			}
+			f32 mass = g_project->mesh_physics_masses != NULL && i < g_project->mesh_physics_masses->length ? g_project->mesh_physics_masses->buffer[i] : 0.0;
+			sim_add_body(g_project->_->paint_objects->buffer[i]->base, (physics_shape_t)shape, mass);
 		}
 	}
 

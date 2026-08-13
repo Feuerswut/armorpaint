@@ -3,12 +3,21 @@
 
 static i32 text_to_text_node_backend = CONSOLE_MODEL_QWEN;
 
-static char *text_to_text_node_guide = "Reply with C code only - no explanations. Do not chain statements - declare intermediary variables. Place the code "
-                                       "inside 'void main()' function. Wrap the code in a ```c markdown fence.";
+static char *text_to_text_node_guide = "Reply with C code only wrapped in a ```c markdown fence. Place the code inside 'void main()' function. "
+                                       "Do not chain statements - declare intermediary variables. Do not use preprocessor.";
+
+static char *text_to_text_node_grok_dir(void) {
+#ifndef NDEBUG
+	// Prevent running from git repository
+	return string("%sgrok", iron_internal_save_path());
+#else
+	return neural_node_dir();
+#endif
+}
 
 static char *text_to_text_node_project_contents(void) {
 	buffer_t *encoded = util_encode_project(g_project);
-	char     *json    = armpack_decode_to_json_omit_buffers(encoded);
+	char     *json    = armpack_decode_to_json_omit_large_arrays(encoded);
 	return string("/* Current project state:\n%s\n*/\n", json);
 }
 
@@ -44,7 +53,9 @@ string_array_t *text_to_text_node_grok_args(char *dir) {
             "--output-format",
             "plain",
             "--tools",
-            "",
+            "todo_write", // An empty list is ignored
+            "--cwd",
+            dir, // Pick up AGENTS.md
             NULL,
         },
         10);
@@ -99,6 +110,9 @@ void text_to_text_node_clear(void) {
 	iron_delete_file(string("%s%scontext.bin", dir, PATH_SEP));
 	iron_delete_file(string("%s%soutput.txt", dir, PATH_SEP));
 	iron_delete_file(string("%s%sapi.h", dir, PATH_SEP));
+	char *gdir = text_to_text_node_grok_dir();
+	iron_delete_file(string("%s%sAGENTS.md", gdir, PATH_SEP));
+	iron_delete_file(string("%s%sprompt.txt", gdir, PATH_SEP));
 }
 
 void text_to_text_node_run(char *prompt, void (*done)(char *)) {
@@ -108,18 +122,31 @@ void text_to_text_node_run(char *prompt, void (*done)(char *)) {
 	}
 	text_to_text_node_backend = g_config->console_model;
 
-	char *reference = string("%s\n%s\n%s\n", minic_api_header_generate(), text_to_text_node_project_contents(), text_to_text_node_guide);
+	char *api       = minic_api_header_generate();
+	char *contents  = text_to_text_node_project_contents();
+	char *reference = string("%s\n%s\n%s\n", api, contents, text_to_text_node_guide);
 
 	string_array_t *argv;
 	if (text_to_text_node_backend == CONSOLE_MODEL_CLAUDE) {
-		iron_file_save_bytes(string("%s%sapi.h", dir, PATH_SEP), (buffer_t *)u8_array_create_from_string(reference), 0);
+		iron_file_save_bytes(string("%s%sapi.h", dir, PATH_SEP), sys_string_to_buffer(reference), 0);
 		argv = text_to_text_node_claude_args(dir, prompt);
 	}
+	else if (text_to_text_node_backend == CONSOLE_MODEL_GROK) {
+		char *gdir = text_to_text_node_grok_dir();
+		if (string_equals(file_read_directory(gdir)->buffer[0], "")) {
+			iron_create_directory(gdir);
+		}
+		char *rules = string("%s\n%s\n", api, text_to_text_node_guide);
+		iron_file_save_bytes(string("%s%sAGENTS.md", gdir, PATH_SEP), sys_string_to_buffer(rules), 0);
+
+		char *full = string("%s\n%s\n\n%s", contents, prompt, text_to_text_node_guide);
+		iron_file_save_bytes(string("%s%sprompt.txt", gdir, PATH_SEP), sys_string_to_buffer(full), 0);
+		argv = text_to_text_node_grok_args(gdir);
+	}
 	else {
-		char *prompt_file = string("%s%sprompt.txt", dir, PATH_SEP);
-		char *full        = string("%s%s", reference, prompt);
-		iron_file_save_bytes(prompt_file, (buffer_t *)u8_array_create_from_string(full), 0);
-		argv = text_to_text_node_backend == CONSOLE_MODEL_GROK ? text_to_text_node_grok_args(dir) : text_to_text_node_qwen_args(dir);
+		char *full = string("%s%s", reference, prompt);
+		iron_file_save_bytes(string("%s%sprompt.txt", dir, PATH_SEP), sys_string_to_buffer(full), 0);
+		argv = text_to_text_node_qwen_args(dir);
 	}
 
 	iron_exec_async_output_file = string("%s%soutput.txt", dir, PATH_SEP);

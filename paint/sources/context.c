@@ -44,6 +44,7 @@ void context_init() {
 	g_context->clone_start_y                = -1.0;
 	g_context->clone_delta_x                = 0.0;
 	g_context->clone_delta_y                = 0.0;
+	g_context->clone_set_source             = false;
 	g_context->show_compass                 = true;
 	g_context->last_paint_vec_x             = -1.0;
 	g_context->last_paint_vec_y             = -1.0;
@@ -103,7 +104,7 @@ void context_init() {
 	g_context->particle_lifetime            = 5.0;
 	g_context->particle_mass                = 1.0;
 	g_context->particle_random              = 0.1;
-	g_context->particle_spawn_distance      = 0.3;
+	g_context->particle_spawn_distance      = 0.0;
 	g_context->layer_filter                 = 0;
 	g_context->gizmo_started                = false;
 	g_context->gizmo_offset                 = 0.0;

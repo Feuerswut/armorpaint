@@ -1,7 +1,7 @@
 
 #pragma once
-
 #include "iron_physics.h"
+
 #include "enums.h"
 #include "minic.h"
 
@@ -232,6 +232,7 @@ typedef struct context {
 	f32                         clone_start_y;
 	f32                         clone_delta_x;
 	f32                         clone_delta_y;
+	bool                        clone_set_source;
 	f32                         grab_start_x;
 	f32                         grab_start_y;
 	bool                        show_compass;
@@ -396,7 +397,7 @@ typedef struct context {
 	f32                         last_particle_hit_x;
 	f32                         last_particle_hit_y;
 	f32                         last_particle_hit_z;
-	struct asim_body           *paint_body;
+	struct physics_body           *paint_body;
 	struct {
 		f32                hit_x;
 		f32                hit_y;
@@ -409,7 +410,7 @@ typedef struct context {
 		f32                hit_nor_z;
 		f32                contact_time;
 		struct tween_anim *timer;
-		struct asim_body  *body;
+		struct physics_body  *body;
 		struct object     *bullet;
 	} particles[32];
 	i32             particle_index;
@@ -569,6 +570,9 @@ typedef struct project {
 	struct f32_array_t_array                    *mesh_transforms;
 	struct i32_array                            *mesh_materials;
 	struct i32_array                            *mesh_parents;
+	struct i32_array                            *mesh_physics_shapes; // -1 = no physics
+	struct f32_array                            *mesh_physics_masses;
+	struct buffer_t_array                       *mesh_skins; // NULL = no skin
 	struct i32_array                            *atlas_objects;
 	struct string_array                         *atlas_names;
 	struct string_array                         *script_datas;

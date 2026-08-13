@@ -104,6 +104,8 @@ typedef struct mesh_data_runtime {
 	gpu_buffer_t          *vertex_buffer;
 	gpu_buffer_t          *index_buffer;
 	gpu_vertex_structure_t structure;
+	buffer_t              *skin_blob; // Source file bytes
+	i32                    skin_frames;
 } mesh_data_runtime_t;
 
 typedef struct mesh_data {
@@ -312,7 +314,7 @@ typedef struct transform {
 typedef struct {
 	int empty;
 #ifdef WITH_PHYSICS
-	asim_body_t *body;
+	physics_body_t *body;
 #endif
 } object_runtime_t;
 
